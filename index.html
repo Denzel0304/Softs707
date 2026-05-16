@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#faf7f2">
+<title>빠른 메모</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-2: #f3efe7;
+    --text: #2d2a26;
+    --text-soft: #6b655d;
+    --text-mute: #a09a91;
+    --border: #ebe5da;
+    --accent: #5b7a6a;
+    --accent-soft: #e8efeb;
+    --shadow-sm: 0 1px 2px rgba(60, 50, 35, 0.04);
+    --shadow-md: 0 4px 14px rgba(60, 50, 35, 0.08);
+    --shadow-lg: 0 12px 32px rgba(60, 50, 35, 0.14);
+
+    --c-todo: #d97757;
+    --c-todo-bg: #fbeae0;
+    --c-idea: #7a8a4e;
+    --c-idea-bg: #eef0e0;
+    --c-basic: #6c7a8a;
+    --c-basic-bg: #e4e8ee;
+
+    --header-h: 108px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
+  input, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+
+  /* === Header === */
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--bg);
+    padding-top: var(--safe-top);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 8px;
+  }
+  .title {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .gear-btn {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    transition: background 0.15s;
+  }
+  .gear-btn:active { background: var(--surface-2); }
+  .gear-btn svg { width: 22px; height: 22px; color: var(--text-soft); }
+
+  .search-bar {
+    margin: 0 16px 10px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .search-bar svg { width: 18px; height: 18px; color: var(--text-mute); flex-shrink: 0; }
+  .search-bar input {
+    flex: 1; border: none; outline: none; background: none;
+    font-size: 15px; padding: 4px 0;
+  }
+  .search-clear {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--text-mute);
+    color: white;
+    display: none;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .search-clear.visible { display: flex; }
+  .search-clear svg { width: 12px; height: 12px; color: white; }
+
+  .filters {
+    display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .filter-chip.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .filter-chip[data-cat="todo"].active { background: var(--c-todo); border-color: var(--c-todo); color: white; }
+  .filter-chip[data-cat="idea"].active { background: var(--c-idea); border-color: var(--c-idea); color: white; }
+  .filter-chip[data-cat="basic"].active { background: var(--c-basic); border-color: var(--c-basic); color: white; }
+
+  /* === List === */
+  .list-container {
+    position: fixed;
+    top: var(--header-h);
+    left: 0; right: 0; bottom: 0;
+    padding-top: var(--safe-top);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .list {
+    padding: 12px 16px calc(96px + var(--safe-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .empty {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--text-mute);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-text { font-size: 14px; }
+
+  .card {
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    transition: transform 0.1s;
+  }
+  .card:active { transform: scale(0.99); }
+  .card-stripe {
+    width: 5px; flex-shrink: 0;
+  }
+  .card[data-cat="todo"] .card-stripe { background: var(--c-todo); }
+  .card[data-cat="idea"] .card-stripe { background: var(--c-idea); }
+  .card[data-cat="basic"] .card-stripe { background: var(--c-basic); }
+
+  .card-body {
+    flex: 1;
+    padding: 12px 6px 12px 14px;
+    min-width: 0;
+    display: flex; flex-direction: column;
+    cursor: pointer;
+  }
+  .card-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  .card[data-cat="todo"] .card-tag { background: var(--c-todo-bg); color: var(--c-todo); }
+  .card[data-cat="idea"] .card-tag { background: var(--c-idea-bg); color: var(--c-idea); }
+  .card[data-cat="basic"] .card-tag { background: var(--c-basic-bg); color: var(--c-basic); }
+  .card-time {
+    font-size: 11px;
+    color: var(--text-mute);
+  }
+  .card-content {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .card-x {
+    flex-shrink: 0;
+    width: 38px;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 12px;
+    color: var(--text-mute);
+  }
+  .card-x svg { width: 16px; height: 16px; }
+  .card-x:active { color: var(--text); }
+
+  /* === FAB === */
+  .fab {
+    position: fixed;
+    right: 18px;
+    bottom: calc(20px + var(--safe-bottom));
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: var(--text);
+    color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 20;
+    transition: transform 0.12s;
+  }
+  .fab:active { transform: scale(0.92); }
+  .fab svg { width: 26px; height: 26px; }
+
+  /* === Modal === */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(45, 42, 38, 0.4);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.18s ease;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-overlay.center { align-items: center; padding: 24px; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .sheet {
+    background: var(--bg);
+    width: 100%;
+    max-width: 520px;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px calc(20px + var(--safe-bottom));
+    animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+  }
+  .dialog {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 22px 20px 16px;
+    width: 100%;
+    max-width: 340px;
+    animation: popIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Settings menu */
+  .menu {
+    background: var(--surface);
+    border-radius: 14px 14px 0 0;
+    width: 100%;
+    max-width: 520px;
+    padding: 8px 0 calc(8px + var(--safe-bottom));
+    animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .menu-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 4px auto 12px;
+  }
+  .menu-item {
+    width: 100%;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    font-size: 15px;
+    color: var(--text);
+    text-align: left;
+  }
+  .menu-item:active { background: var(--surface-2); }
+  .menu-item svg { width: 20px; height: 20px; color: var(--text-soft); flex-shrink: 0; }
+  .menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* Editor */
+  .editor-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .editor-cancel, .editor-save {
+    font-size: 15px;
+    padding: 6px 4px;
+    font-weight: 500;
+  }
+  .editor-cancel { color: var(--text-soft); }
+  .editor-save { color: var(--accent); font-weight: 600; }
+  .editor-save:disabled { color: var(--text-mute); opacity: 0.5; }
+
+  .cat-select {
+    display: flex; gap: 6px; margin-bottom: 14px;
+  }
+  .cat-option {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-soft);
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cat-option .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-mute);
+  }
+  .cat-option[data-cat="todo"] .dot { background: var(--c-todo); }
+  .cat-option[data-cat="idea"] .dot { background: var(--c-idea); }
+  .cat-option[data-cat="basic"] .dot { background: var(--c-basic); }
+  .cat-option.selected {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .cat-option[data-cat="todo"].selected { background: var(--c-todo-bg); border-color: var(--c-todo); color: var(--c-todo); }
+  .cat-option[data-cat="idea"].selected { background: var(--c-idea-bg); border-color: var(--c-idea); color: var(--c-idea); }
+  .cat-option[data-cat="basic"].selected { background: var(--c-basic-bg); border-color: var(--c-basic); color: var(--c-basic); }
+
+  .editor-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 180px;
+    max-height: 50vh;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+    font-size: 16px;
+    line-height: 1.55;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .editor-textarea:focus { border-color: var(--accent); }
+
+  .editor-actions {
+    display: flex; gap: 10px;
+    margin-top: 14px;
+  }
+  .btn-delete {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: #b04a3a;
+    font-size: 14px; font-weight: 500;
+  }
+  .btn-delete:active { background: var(--surface-2); }
+
+  /* Confirm dialog */
+  .dialog-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .dialog-msg {
+    font-size: 14px;
+    color: var(--text-soft);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .dialog-actions {
+    display: flex; gap: 8px;
+  }
+  .dialog-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .dialog-btn.cancel {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .dialog-btn.confirm {
+    background: #c25a45;
+    color: white;
+  }
+  .dialog-btn:active { opacity: 0.85; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + var(--safe-bottom));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Search highlight */
+  mark {
+    background: #fff3a8;
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <div class="title">빠른 메모</div>
+    <button class="gear-btn" id="gearBtn" aria-label="설정">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="메모 검색" autocomplete="off">
+    <button class="search-clear" id="searchClear" aria-label="검색 지우기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-chip active" data-filter="all">전체</button>
+    <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
+    <button class="filter-chip" data-filter="idea" data-cat="idea">글감</button>
+    <button class="filter-chip" data-filter="basic" data-cat="basic">기본</button>
+  </div>
+</header>
+
+<div class="list-container">
+  <div class="list" id="list"></div>
+</div>
+
+<button class="fab" id="fab" aria-label="새 메모">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<!-- Settings Menu Modal -->
+<div class="modal-overlay" id="menuModal" data-modal="menu">
+  <div class="menu" onclick="event.stopPropagation()">
+    <div class="menu-handle"></div>
+    <button class="menu-item" id="menuExport">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      내보내기 (JSON)
+    </button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" id="menuImport">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      가져오기 (JSON)
+    </button>
+  </div>
+</div>
+
+<!-- Editor Modal -->
+<div class="modal-overlay" id="editorModal" data-modal="editor">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="editor-head">
+      <button class="editor-cancel" id="editorCancel">취소</button>
+      <button class="editor-save" id="editorSave">저장</button>
+    </div>
+    <div class="cat-select" id="catSelect">
+      <button class="cat-option" data-cat="todo"><span class="dot"></span>할 일</button>
+      <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
+      <button class="cat-option" data-cat="basic"><span class="dot"></span>기본</button>
+    </div>
+    <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
+    <div class="editor-actions" id="editorActions" style="display:none;">
+      <button class="btn-delete" id="editorDelete">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay center" id="confirmModal" data-modal="confirm">
+  <div class="dialog" onclick="event.stopPropagation()">
+    <div class="dialog-title">메모 삭제</div>
+    <div class="dialog-msg">이 메모를 삭제할까요? 삭제하면 되돌릴 수 없습니다.</div>
+    <div class="dialog-actions">
+      <button class="dialog-btn cancel" id="confirmCancel">취소</button>
+      <button class="dialog-btn confirm" id="confirmDelete">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+
+<script>
+/* =========================================================
+   빠른 메모 — single-file app
+   ========================================================= */
+
+const STORAGE_KEY = 'quick-memo:v1';
+const CATS = ['todo', 'idea', 'basic'];
+const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본' };
+
+/* ---------- State ---------- */
+let memos = [];
+let currentFilter = 'all';
+let currentSearch = '';
+let editingId = null;       // null = new memo
+let editingCat = null;
+let pendingDeleteId = null;
+
+/* ---------- Storage ---------- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    memos = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(memos)) memos = [];
+  } catch { memos = []; }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+}
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/* =========================================================
+   MODAL SYSTEM — 단순화된 단일 책임 시스템
+   ---------------------------------------------------------
+   - 열기: openModal(id)  →  history.pushState 한 번
+   - 닫기: closeModal()   →  history.back() 호출
+   - 뒤로가기(popstate): 가장 위 모달만 닫는다. 사이트 빠져나가지 않음.
+   - 어떤 모달이든 한 함수로 처리, 스택은 브라우저가 관리.
+   ========================================================= */
+
+const modalStack = [];  // 현재 열려있는 모달 id들
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  modalStack.push(id);
+  history.pushState({ modalDepth: modalStack.length }, '');
+}
+
+function closeModal() {
+  // 가장 위 모달을 닫는다 (popstate 트리거)
+  if (modalStack.length === 0) return;
+  history.back();
+}
+
+function closeAllModals() {
+  while (modalStack.length > 0) closeModal();
+}
+
+// popstate가 모달 닫기의 유일한 경로. 이걸로 일관성 확보.
+window.addEventListener('popstate', () => {
+  if (modalStack.length === 0) return;
+  const id = modalStack.pop();
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+  // 모달별 정리 작업
+  onModalClosed(id);
+});
+
+// 첫 로드 시 history에 base state를 하나 깔아둔다.
+// (외부에서 들어왔을 때 뒤로가기가 모달이 아닌 경우에도 안전하게.)
+history.replaceState({ modalDepth: 0 }, '');
+
+function onModalClosed(id) {
+  if (id === 'editorModal') {
+    // 입력 내용 초기화 (저장 안 하면 버려짐)
+    document.getElementById('editorText').value = '';
+    editingId = null;
+    editingCat = null;
+    refreshCatUI();
+    document.getElementById('editorActions').style.display = 'none';
+  } else if (id === 'confirmModal') {
+    pendingDeleteId = null;
+  }
+}
+
+/* ---------- Overlay click closes top modal ---------- */
+function bindOverlayClicks() {
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+  });
+}
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* ---------- Render ---------- */
+function relTime(ts) {
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 30) return '방금 전';
+  if (sec < 60) return `${sec}초 전`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}일 전`;
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}.${m}.${dd}`;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function highlight(text, q) {
+  const safe = escapeHtml(text);
+  if (!q) return safe;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+
+function render() {
+  const list = document.getElementById('list');
+  const q = currentSearch.trim().toLowerCase();
+
+  let filtered = memos.slice();
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(m => m.cat === currentFilter);
+  }
+  if (q) {
+    filtered = filtered.filter(m => m.content.toLowerCase().includes(q));
+  }
+  filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📝</div>
+        <div class="empty-text">${memos.length === 0 ? '아직 메모가 없습니다' : '결과가 없습니다'}</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(m => `
+    <div class="card" data-cat="${m.cat}" data-id="${m.id}">
+      <div class="card-stripe"></div>
+      <div class="card-body" data-action="edit" data-id="${m.id}">
+        <div class="card-meta">
+          <span class="card-tag">${CAT_LABEL[m.cat]}</span>
+          <span class="card-time">${relTime(m.updatedAt)}</span>
+        </div>
+        <div class="card-content">${highlight(m.content, q)}</div>
+      </div>
+      <button class="card-x" data-action="delete" data-id="${m.id}" aria-label="삭제">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+/* ---------- Editor ---------- */
+function refreshCatUI() {
+  document.querySelectorAll('#catSelect .cat-option').forEach(b => {
+    b.classList.toggle('selected', b.dataset.cat === editingCat);
+  });
+}
+
+function openNewMemo() {
+  editingId = null;
+  editingCat = null;
+  document.getElementById('editorText').value = '';
+  document.getElementById('editorActions').style.display = 'none';
+  refreshCatUI();
+  openModal('editorModal');
+  // 포커스는 어디에도 두지 않는다.
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+}
+
+function openEditMemo(id) {
+  const m = memos.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  editingCat = m.cat;
+  document.getElementById('editorText').value = m.content;
+  document.getElementById('editorActions').style.display = 'flex';
+  refreshCatUI();
+  openModal('editorModal');
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+}
+
+function trySave() {
+  const text = document.getElementById('editorText').value.trim();
+  if (!editingCat) {
+    toast('종류를 선택해주세요');
+    return;
+  }
+  if (!text) {
+    toast('내용을 입력해주세요');
+    return;
+  }
+  const now = Date.now();
+  if (editingId) {
+    const m = memos.find(x => x.id === editingId);
+    if (m) {
+      m.content = text;
+      m.cat = editingCat;
+      m.updatedAt = now;
+    }
+  } else {
+    memos.push({
+      id: genId(),
+      content: text,
+      cat: editingCat,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+  save();
+  render();
+  closeModal();
+}
+
+/* ---------- Delete ---------- */
+function askDelete(id) {
+  pendingDeleteId = id;
+  openModal('confirmModal');
+}
+function doDelete() {
+  const id = pendingDeleteId;
+  if (!id) { closeModal(); return; }
+  memos = memos.filter(m => m.id !== id);
+  save();
+  render();
+  // confirmModal 닫고, editor에서 진입했다면 editor도 닫는다.
+  closeModal();  // confirmModal 닫음
+  // editor가 열려있고 그 메모를 삭제했다면 editor도 닫기
+  if (modalStack[modalStack.length - 1] === 'editorModal' && editingId === id) {
+    setTimeout(() => closeModal(), 50);
+  }
+  toast('삭제되었습니다');
+}
+
+/* ---------- Export / Import ---------- */
+function exportJson() {
+  const data = {
+    app: 'quick-memo',
+    version: 1,
+    exportedAt: Date.now(),
+    memos: memos
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const ts = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `quick-memo_${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  closeModal();
+  toast('내보내기 완료');
+}
+
+function importJson(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const incoming = Array.isArray(data) ? data : data.memos;
+      if (!Array.isArray(incoming)) throw new Error('invalid format');
+
+      const existingIds = new Set(memos.map(m => m.id));
+      let added = 0;
+      incoming.forEach(m => {
+        if (!m || typeof m.content !== 'string' || !CATS.includes(m.cat)) return;
+        let id = m.id || genId();
+        if (existingIds.has(id)) id = genId();   // 충돌시 새 id
+        const now = Date.now();
+        memos.push({
+          id,
+          content: m.content,
+          cat: m.cat,
+          createdAt: m.createdAt || now,
+          updatedAt: m.updatedAt || m.createdAt || now
+        });
+        existingIds.add(id);
+        added++;
+      });
+      save();
+      render();
+      closeModal();
+      toast(`${added}개 가져왔습니다`);
+    } catch (err) {
+      toast('가져오기 실패: 잘못된 파일');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Event bindings ---------- */
+function bindEvents() {
+  // Gear → menu
+  document.getElementById('gearBtn').addEventListener('click', () => openModal('menuModal'));
+
+  // Menu items
+  document.getElementById('menuExport').addEventListener('click', exportJson);
+  document.getElementById('menuImport').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) importJson(f);
+    e.target.value = '';
+  });
+
+  // FAB
+  document.getElementById('fab').addEventListener('click', openNewMemo);
+
+  // Search
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+  searchInput.addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    searchClear.classList.toggle('visible', currentSearch.length > 0);
+    render();
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    currentSearch = '';
+    searchClear.classList.remove('visible');
+    render();
+    searchInput.blur();
+  });
+
+  // Filters
+  document.getElementById('filters').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-chip');
+    if (!btn) return;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+
+  // Card actions
+  document.getElementById('list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-action="delete"]');
+    if (delBtn) {
+      e.stopPropagation();
+      askDelete(delBtn.dataset.id);
+      return;
+    }
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) {
+      openEditMemo(editBtn.dataset.id);
+    }
+  });
+
+  // Editor
+  document.getElementById('editorCancel').addEventListener('click', () => closeModal());
+  document.getElementById('editorSave').addEventListener('click', trySave);
+  document.getElementById('editorDelete').addEventListener('click', () => {
+    if (editingId) askDelete(editingId);
+  });
+  document.getElementById('catSelect').addEventListener('click', (e) => {
+    const opt = e.target.closest('.cat-option');
+    if (!opt) return;
+    editingCat = opt.dataset.cat;
+    refreshCatUI();
+  });
+
+  // Confirm modal
+  document.getElementById('confirmCancel').addEventListener('click', () => closeModal());
+  document.getElementById('confirmDelete').addEventListener('click', doDelete);
+
+  // Overlay clicks → close top modal
+  bindOverlayClicks();
+}
+
+/* ---------- Periodic time refresh ---------- */
+setInterval(() => {
+  if (modalStack.length === 0) render();
+}, 60000);
+
+/* ---------- Init ---------- */
+load();
+bindEvents();
+render();
+
+// Prevent accidental form submission via Enter on search
+document.getElementById('searchInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') e.preventDefault();
+});
+</script>
+</body>
+</html>

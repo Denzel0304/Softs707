@@ -316,11 +316,12 @@
     transition: all 0.15s;
   }
   .editor-cancel {
-    color: var(--text-soft);
+    color: var(--text);
     padding: 8px 14px;
-    background: var(--surface-2);
+    background: #e0d8c8;
+    border: 1px solid #c9bea8;
   }
-  .editor-cancel:active { background: var(--border); }
+  .editor-cancel:active { background: #cfc4af; }
   .editor-save {
     color: white;
     background: var(--accent);
@@ -558,9 +559,9 @@
       <button class="editor-save" id="editorSave">저장</button>
     </div>
     <div class="cat-select" id="catSelect">
-      <button class="cat-option" data-cat="todo"><span class="dot"></span>할 일</button>
-      <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
       <button class="cat-option" data-cat="basic"><span class="dot"></span>기본</button>
+      <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
+      <button class="cat-option" data-cat="todo"><span class="dot"></span>할 일</button>
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
     <div class="editor-actions" id="editorActions" style="display:none;">

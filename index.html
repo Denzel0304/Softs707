@@ -55,21 +55,38 @@
     border-bottom: 1px solid var(--border);
   }
   .header-top {
-    display: flex; align-items: center; justify-content: space-between;
+    display: grid;
+    grid-template-columns: 38px 1fr 38px;
+    align-items: center;
     padding: 12px 16px 8px;
   }
+  .title-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .title-icon {
+    width: 22px; height: 22px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
   .title {
-    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    font-size: 19px; font-weight: 700; letter-spacing: -0.02em;
     color: var(--text);
   }
   .gear-btn {
     width: 38px; height: 38px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 10px;
-    transition: background 0.15s;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+    justify-self: end;
   }
-  .gear-btn:active { background: var(--surface-2); }
-  .gear-btn svg { width: 22px; height: 22px; color: var(--text-soft); }
+  .gear-btn:active {
+    background: var(--surface-2);
+    transform: scale(0.94);
+  }
+  .gear-btn svg { width: 20px; height: 20px; color: var(--text-soft); }
 
   .search-bar {
     margin: 0 16px 10px;
@@ -124,9 +141,9 @@
   /* === List === */
   .list-container {
     position: fixed;
-    top: var(--header-h);
+    top: 0;
     left: 0; right: 0; bottom: 0;
-    padding-top: var(--safe-top);
+    padding-top: var(--header-h);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -293,25 +310,40 @@
     margin-bottom: 14px;
   }
   .editor-cancel, .editor-save {
-    font-size: 15px;
-    padding: 6px 4px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.15s;
   }
-  .editor-cancel { color: var(--text-soft); }
-  .editor-save { color: var(--accent); font-weight: 600; }
-  .editor-save:disabled { color: var(--text-mute); opacity: 0.5; }
+  .editor-cancel {
+    color: var(--text-soft);
+    padding: 8px 14px;
+    background: var(--surface-2);
+  }
+  .editor-cancel:active { background: var(--border); }
+  .editor-save {
+    color: white;
+    background: var(--accent);
+    padding: 8px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .editor-save:active {
+    background: #4a6557;
+    transform: scale(0.96);
+  }
+  .editor-save:disabled { opacity: 0.5; }
 
   .cat-select {
     display: flex; gap: 6px; margin-bottom: 14px;
   }
   .cat-option {
     flex: 1;
-    padding: 10px 12px;
+    padding: 11px 12px;
     border-radius: 10px;
     background: var(--surface);
     border: 1.5px solid var(--border);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-soft);
     transition: all 0.15s;
     display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -319,17 +351,33 @@
   .cat-option .dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--text-mute);
+    transition: all 0.15s;
   }
   .cat-option[data-cat="todo"] .dot { background: var(--c-todo); }
   .cat-option[data-cat="idea"] .dot { background: var(--c-idea); }
   .cat-option[data-cat="basic"] .dot { background: var(--c-basic); }
-  .cat-option.selected {
-    background: var(--surface-2);
-    color: var(--text);
+  .cat-option.selected .dot {
+    background: white;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
   }
-  .cat-option[data-cat="todo"].selected { background: var(--c-todo-bg); border-color: var(--c-todo); color: var(--c-todo); }
-  .cat-option[data-cat="idea"].selected { background: var(--c-idea-bg); border-color: var(--c-idea); color: var(--c-idea); }
-  .cat-option[data-cat="basic"].selected { background: var(--c-basic-bg); border-color: var(--c-basic); color: var(--c-basic); }
+  .cat-option[data-cat="todo"].selected {
+    background: var(--c-todo);
+    border-color: var(--c-todo);
+    color: white;
+    box-shadow: 0 2px 8px rgba(217, 119, 87, 0.35);
+  }
+  .cat-option[data-cat="idea"].selected {
+    background: var(--c-idea);
+    border-color: var(--c-idea);
+    color: white;
+    box-shadow: 0 2px 8px rgba(122, 138, 78, 0.35);
+  }
+  .cat-option[data-cat="basic"].selected {
+    background: var(--c-basic);
+    border-color: var(--c-basic);
+    color: white;
+    box-shadow: 0 2px 8px rgba(108, 122, 138, 0.35);
+  }
 
   .editor-textarea {
     flex: 1;
@@ -430,9 +478,18 @@
 </head>
 <body>
 
-<header class="header">
+<header class="header" id="header">
   <div class="header-top">
-    <div class="title">빠른 메모</div>
+    <div></div>
+    <div class="title-wrap">
+      <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        <polyline points="13 2 13 9 20 9"/>
+        <line x1="9" y1="14" x2="15" y2="14"/>
+        <line x1="9" y1="17" x2="13" y2="17"/>
+      </svg>
+      <div class="title">빠른 메모</div>
+    </div>
     <button class="gear-btn" id="gearBtn" aria-label="설정">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -455,9 +512,9 @@
 
   <div class="filters" id="filters">
     <button class="filter-chip active" data-filter="all">전체</button>
-    <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
-    <button class="filter-chip" data-filter="idea" data-cat="idea">글감</button>
     <button class="filter-chip" data-filter="basic" data-cat="basic">기본</button>
+    <button class="filter-chip" data-filter="idea" data-cat="idea">글감</button>
+    <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
   </div>
 </header>
 
@@ -938,10 +995,24 @@ setInterval(() => {
   if (modalStack.length === 0) render();
 }, 60000);
 
+/* ---------- Header height sync ---------- */
+function syncHeaderHeight() {
+  const h = document.getElementById('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+
 /* ---------- Init ---------- */
 load();
 bindEvents();
 render();
+syncHeaderHeight();
+
+// 폰트 로딩, 회전, safe-area 변화 등에 대응
+window.addEventListener('resize', syncHeaderHeight);
+window.addEventListener('orientationchange', syncHeaderHeight);
+if (window.ResizeObserver) {
+  new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
+}
 
 // Prevent accidental form submission via Enter on search
 document.getElementById('searchInput').addEventListener('keydown', (e) => {

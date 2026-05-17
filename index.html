@@ -800,10 +800,8 @@ function openNewMemo() {
   et._listNum = null;
   refreshCatUI();
   openModal('editorModal');
-  // 포커스는 어디에도 두지 않는다.
-  if (document.activeElement && document.activeElement.blur) {
-    document.activeElement.blur();
-  }
+  // 내용 textarea에 포커스
+  setTimeout(() => et.focus(), 100);
 }
 
 function openEditMemo(id) {
@@ -818,9 +816,7 @@ function openEditMemo(id) {
   document.getElementById('editorActions').style.display = 'flex';
   refreshCatUI();
   openModal('editorModal');
-  if (document.activeElement && document.activeElement.blur) {
-    document.activeElement.blur();
-  }
+  setTimeout(() => et2.focus(), 100);
 }
 
 function trySave() {
@@ -866,11 +862,17 @@ function doDelete() {
   memos = memos.filter(m => m.id !== id);
   save();
   render();
-  // confirmModal 닫고, editor에서 진입했다면 editor도 닫는다.
-  closeModal();  // confirmModal 닫음
-  // editor가 열려있고 그 메모를 삭제했다면 editor도 닫기
-  if (modalStack[modalStack.length - 1] === 'editorModal' && editingId === id) {
-    setTimeout(() => closeModal(), 50);
+  // 열려있는 모든 모달을 즉시 닫는다 (confirmModal + editorModal 등)
+  const count = modalStack.length;
+  for (let i = 0; i < count; i++) {
+    const mid = modalStack.pop();
+    const el = document.getElementById(mid);
+    if (el) el.classList.remove('show');
+    onModalClosed(mid);
+  }
+  // history 스택도 맞춰서 정리
+  if (count > 0) {
+    history.go(-count);
   }
   toast('삭제되었습니다');
 }

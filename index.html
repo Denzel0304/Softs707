@@ -869,7 +869,8 @@ function startVoice() {
   const bar = document.getElementById('voiceBar');
   const statusEl = document.getElementById('voiceStatus');
   let baseText = ta.value;   // 음성 시작 전 기존 텍스트
-  let confirmedText = '';    // 이번 세션에서 isFinal로 확정된 텍스트
+  let finalizedText = '';    // isFinal 확정된 텍스트 누적
+  let lastFinalIndex = -1;   // 마지막으로 처리한 isFinal 결과 인덱스
 
   recognition.onstart = () => {
     voiceActive = true;
@@ -878,24 +879,23 @@ function startVoice() {
   };
 
   recognition.onresult = (e) => {
-    // 이번 이벤트에서의 interim 텍스트만 수집
     let interim = '';
+
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
       if (e.results[i].isFinal) {
-        // 확정된 텍스트는 confirmedText에 누적
-        confirmedText += t;
+        // 이미 처리한 인덱스는 건너뜀 (중복 방지)
+        if (i > lastFinalIndex) {
+          finalizedText += t;
+          lastFinalIndex = i;
+        }
       } else {
         interim += t;
       }
     }
 
-    // 전체 표시: 기존텍스트 + 확정텍스트 + 현재 interim
-    const combined = baseText
-      + (baseText && confirmedText ? (baseText.endsWith('\n') ? '' : '') : '')
-      + confirmedText
-      + interim;
-    ta.value = combined;
+    // 표시: 기존텍스트 + 확정텍스트 + 현재 interim(미확정)
+    ta.value = baseText + finalizedText + interim;
     ta.scrollTop = ta.scrollHeight;
   };
 
@@ -909,10 +909,10 @@ function startVoice() {
 
   recognition.onend = () => {
     if (voiceActive) {
-      // 재시작 전에 지금까지 확정된 텍스트를 baseText에 반영
-      baseText = baseText + confirmedText;
-      confirmedText = '';
-      // 자동 재시작 (continuous가 끊길 때 대비)
+      // 재시작 시 확정 텍스트를 baseText에 병합하고 초기화
+      baseText = baseText + finalizedText;
+      finalizedText = '';
+      lastFinalIndex = -1;
       try { recognition.start(); } catch(_) { stopVoice(); }
     }
   };

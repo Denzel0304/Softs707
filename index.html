@@ -418,12 +418,12 @@
     flex: 1;
     padding: 12px;
     border-radius: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: #b04a3a;
+    background: #fdecea;
+    border: 1px solid #f5c4be;
+    color: #c0392b;
     font-size: 14px; font-weight: 500;
   }
-  .btn-delete:active { background: var(--surface-2); }
+  .btn-delete:active { background: #f9d5d1; }
 
   /* Confirm dialog */
   .dialog-title {
@@ -681,7 +681,7 @@ function onModalClosed(id) {
     // 입력 내용 초기화 (저장 안 하면 버려짐)
     const et = document.getElementById('editorText');
     et.value = '';
-    et._listActive = false;
+    et._listType = null;
     et._listNum = null;
     editingId = null;
     editingCat = null;
@@ -796,9 +796,8 @@ function openNewMemo() {
   editingCat = null;
   const et = document.getElementById('editorText');
   et.value = '';
-  et._listActive = false;
+  et._listType = null;
   et._listNum = null;
-  document.getElementById('editorActions').style.display = 'none';
   refreshCatUI();
   openModal('editorModal');
   // 포커스는 어디에도 두지 않는다.
@@ -814,7 +813,7 @@ function openEditMemo(id) {
   editingCat = m.cat;
   const et2 = document.getElementById('editorText');
   et2.value = m.content;
-  et2._listActive = false;
+  et2._listType = null;
   et2._listNum = null;
   document.getElementById('editorActions').style.display = 'flex';
   refreshCatUI();
@@ -1009,106 +1008,83 @@ function bindEvents() {
 
   // Auto-numbering & bullet in textarea
   const editorText = document.getElementById('editorText');
-  editorText.addEventListener('keydown', (e) => {
-    if (e.key !== ' ') return;
-
-    const ta = e.target;
+  editorText.addEventListener('keydown', function(e) {
+    const ta = this;
     const pos = ta.selectionStart;
     const val = ta.value;
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
     const lineText = val.substring(lineStart, pos);
 
-    // '* ' → bullet
-    if (lineText === '*') {
-      e.preventDefault();
-      const before = val.substring(0, lineStart);
-      const after = val.substring(pos);
-      ta.value = before + '• ' + after;
-      ta.selectionStart = ta.selectionEnd = lineStart + 2;
-      return;
+    /* ── Space key: trigger list activation ── */
+    if (e.key === ' ') {
+      // '* ' → bullet
+      if (lineText === '*') {
+        e.preventDefault();
+        ta.value = val.substring(0, lineStart) + '• ' + val.substring(pos);
+        ta.selectionStart = ta.selectionEnd = lineStart + 2;
+        ta._listType = 'bullet';
+        ta._listNum = null;
+        return;
+      }
+      // '숫자.' → numbered list
+      const numMatch = lineText.match(/^(\d+)\.$/);
+      if (numMatch) {
+        e.preventDefault();
+        const startNum = parseInt(numMatch[1], 10);
+        const prefix = startNum + '. ';
+        ta.value = val.substring(0, lineStart) + prefix + val.substring(pos);
+        ta.selectionStart = ta.selectionEnd = lineStart + prefix.length;
+        ta._listType = 'number';
+        ta._listNum = startNum;
+        return;
+      }
     }
 
-    // '숫자.' → numbered list start
-    const numMatch = lineText.match(/^(\d+)\.$/);
-    if (numMatch) {
-      e.preventDefault();
-      const startNum = parseInt(numMatch[1], 10);
-      const before = val.substring(0, lineStart);
-      const after = val.substring(pos);
-      ta.value = before + startNum + '. ' + after;
-      ta.selectionStart = ta.selectionEnd = lineStart + (startNum + '. ').length;
-      // store list state on element
-      ta._listNum = startNum;
-      ta._listActive = true;
-      return;
+    /* ── Enter key: continue or end list ── */
+    if (e.key === 'Enter') {
+      if (!ta._listType) return;
+
+      if (ta._listType === 'number') {
+        const numLine = lineText.match(/^(\d+)\. (.*)$/);
+        if (!numLine) { ta._listType = null; return; }
+        e.preventDefault();
+        const content = numLine[2];
+        if (content.trim() === '') {
+          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거
+          ta.value = val.substring(0, lineStart) + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = lineStart;
+          ta._listType = null;
+          ta._listNum = null;
+        } else {
+          // 다음 번호로 계속
+          const nextNum = ta._listNum + 1;
+          ta._listNum = nextNum;
+          const prefix = nextNum + '. ';
+          ta.value = val.substring(0, pos) + '\n' + prefix + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = pos + 1 + prefix.length;
+        }
+        return;
+      }
+
+      if (ta._listType === 'bullet') {
+        const bulletLine = lineText.match(/^• (.*)$/);
+        if (!bulletLine) { ta._listType = null; return; }
+        e.preventDefault();
+        const content = bulletLine[1];
+        if (content.trim() === '') {
+          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거
+          ta.value = val.substring(0, lineStart) + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = lineStart;
+          ta._listType = null;
+        } else {
+          // 불릿 계속
+          ta.value = val.substring(0, pos) + '\n• ' + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = pos + 3;
+        }
+        return;
+      }
     }
   });
-
-  editorText.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-
-    const ta = e.target;
-    if (!ta._listActive) return;
-
-    const pos = ta.selectionStart;
-    const val = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const lineText = val.substring(lineStart, pos);
-
-    // Check if current line is a list item: starts with "N. " or "• "
-    const numLine = lineText.match(/^(\d+)\. (.*)$/);
-    const bulletLine = lineText.match(/^• (.*)$/);
-
-    if (numLine) {
-      const content = numLine[2];
-      if (content.trim() === '') {
-        // Empty numbered item → end list, remove prefix
-        e.preventDefault();
-        const before = val.substring(0, lineStart);
-        const after = val.substring(pos);
-        ta.value = before + '\n' + after;
-        ta.selectionStart = ta.selectionEnd = lineStart + 1;
-        ta._listActive = false;
-        ta._listNum = null;
-      } else {
-        // Continue numbering
-        e.preventDefault();
-        const nextNum = ta._listNum + 1;
-        ta._listNum = nextNum;
-        const prefix = nextNum + '. ';
-        const before = val.substring(0, pos);
-        const after = val.substring(pos);
-        ta.value = before + '\n' + prefix + after;
-        ta.selectionStart = ta.selectionEnd = pos + 1 + prefix.length;
-      }
-      return;
-    }
-
-    if (bulletLine) {
-      const content = bulletLine[1];
-      if (content.trim() === '') {
-        // Empty bullet → end list
-        e.preventDefault();
-        const before = val.substring(0, lineStart);
-        const after = val.substring(pos);
-        ta.value = before + '\n' + after;
-        ta.selectionStart = ta.selectionEnd = lineStart + 1;
-        ta._listActive = false;
-      } else {
-        // Continue bullet
-        e.preventDefault();
-        const before = val.substring(0, pos);
-        const after = val.substring(pos);
-        ta.value = before + '\n• ' + after;
-        ta.selectionStart = ta.selectionEnd = pos + 3;
-      }
-      return;
-    }
-
-    // Line doesn't match list pattern → deactivate
-    ta._listActive = false;
-    ta._listNum = null;
-  }, true); // capture phase to run before browser default
 
   // Confirm modal
   document.getElementById('confirmCancel').addEventListener('click', () => closeModal());

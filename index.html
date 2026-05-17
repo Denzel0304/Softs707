@@ -488,59 +488,6 @@
     border-radius: 2px;
     padding: 0 1px;
   }
-
-  /* === Voice === */
-  .voice-bar {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    font-size: 13px;
-    color: var(--text-soft);
-  }
-  .voice-bar.active {
-    display: flex;
-    border-color: #e05555;
-    background: #fff5f5;
-    color: #c0392b;
-  }
-  .voice-bar.listening {
-    display: flex;
-    border-color: #e05555;
-    background: #fff5f5;
-    animation: voicePulse 1.4s ease-in-out infinite;
-  }
-  @keyframes voicePulse {
-    0%, 100% { border-color: #e05555; background: #fff5f5; }
-    50% { border-color: #c0392b; background: #ffe8e8; }
-  }
-  .voice-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: #e05555;
-    flex-shrink: 0;
-    animation: dotBlink 1.2s ease-in-out infinite;
-  }
-  @keyframes dotBlink {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
-  .voice-stop {
-    margin-left: auto;
-    font-size: 12px;
-    font-weight: 600;
-    color: #c0392b;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background: #fddede;
-    border: 1px solid #f5c4c4;
-    flex-shrink: 0;
-  }
-  .voice-stop:active { background: #f9c8c8; }
 </style>
 </head>
 <body>
@@ -632,11 +579,6 @@
       <button class="cat-option" data-cat="buy"><span class="dot"></span>살 것</button>
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
-    <div class="voice-bar" id="voiceBar">
-      <div class="voice-dot"></div>
-      <span id="voiceStatus">듣고 있어요… 말씀해주세요</span>
-      <button class="voice-stop" id="voiceStop">완료</button>
-    </div>
     <div class="editor-actions" id="editorActions" style="display:none;">
       <button class="btn-delete" id="editorDelete">삭제</button>
     </div>
@@ -736,7 +678,6 @@ history.replaceState({ modalDepth: 0 }, '');
 
 function onModalClosed(id) {
   if (id === 'editorModal') {
-    stopVoice();
     // 입력 내용 초기화 (저장 안 하면 버려짐)
     const et = document.getElementById('editorText');
     et.value = '';
@@ -843,90 +784,6 @@ function render() {
   `).join('');
 }
 
-/* ---------- Voice Recognition ---------- */
-let recognition = null;
-let voiceActive = false;
-
-function initRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const r = new SR();
-  r.lang = 'ko-KR';
-  r.continuous = true;
-  r.interimResults = true;
-  return r;
-}
-
-function startVoice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    toast('이 브라우저는 음성 인식을 지원하지 않습니다 (Chrome 사용 권장)');
-    return;
-  }
-
-  recognition = initRecognition();
-  const ta = document.getElementById('editorText');
-  const bar = document.getElementById('voiceBar');
-  const statusEl = document.getElementById('voiceStatus');
-  let finalText = ta.value; // 기존 텍스트 보존
-
-  recognition.onstart = () => {
-    voiceActive = true;
-    bar.className = 'voice-bar listening';
-    statusEl.textContent = '듣고 있어요… 말씀해주세요';
-  };
-
-  recognition.onresult = (e) => {
-    let interim = '';
-    let final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) {
-        final += t;
-      } else {
-        interim += t;
-      }
-    }
-    if (final) {
-      finalText += (finalText && !finalText.endsWith('\n') ? '\n' : '') + final;
-    }
-    ta.value = finalText + (interim ? interim : '');
-    ta.scrollTop = ta.scrollHeight;
-  };
-
-  recognition.onerror = (e) => {
-    if (e.error === 'no-speech') return; // 무시
-    stopVoice();
-    if (e.error === 'not-allowed') {
-      toast('마이크 권한을 허용해주세요');
-    }
-  };
-
-  recognition.onend = () => {
-    if (voiceActive) {
-      // 자동 재시작 (continuous가 끊길 때 대비)
-      try { recognition.start(); } catch(_) { stopVoice(); }
-    }
-  };
-
-  try {
-    recognition.start();
-  } catch(e) {
-    toast('음성 인식을 시작할 수 없습니다');
-  }
-}
-
-function stopVoice() {
-  voiceActive = false;
-  if (recognition) {
-    recognition.onend = null;
-    try { recognition.stop(); } catch(_) {}
-    recognition = null;
-  }
-  const bar = document.getElementById('voiceBar');
-  bar.className = 'voice-bar';
-}
-
 /* ---------- Editor ---------- */
 function refreshCatUI() {
   document.querySelectorAll('#catSelect .cat-option').forEach(b => {
@@ -943,11 +800,10 @@ function openNewMemo() {
   et._listNum = null;
   refreshCatUI();
   openModal('editorModal');
-  // 포커스 후 음성 자동 시작
-  setTimeout(() => {
-    et.focus();
-    startVoice();
-  }, 300);
+  // 포커스는 어디에도 두지 않는다.
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
 }
 
 function openEditMemo(id) {
@@ -1140,7 +996,6 @@ function bindEvents() {
   // Editor
   document.getElementById('editorCancel').addEventListener('click', () => closeModal());
   document.getElementById('editorSave').addEventListener('click', trySave);
-  document.getElementById('voiceStop').addEventListener('click', stopVoice);
   document.getElementById('editorDelete').addEventListener('click', () => {
     if (editingId) askDelete(editingId);
   });

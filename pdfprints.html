@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 일괄 인쇄 - Professional</title>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f4f4f7;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --accent-color: #3d5afe;
+            --pastel-green: #a5d6a7;
+            --reset-color: #ef5350;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px 20px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 700; color: #1a1a1a; }
+
+        main { width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: none;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+        #progress-text {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-bottom: 6px;
+            text-align: center;
+            display: none;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        button {
+            cursor: pointer; border: none; border-radius: 8px; height: 45px;
+            font-weight: 600; display: flex; align-items: center; justify-content: center;
+            gap: 8px; transition: all 0.2s; font-size: 0.9rem; white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-load { background-color: var(--pastel-green); color: #1a3d1a; }
+        .btn-reset { background-color: transparent; color: var(--reset-color); border: 1px solid var(--reset-color); }
+        .btn-reset:hover { background-color: #fff5f5; }
+        .btn-print { background-color: var(--accent-color); color: white; }
+        .btn-print:disabled { background-color: #d1d1d1; color: #757575; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        #file-list { list-style: none; padding: 0; margin: 0; }
+        .file-item {
+            background: var(--card-bg); margin-bottom: 8px; padding: 10px 15px;
+            border-radius: 8px; display: flex; align-items: center;
+            border: 1px solid var(--border-color);
+            min-height: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .handle { cursor: grab; margin-right: 12px; color: #9e9e9e; display: flex; align-items: center; }
+        .file-info { 
+            flex-grow: 1; 
+            font-size: 0.85rem; 
+            line-height: 1.4;
+            word-break: break-all;
+            color: #555;
+            padding-right: 10px;
+        }
+        .btn-remove { background: transparent; color: #bdbdbd; padding: 4px; cursor: pointer; border: none; }
+        .btn-remove:hover { color: var(--reset-color); background: none; transform: none; }
+
+        #file-input { display: none; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo"><i data-lucide="printer"></i> PDF 일괄 인쇄/저장</div>
+    </header>
+
+    <main>
+        <div id="progress-text">진행 중</div>
+        <div class="progress-container" id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-load" onclick="document.getElementById('file-input').click()">
+                <i data-lucide="file-plus"></i> 불러오기
+            </button>
+            <input type="file" id="file-input" multiple accept=".pdf">
+
+            <button class="btn-reset" onclick="resetApp()">
+                <i data-lucide="refresh-cw"></i> 초기화
+            </button>
+
+            <button class="btn-print" id="print-btn" onclick="processAndPrint()" disabled>
+                <i data-lucide="printer"></i> 일괄 인쇄/저장
+            </button>
+        </div>
+
+        <ul id="file-list"></ul>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        let selectedFiles = [];
+        const fileInput = document.getElementById('file-input');
+        const fileListElement = document.getElementById('file-list');
+        const printBtn = document.getElementById('print-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const progressText = document.getElementById('progress-text');
+
+        new Sortable(fileListElement, {
+            handle: '.handle', animation: 150,
+            onEnd: () => {
+                const newOrder = Array.from(fileListElement.children).map(li => li.getAttribute('data-id'));
+                selectedFiles.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                selectedFiles.push({ id: Math.random().toString(36).substr(2, 9), data: file });
+            });
+            renderList();
+            fileInput.value = '';
+        });
+
+        function renderList() {
+            fileListElement.innerHTML = '';
+            selectedFiles.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                li.setAttribute('data-id', f.id);
+                li.innerHTML = `
+                    <div class="handle"><i data-lucide="grip-vertical" style="width:16px;"></i></div>
+                    <div class="file-info">${f.data.name}</div>
+                    <button class="btn-remove" onclick="removeFile('${f.id}')"><i data-lucide="x" style="width:18px;"></i></button>
+                `;
+                fileListElement.appendChild(li);
+            });
+            lucide.createIcons();
+            printBtn.disabled = selectedFiles.length === 0;
+        }
+
+        function removeFile(id) {
+            selectedFiles = selectedFiles.filter(f => f.id !== id);
+            renderList();
+        }
+
+        function resetApp() {
+            selectedFiles = [];
+            renderList();
+            progressContainer.style.display = 'none';
+            progressText.style.display = 'none';
+            progressBar.style.width = '0%';
+        }
+
+        async function processAndPrint() {
+            printBtn.disabled = true;
+            printBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 처리 중';
+            
+            progressContainer.style.display = 'block';
+            progressText.style.display = 'block';
+            lucide.createIcons();
+
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                const A4_WIDTH = 595.28;
+                const A4_HEIGHT = 841.89;
+                const totalFiles = selectedFiles.length;
+                
+                for (let fIdx = 0; fIdx < totalFiles; fIdx++) {
+                    const fileObj = selectedFiles[fIdx];
+                    const percent = Math.round(((fIdx) / totalFiles) * 100);
+                    progressBar.style.width = `${percent}%`;
+
+                    const arrayBuffer = await fileObj.data.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({scale: 2.2});
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        await page.render({canvasContext: context, viewport: viewport}).promise;
+                        
+                        const imgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                        const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+                        const img = await mergedPdf.embedJpg(imgBytes);
+                        
+                        const newPage = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                        newPage.drawImage(img, { x: 0, y: 0, width: A4_WIDTH, height: A4_HEIGHT });
+                    }
+
+                    // 마지막 파일이 아니고, 페이지 수가 홀수이면 빈 페이지 삽입
+                    // → 다음 파일이 항상 새 앞면(홀수 페이지)에서 시작하도록 보장
+                    if (fIdx < totalFiles - 1 && pdf.numPages % 2 === 1) {
+                        mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                    }
+                }
+
+                progressBar.style.width = `100%`;
+                const pdfBytes = await mergedPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                let iframe = document.getElementById('print-iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'print-iframe';
+                    iframe.style.position = 'fixed';
+                    iframe.style.width = '0'; iframe.style.height = '0';
+                    iframe.style.border = 'none';
+                    document.body.appendChild(iframe);
+                }
+                
+                iframe.src = url;
+                iframe.onload = function() {
+                    setTimeout(() => {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                            progressText.style.display = 'none';
+                            progressBar.style.width = '0%';
+                        }, 2000);
+                    }, 500);
+                };
+
+            } catch (err) {
+                alert("오류: " + err.message);
+            } finally {
+                printBtn.disabled = false;
+                printBtn.innerHTML = '<i data-lucide="printer"></i> 일괄 인쇄/저장';
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>

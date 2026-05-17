@@ -868,39 +868,49 @@ function startVoice() {
   const ta = document.getElementById('editorText');
   const bar = document.getElementById('voiceBar');
   const statusEl = document.getElementById('voiceStatus');
-  let baseText = ta.value;   // 음성 시작 전 기존 텍스트
-  let finalizedText = '';    // isFinal 확정된 텍스트 누적
-  let lastFinalIndex = -1;   // 마지막으로 처리한 isFinal 결과 인덱스
+  // ── 핵심 설계 ──
+  // textarea의 값을 직접 덮어쓰지 않는다.
+  // isFinal 결과만 textarea 끝에 append한다.
+  // interim(미확정)은 별도 변수에만 보관하고 표시용으로만 쓴다.
+  // 사용자가 직접 textarea를 수정해도 그 내용은 건드리지 않는다.
+
+  let interimText = '';        // 현재 미확정 텍스트 (표시 전용)
+  let committedBase = ta.value; // isFinal append 직전의 textarea 확정 값
+
+  // interim 표시: committedBase + interimText
+  function renderInterim() {
+    ta.value = committedBase + interimText;
+    ta.scrollTop = ta.scrollHeight;
+  }
 
   recognition.onstart = () => {
     voiceActive = true;
+    // 재시작마다 현재 textarea 실제 값을 committedBase로 갱신
+    committedBase = ta.value;
+    interimText = '';
     bar.className = 'voice-bar listening';
     statusEl.textContent = '듣고 있어요… 말씀해주세요';
   };
 
   recognition.onresult = (e) => {
-    let interim = '';
+    interimText = '';
 
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
       if (e.results[i].isFinal) {
-        // 이미 처리한 인덱스는 건너뜀 (중복 방지)
-        if (i > lastFinalIndex) {
-          finalizedText += t;
-          lastFinalIndex = i;
-        }
+        // 확정: committedBase에 직접 append하고 interim 초기화
+        committedBase += t;
+        interimText = '';
       } else {
-        interim += t;
+        interimText += t;
       }
     }
 
-    // 표시: 기존텍스트 + 확정텍스트 + 현재 interim(미확정)
-    ta.value = baseText + finalizedText + interim;
-    ta.scrollTop = ta.scrollHeight;
+    renderInterim();
   };
 
   recognition.onerror = (e) => {
-    if (e.error === 'no-speech') return; // 무시
+    if (e.error === 'no-speech') return;
     stopVoice();
     if (e.error === 'not-allowed') {
       toast('마이크 권한을 허용해주세요');
@@ -909,10 +919,10 @@ function startVoice() {
 
   recognition.onend = () => {
     if (voiceActive) {
-      // 재시작 시 확정 텍스트를 baseText에 병합하고 초기화
-      baseText = baseText + finalizedText;
-      finalizedText = '';
-      lastFinalIndex = -1;
+      // interim이 남아있으면 textarea에서 제거 (확정 안 된 것이므로)
+      ta.value = committedBase;
+      interimText = '';
+      // onstart에서 committedBase를 다시 읽으므로 자동 반영됨
       try { recognition.start(); } catch(_) { stopVoice(); }
     }
   };

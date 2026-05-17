@@ -1007,83 +1007,127 @@ function bindEvents() {
   });
 
   // Auto-numbering & bullet in textarea
+  // 모바일 소프트키보드는 keydown의 e.key가 신뢰되지 않으므로
+  // 스페이스/엔터 트리거는 'input' 이벤트로 처리한다.
   const editorText = document.getElementById('editorText');
-  editorText.addEventListener('keydown', function(e) {
+
+  // 커서가 있는 줄이 화면에 보이도록 textarea 스크롤을 맞춘다.
+  function scrollCursorIntoView(ta) {
+    // lineHeight 기반으로 커서 y 추정 후 scrollTop 보정
+    const style = window.getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const pos = ta.selectionStart;
+    const textBefore = ta.value.substring(0, pos);
+    const linesBefore = textBefore.split('\n').length;
+    const cursorY = paddingTop + (linesBefore - 1) * lineHeight;
+    const visibleBottom = ta.scrollTop + ta.clientHeight;
+    if (cursorY + lineHeight > visibleBottom) {
+      ta.scrollTop = cursorY + lineHeight - ta.clientHeight + lineHeight;
+    } else if (cursorY < ta.scrollTop) {
+      ta.scrollTop = cursorY - paddingTop;
+    }
+  }
+
+  editorText.addEventListener('input', function(e) {
     const ta = this;
     const pos = ta.selectionStart;
     const val = ta.value;
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    // 방금 입력된 문자 확인: 현재 커서 직전 문자
+    const charBefore = val[pos - 1];
     const lineText = val.substring(lineStart, pos);
 
-    /* ── Space key: trigger list activation ── */
-    if (e.key === ' ') {
+    /* ── 스페이스 입력: 리스트 활성화 트리거 ── */
+    if (charBefore === ' ') {
+      const textBeforeSpace = lineText.substring(0, lineText.length - 1); // 스페이스 제외
+
       // '* ' → bullet
-      if (lineText === '*') {
-        e.preventDefault();
-        ta.value = val.substring(0, lineStart) + '• ' + val.substring(pos);
-        ta.selectionStart = ta.selectionEnd = lineStart + 2;
+      if (textBeforeSpace === '*') {
+        // '*' + 공백을 '• '로 교체
+        const newVal = val.substring(0, lineStart) + '• ' + val.substring(pos);
+        ta.value = newVal;
+        const newPos = lineStart + 2;
+        ta.selectionStart = ta.selectionEnd = newPos;
         ta._listType = 'bullet';
         ta._listNum = null;
+        scrollCursorIntoView(ta);
         return;
       }
+
       // '숫자.' → numbered list
-      const numMatch = lineText.match(/^(\d+)\.$/);
+      const numMatch = textBeforeSpace.match(/^(\d+)\.$/);
       if (numMatch) {
-        e.preventDefault();
         const startNum = parseInt(numMatch[1], 10);
         const prefix = startNum + '. ';
-        ta.value = val.substring(0, lineStart) + prefix + val.substring(pos);
-        ta.selectionStart = ta.selectionEnd = lineStart + prefix.length;
+        const newVal = val.substring(0, lineStart) + prefix + val.substring(pos);
+        ta.value = newVal;
+        const newPos = lineStart + prefix.length;
+        ta.selectionStart = ta.selectionEnd = newPos;
         ta._listType = 'number';
         ta._listNum = startNum;
+        scrollCursorIntoView(ta);
         return;
       }
     }
 
-    /* ── Enter key: continue or end list ── */
-    if (e.key === 'Enter') {
+    /* ── 엔터 입력: 리스트 계속 또는 종료 ── */
+    if (charBefore === '\n') {
       if (!ta._listType) return;
 
+      // 엔터 직전 줄 (방금 완성된 줄)
+      const prevLineEnd = pos - 1; // '\n' 위치
+      const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
+      const prevLine = val.substring(prevLineStart, prevLineEnd);
+
       if (ta._listType === 'number') {
-        const numLine = lineText.match(/^(\d+)\. (.*)$/);
+        const numLine = prevLine.match(/^(\d+)\. (.*)$/);
         if (!numLine) { ta._listType = null; return; }
-        e.preventDefault();
         const content = numLine[2];
         if (content.trim() === '') {
-          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거
-          ta.value = val.substring(0, lineStart) + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = lineStart;
+          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거 후 엔터도 제거
+          const newVal = val.substring(0, prevLineStart) + val.substring(pos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = prevLineStart;
           ta._listType = null;
           ta._listNum = null;
         } else {
-          // 다음 번호로 계속
+          // 다음 번호 prefix 삽입 (브라우저가 이미 '\n' 삽입한 상태)
           const nextNum = ta._listNum + 1;
           ta._listNum = nextNum;
           const prefix = nextNum + '. ';
-          ta.value = val.substring(0, pos) + '\n' + prefix + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = pos + 1 + prefix.length;
+          const newVal = val.substring(0, pos) + prefix + val.substring(pos);
+          ta.value = newVal;
+          const newPos = pos + prefix.length;
+          ta.selectionStart = ta.selectionEnd = newPos;
         }
+        scrollCursorIntoView(ta);
         return;
       }
 
       if (ta._listType === 'bullet') {
-        const bulletLine = lineText.match(/^• (.*)$/);
+        const bulletLine = prevLine.match(/^• (.*)$/);
         if (!bulletLine) { ta._listType = null; return; }
-        e.preventDefault();
         const content = bulletLine[1];
         if (content.trim() === '') {
-          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거
-          ta.value = val.substring(0, lineStart) + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = lineStart;
+          // 빈 항목 → 리스트 종료
+          const newVal = val.substring(0, prevLineStart) + val.substring(pos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = prevLineStart;
           ta._listType = null;
         } else {
           // 불릿 계속
-          ta.value = val.substring(0, pos) + '\n• ' + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = pos + 3;
+          const newVal = val.substring(0, pos) + '• ' + val.substring(pos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = pos + 2;
         }
+        scrollCursorIntoView(ta);
         return;
       }
     }
+
+    // 일반 타이핑 중에도 커서가 항상 보이게
+    scrollCursorIntoView(ta);
   });
 
   // Confirm modal

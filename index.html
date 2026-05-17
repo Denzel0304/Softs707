@@ -847,15 +847,6 @@ function render() {
 let recognition = null;
 let voiceActive = false;
 
-function initRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const r = new SR();
-  r.lang = 'ko-KR';
-  r.continuous = true;
-  r.interimResults = true;
-  return r;
-}
 
 function startVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -864,69 +855,73 @@ function startVoice() {
     return;
   }
 
-  recognition = initRecognition();
   const ta = document.getElementById('editorText');
   const bar = document.getElementById('voiceBar');
   const statusEl = document.getElementById('voiceStatus');
-  // ── 핵심 설계 ──
-  // textarea의 값을 직접 덮어쓰지 않는다.
-  // isFinal 결과만 textarea 끝에 append한다.
-  // interim(미확정)은 별도 변수에만 보관하고 표시용으로만 쓴다.
-  // 사용자가 직접 textarea를 수정해도 그 내용은 건드리지 않는다.
 
-  let interimText = '';        // 현재 미확정 텍스트 (표시 전용)
-  let committedBase = ta.value; // isFinal append 직전의 textarea 확정 값
+  // ── 상태 변수 (재시작해도 클로저가 유지됨) ──
+  let committedBase = ta.value; // 확정된 텍스트의 기준값 (사용자 편집 반영)
+  let interimText = '';         // 미확정 표시용
+  let processedFinals = new Set(); // 이미 처리한 isFinal 결과 인덱스 집합
+  let sessionOffset = 0;        // 재시작마다 인덱스 충돌 방지용 offset
 
-  // interim 표시: committedBase + interimText
-  function renderInterim() {
+  function render() {
     ta.value = committedBase + interimText;
     ta.scrollTop = ta.scrollHeight;
   }
 
-  recognition.onstart = () => {
-    voiceActive = true;
-    // 재시작마다 현재 textarea 실제 값을 committedBase로 갱신
-    committedBase = ta.value;
-    interimText = '';
-    bar.className = 'voice-bar listening';
-    statusEl.textContent = '듣고 있어요… 말씀해주세요';
-  };
+  function createRecognition() {
+    const r = new SR();
+    r.lang = 'ko-KR';
+    r.continuous = true;
+    r.interimResults = true;
 
-  recognition.onresult = (e) => {
-    interimText = '';
+    r.onstart = () => {
+      voiceActive = true;
+      bar.className = 'voice-bar listening';
+      statusEl.textContent = '듣고 있어요… 말씀해주세요';
+    };
 
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) {
-        // 확정: committedBase에 직접 append하고 interim 초기화
-        committedBase += t;
-        interimText = '';
-      } else {
-        interimText += t;
+    r.onresult = (e) => {
+      interimText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const globalIdx = sessionOffset + i; // 재시작해도 겹치지 않는 고유 인덱스
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          if (!processedFinals.has(globalIdx)) {
+            processedFinals.add(globalIdx);
+            committedBase += t; // 딱 한 번만 append
+          }
+        } else {
+          interimText += t;
+        }
       }
-    }
+      render();
+    };
 
-    renderInterim();
-  };
+    r.onerror = (e) => {
+      if (e.error === 'no-speech') return;
+      stopVoice();
+      if (e.error === 'not-allowed') toast('마이크 권한을 허용해주세요');
+    };
 
-  recognition.onerror = (e) => {
-    if (e.error === 'no-speech') return;
-    stopVoice();
-    if (e.error === 'not-allowed') {
-      toast('마이크 권한을 허용해주세요');
-    }
-  };
-
-  recognition.onend = () => {
-    if (voiceActive) {
-      // interim이 남아있으면 textarea에서 제거 (확정 안 된 것이므로)
+    r.onend = () => {
+      if (!voiceActive) return;
+      // 재시작 전: 미확정 interim 제거, 확정 base만 남김
       ta.value = committedBase;
       interimText = '';
-      // onstart에서 committedBase를 다시 읽으므로 자동 반영됨
-      try { recognition.start(); } catch(_) { stopVoice(); }
-    }
-  };
+      // 다음 세션의 인덱스가 겹치지 않도록 offset 크게 증가
+      sessionOffset += 10000;
+      try {
+        recognition = createRecognition();
+        recognition.start();
+      } catch(_) { stopVoice(); }
+    };
 
+    return r;
+  }
+
+  recognition = createRecognition();
   try {
     recognition.start();
   } catch(e) {

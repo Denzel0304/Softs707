@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이미지 → PDF</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424; --border: #2e2e2e;
+    --accent: #f0e040; --accent2: #e8c800; --text: #f0f0f0; --text-muted: #888;
+    --radius: 14px; --shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; min-height: 100dvh; }
+
+  header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px 20px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 17px; font-weight: 700; }
+  .logo span { color: var(--accent); }
+  .count-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text-muted); transition: all 0.2s; }
+  .count-badge.has { border-color: var(--accent); color: var(--accent); background: rgba(240,224,64,0.08); }
+
+  main { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 14px 20px; cursor: pointer; transition: all 0.2s; background: var(--surface); display: flex; align-items: center; gap: 14px; }
+  .drop-zone:active, .drop-zone.over { border-color: var(--accent); background: rgba(240,224,64,0.05); }
+  .drop-icon { font-size: 26px; flex-shrink: 0; }
+  .drop-texts { text-align: left; }
+  .drop-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .drop-sub { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .drop-sub strong { color: var(--accent); font-weight: 600; }
+  .drop-arrow { margin-left: auto; font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+  #fileInput { display: none; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .btn-clear { font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1.5px solid var(--accent); cursor: pointer; padding: 5px 12px; border-radius: 20px; font-family: 'Noto Sans KR', sans-serif; transition: all 0.15s; touch-action: manipulation; }
+  .btn-clear:active { background: rgba(240,224,64,0.12); transform: scale(0.95); }
+
+  /* 빈 상태 안내 */
+  #emptyMsg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); pointer-events: none; padding-bottom: 80px; }
+  #emptyMsg .empty-icon { font-size: 48px; opacity: 0.4; }
+  #emptyMsg .empty-text { font-size: 15px; font-weight: 600; opacity: 0.5; }
+  #emptyMsg .empty-sub { font-size: 13px; opacity: 0.35; }
+
+  /* 확인 다이얼로그 */
+  #confirmDlg { display: none; position: fixed; inset: 0; z-index: 997; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+  #confirmDlg.show { display: flex; }
+  .dlg-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px 20px; width: min(300px, calc(100vw - 40px)); text-align: center; }
+  .dlg-icon { font-size: 32px; margin-bottom: 10px; }
+  .dlg-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .dlg-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
+  .dlg-btns { display: flex; gap: 10px; }
+  .dlg-btn { flex: 1; padding: 13px; border-radius: 12px; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; touch-action: manipulation; }
+  .dlg-btn.cancel { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .dlg-btn.cancel:active { background: var(--border); }
+  .dlg-btn.confirm { background: var(--accent); color: #111; }
+  .dlg-btn.confirm:active { background: var(--accent2); transform: scale(0.97); }
+
+  .drag-hint { text-align: center; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .drag-hint::before, .drag-hint::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  .thumb { position: relative; border-radius: 10px; overflow: hidden; background: var(--surface2); aspect-ratio: 3/4; border: 2px solid transparent; transition: border-color 0.15s, opacity 0.15s, box-shadow 0.15s, transform 0.18s ease; touch-action: pan-y; -webkit-user-select: none; user-select: none; cursor: pointer; }
+  .thumb.drag-lock { touch-action: none; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .thumb-num { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); color: var(--accent); font-size: 11px; font-weight: 700; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .thumb-del { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); border: none; color: #fff; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; pointer-events: auto; }
+  .thumb-del:active { background: rgba(255,80,80,0.85); }
+  .thumb.dragging { opacity: 0.25; border-color: var(--accent); transform: scale(0.94); }
+  .thumb.shift-right { transform: translateX(6px) scale(0.97); border-color: rgba(240,224,64,0.4); box-shadow: -3px 0 0 0 var(--accent); }
+  .thumb.shift-left  { transform: translateX(-6px) scale(0.97); border-color: rgba(240,224,64,0.4); box-shadow: 3px 0 0 0 var(--accent); }
+
+  footer { position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg) 60%, transparent); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .btn-pdf { width: 100%; background: var(--accent); color: #111; border: none; border-radius: var(--radius); padding: 17px; font-family: 'Noto Sans KR', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(240,224,64,0.3); }
+  .btn-pdf:active { transform: scale(0.97); }
+  .btn-pdf:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; box-shadow: none; transform: none; opacity: 0; pointer-events: none; }
+
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); z-index: 998; flex-direction: column; align-items: center; justify-content: center; }
+  #overlay.show { display: flex; }
+  .progress-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px 36px; text-align: center; width: min(320px, calc(100vw - 40px)); }
+  .progress-emoji { font-size: 36px; margin-bottom: 12px; }
+  .progress-text { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 100px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.3s; width: 0%; }
+  .progress-sub { font-size: 12px; color: var(--text-muted); margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: var(--shadow); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* FULLSCREEN PREVIEW */
+  #preview { display: none; position: fixed; inset: 0; z-index: 500; background: #000; flex-direction: column; align-items: center; justify-content: center; }
+  #preview.show { display: flex; }
+  #previewImg { max-width: 100vw; max-height: calc(100dvh - 80px); object-fit: contain; display: block; }
+  .preview-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+  .preview-info { font-size: 13px; color: rgba(255,255,255,0.6); }
+  .preview-info strong { color: #fff; margin-right: 6px; }
+  .preview-close { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 50px; padding: 8px 22px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; touch-action: manipulation; }
+  .preview-close:active { background: rgba(255,255,255,0.25); }
+  .preview-nav { display: none; }
+
+  /* ===== PC ONLY (768px 이상) : 가운데 정렬 + 폭 제한 ===== */
+  @media (min-width: 768px) {
+    body {
+      align-items: center;
+      background: #000;
+    }
+    header, main, footer {
+      width: 100%;
+      max-width: 520px;
+    }
+    header {
+      align-self: center;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    main {
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    footer {
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    /* PC 전용 : 미리보기 좌/우 네비 버튼 */
+    .preview-nav { display: contents; }
+    #prevBtn, #nextBtn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: background 0.15s, transform 0.15s, opacity 0.15s;
+      z-index: 510;
+      padding: 0;
+      padding-bottom: 4px;
+    }
+    #prevBtn { left: 24px; }
+    #nextBtn { right: 24px; }
+    #prevBtn:hover:not(:disabled),
+    #nextBtn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.22);
+      transform: translateY(-50%) scale(1.05);
+    }
+    #prevBtn:active:not(:disabled),
+    #nextBtn:active:not(:disabled) {
+      transform: translateY(-50%) scale(0.95);
+    }
+    #prevBtn:disabled,
+    #nextBtn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">이미지 <span>→</span> PDF</div>
+  <div class="count-badge" id="countBadge">0장</div>
+</header>
+
+<main>
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <span class="drop-icon">🖼️</span>
+    <div class="drop-texts">
+      <div class="drop-title">이미지 불러오기</div>
+      <div class="drop-sub"><strong>JPG / PNG</strong> · 여러 장 동시 선택 가능</div>
+    </div>
+    <span class="drop-arrow">＋</span>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple>
+  </div>
+
+  <div id="emptyMsg">
+    <div class="empty-icon">📂</div>
+    <div class="empty-text">이미지를 먼저 추가하세요</div>
+    <div class="empty-sub">위 버튼을 탭해서 사진을 불러오세요</div>
+  </div>
+
+  <div id="gridWrap" style="display:none; flex-direction:column; gap:10px;">
+    <div class="section-header">
+      <span class="section-title">순서 편집</span>
+      <button class="btn-clear" id="btnClear">전체 삭제</button>
+    </div>
+    <div class="drag-hint">꾹 눌러 드래그 순서 변경 · 탭하면 크게 보기</div>
+    <div id="grid"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn-pdf" id="btnPdf" disabled>
+    <span>📄</span><span id="btnPdfText">이미지를 먼저 추가하세요</span>
+  </button>
+</footer>
+
+<div id="confirmDlg">
+  <div class="dlg-box">
+    <div class="dlg-icon">🗑️</div>
+    <div class="dlg-title">전체 삭제</div>
+    <div class="dlg-sub">추가한 이미지 <strong id="dlgCount"></strong>장을<br>모두 삭제할까요?</div>
+    <div class="dlg-btns">
+      <button class="dlg-btn cancel" id="dlgCancel">취소</button>
+      <button class="dlg-btn confirm" id="dlgConfirm">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="progress-box">
+    <div class="progress-emoji">⚙️</div>
+    <div class="progress-text" id="progressText">PDF 생성 중...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-sub" id="progressSub"></div>
+  </div>
+</div>
+
+<div id="preview">
+  <img id="previewImg" src="" alt="">
+  <div class="preview-nav">
+    <button id="prevBtn">‹</button>
+    <button id="nextBtn">›</button>
+  </div>
+  <div class="preview-footer">
+    <div class="preview-info"><strong id="previewNum"></strong><span id="previewName"></span></div>
+    <button class="preview-close" id="previewClose">닫기</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ── ELEMENTS ──
+const fileInput   = document.getElementById('fileInput');
+const dropZone    = document.getElementById('dropZone');
+const grid        = document.getElementById('grid');
+const gridWrap    = document.getElementById('gridWrap');
+const btnPdf      = document.getElementById('btnPdf');
+const btnPdfText  = document.getElementById('btnPdfText');
+const btnClear    = document.getElementById('btnClear');
+const countBadge  = document.getElementById('countBadge');
+const overlay     = document.getElementById('overlay');
+const progressText= document.getElementById('progressText');
+const progressBar = document.getElementById('progressBar');
+const progressSub = document.getElementById('progressSub');
+const toastEl     = document.getElementById('toast');
+const previewEl   = document.getElementById('preview');
+const previewImg  = document.getElementById('previewImg');
+const previewNum  = document.getElementById('previewNum');
+const previewName = document.getElementById('previewName');
+const prevBtn     = document.getElementById('prevBtn');
+const nextBtn     = document.getElementById('nextBtn');
+
+let images = [];
+let idCnt  = 0;
+let pvIdx  = 0;
+
+// ── FILE INPUT ──
+fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value = ''; });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+function addFiles(files) {
+  const valid = Array.from(files).filter(f => f.type === 'image/jpeg' || f.type === 'image/png');
+  if (!valid.length) { toast('JPG 또는 PNG 파일만 추가할 수 있어요'); return; }
+  valid.forEach(f => images.push({ id: ++idCnt, file: f, url: URL.createObjectURL(f), name: f.name }));
+  render();
+  if (files.length > valid.length) toast(`${files.length - valid.length}개는 지원하지 않는 형식`);
+}
+
+// ── RENDER ──
+const emptyMsg = document.getElementById('emptyMsg');
+
+function render() {
+  grid.innerHTML = '';
+  const hasImages = images.length > 0;
+  gridWrap.style.display = hasImages ? 'flex' : 'none';
+  emptyMsg.style.display = hasImages ? 'none' : 'flex';
+
+  images.forEach((img, idx) => {
+    const el = document.createElement('div');
+    el.className = 'thumb';
+    el.dataset.id = img.id;
+    el.innerHTML = `<img src="${img.url}" loading="lazy"><div class="thumb-num">${idx + 1}</div><button class="thumb-del" data-id="${img.id}">✕</button>`;
+    grid.appendChild(el);
+
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('thumb-del')) return;
+      openPreviewWithHistory(idx);
+    });
+    el.querySelector('.thumb-del').addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +e.currentTarget.dataset.id;
+      URL.revokeObjectURL(images.find(i => i.id === id)?.url);
+      images = images.filter(i => i.id !== id);
+      render();
+    });
+
+    setupDrag(el);
+  });
+
+  btnPdf.disabled = !images.length;
+  btnPdfText.textContent = images.length ? `PDF 저장 (${images.length}장)` : '이미지를 먼저 추가하세요';
+  countBadge.textContent = `${images.length}장`;
+  countBadge.className = 'count-badge' + (images.length ? ' has' : '');
+}
+
+const confirmDlg  = document.getElementById('confirmDlg');
+const dlgCount    = document.getElementById('dlgCount');
+const dlgCancel   = document.getElementById('dlgCancel');
+const dlgConfirm  = document.getElementById('dlgConfirm');
+
+btnClear.addEventListener('click', () => {
+  dlgCount.textContent = images.length;
+  confirmDlg.classList.add('show');
+  history.pushState({ modal: 'confirm' }, '');
+});
+dlgCancel.addEventListener('click', () => {
+  confirmDlg.classList.remove('show');
+  if (history.state && history.state.modal === 'confirm') history.back();
+});
+dlgConfirm.addEventListener('click', () => {
+  confirmDlg.classList.remove('show');
+  if (history.state && history.state.modal === 'confirm') history.back();
+  images.forEach(i => URL.revokeObjectURL(i.url));
+  images = [];
+  render();
+});
+confirmDlg.addEventListener('click', e => {
+  if (e.target === confirmDlg) {
+    confirmDlg.classList.remove('show');
+    if (history.state && history.state.modal === 'confirm') history.back();
+  }
+});
+
+// ── PREVIEW ──
+function openPreview(idx) {
+  pvIdx = idx;
+  showPreview();
+  previewEl.classList.add('show');
+}
+function showPreview() {
+  const img = images[pvIdx];
+  previewImg.src = img.url;
+  previewNum.textContent = `${pvIdx + 1} / ${images.length}`;
+  previewName.textContent = img.name;
+  prevBtn.disabled = pvIdx === 0;
+  nextBtn.disabled = pvIdx === images.length - 1;
+}
+function closePreview() {
+  if (!previewEl.classList.contains('show')) return;
+  previewEl.classList.remove('show');
+  // pop the history entry we pushed when opening
+  if (history.state && history.state.preview) history.back();
+}
+
+function openPreviewWithHistory(idx) {
+  pvIdx = idx;
+  showPreview();
+  previewEl.classList.add('show');
+  history.pushState({ preview: true }, '');
+}
+
+document.getElementById('previewClose').addEventListener('click', closePreview);
+prevBtn.addEventListener('click', () => { if (pvIdx > 0) { pvIdx--; showPreview(); } });
+nextBtn.addEventListener('click', () => { if (pvIdx < images.length - 1) { pvIdx++; showPreview(); } });
+previewEl.addEventListener('click', e => { if (e.target === previewEl) closePreview(); });
+window.addEventListener('popstate', e => {
+  if (confirmDlg.classList.contains('show')) { confirmDlg.classList.remove('show'); return; }
+  if (previewEl.classList.contains('show')) previewEl.classList.remove('show');
+});
+
+// PC 키보드 좌/우 화살표로 미리보기 이동
+window.addEventListener('keydown', e => {
+  if (!previewEl.classList.contains('show')) return;
+  if (e.key === 'ArrowLeft'  && pvIdx > 0)                 { pvIdx--; showPreview(); }
+  if (e.key === 'ArrowRight' && pvIdx < images.length - 1) { pvIdx++; showPreview(); }
+  if (e.key === 'Escape') closePreview();
+});
+
+// swipe on preview
+let swX = 0;
+previewImg.addEventListener('touchstart', e => { swX = e.touches[0].clientX; }, { passive: true });
+previewImg.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - swX;
+  if (dx < -50 && pvIdx < images.length - 1) { pvIdx++; showPreview(); }
+  if (dx >  50 && pvIdx > 0)                 { pvIdx--; showPreview(); }
+});
+
+// ── DRAG REORDER (insert, not swap) ──
+let dragId = null;
+
+// Touch state
+let tActive = false, tSrcId = null, tClone = null, tTimer = null;
+let tSX = 0, tSY = 0, tOver = null;
+
+function setupDrag(el) {
+  // Mouse drag
+  el.setAttribute('draggable', 'true');
+  el.addEventListener('dragstart', e => {
+    dragId = +el.dataset.id;
+    setTimeout(() => el.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', () => { el.classList.remove('dragging'); clearHL(); dragId = null; });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragId || dragId === +el.dataset.id) return;
+    applyShift(dragId, +el.dataset.id);
+  });
+  el.addEventListener('dragleave', () => {});
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    if (!dragId || dragId === +el.dataset.id) return;
+    insert(dragId, +el.dataset.id);
+    dragId = null;
+  });
+
+  // Touch drag
+  el.addEventListener('touchstart', e => {
+    if (e.target.classList.contains('thumb-del')) return;
+    tSrcId = +el.dataset.id;
+    tSX = e.touches[0].clientX;
+    tSY = e.touches[0].clientY;
+    tTimer = setTimeout(() => {
+      tActive = true;
+      el.classList.add('dragging', 'drag-lock');
+      const r = el.getBoundingClientRect();
+      tClone = el.cloneNode(true);
+      Object.assign(tClone.style, {
+        position:'fixed', top:r.top+'px', left:r.left+'px',
+        width:r.width+'px', height:r.height+'px',
+        pointerEvents:'none', zIndex:'900', opacity:'0.88',
+        transform:'scale(1.06)', borderRadius:'10px', overflow:'hidden',
+        border:'2px solid var(--accent)', boxShadow:'0 8px 32px rgba(0,0,0,0.6)'
+      });
+      document.body.appendChild(tClone);
+    }, 200);
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    clearTimeout(tTimer);
+    if (!tActive || !tClone) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const dx = t.clientX - tSX, dy = t.clientY - tSY;
+    const srcEl = grid.querySelector(`.thumb[data-id="${tSrcId}"]`);
+    if (srcEl) {
+      const r = srcEl.getBoundingClientRect();
+      tClone.style.left = (r.left + dx) + 'px';
+      tClone.style.top  = (r.top  + dy) + 'px';
+    }
+    tClone.style.display = 'none';
+    const under = document.elementFromPoint(t.clientX, t.clientY);
+    tClone.style.display = '';
+    const overEl = under?.closest?.('.thumb');
+    if (overEl && +overEl.dataset.id !== tSrcId) {
+      if (tOver !== overEl) {
+        applyShift(tSrcId, +overEl.dataset.id);
+        tOver = overEl;
+      }
+    } else if (!overEl) { clearHL(); tOver = null; }
+  }, { passive: false });
+
+  el.addEventListener('touchend', () => {
+    clearTimeout(tTimer);
+    if (tClone) { tClone.remove(); tClone = null; }
+    el.classList.remove('dragging', 'drag-lock');
+    clearHL();
+    if (tActive && tOver && +tOver.dataset.id !== tSrcId) insert(tSrcId, +tOver.dataset.id);
+    tActive = false; tSrcId = null; tOver = null;
+  }, { passive: true });
+}
+
+function clearHL() {
+  grid.querySelectorAll('.thumb').forEach(t => t.classList.remove('shift-left','shift-right'));
+}
+
+function applyShift(srcId, tgtId) {
+  clearHL();
+  const si = images.findIndex(i => i.id === srcId);
+  const ti = images.findIndex(i => i.id === tgtId);
+  if (si < 0 || ti < 0 || si === ti) return;
+  // 카드들이 어느 방향으로 밀릴지 표시
+  // src를 tgt 위치로 보낼 때, 사이에 있는 카드들이 반대 방향으로 밀림
+  const thumbs = Array.from(grid.querySelectorAll('.thumb'));
+  if (si < ti) {
+    // 앞→뒤: si+1 ~ ti 사이 카드들이 왼쪽으로 밀림
+    thumbs.forEach(t => {
+      const idx = images.findIndex(i => i.id === +t.dataset.id);
+      if (idx > si && idx <= ti) t.classList.add('shift-left');
+    });
+  } else {
+    // 뒤→앞: ti ~ si-1 사이 카드들이 오른쪽으로 밀림
+    thumbs.forEach(t => {
+      const idx = images.findIndex(i => i.id === +t.dataset.id);
+      if (idx >= ti && idx < si) t.classList.add('shift-right');
+    });
+  }
+}
+function insert(srcId, tgtId) {
+  const si = images.findIndex(i => i.id === srcId);
+  const ti = images.findIndex(i => i.id === tgtId);
+  if (si < 0 || ti < 0 || si === ti) return;
+  const [item] = images.splice(si, 1);
+  images.splice(ti, 0, item);
+  render();
+}
+
+// ── PDF ──
+btnPdf.addEventListener('click', async () => {
+  if (!images.length) return;
+  if (typeof window.jspdf === 'undefined') { toast('PDF 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  const { jsPDF } = window.jspdf;
+
+  overlay.classList.add('show');
+  progressBar.style.width = '0%';
+  progressText.textContent = 'PDF 생성 중...';
+  progressSub.textContent = '';
+  await tick();
+
+  try {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const A4W = 210, A4H = 297;
+
+    for (let i = 0; i < images.length; i++) {
+      progressText.textContent = `처리 중... (${i + 1} / ${images.length})`;
+      progressSub.textContent = images[i].name;
+      progressBar.style.width = (5 + (i / images.length) * 85) + '%';
+      await tick();
+
+      const { dataUrl, w, h } = await imgToDataUrl(images[i].url);
+      const ratio = w / h, pageRatio = A4W / A4H;
+      let dw, dh, ox = 0, oy = 0;
+      if (ratio > pageRatio) { dw = A4W; dh = A4W / ratio; oy = (A4H - dh) / 2; }
+      else                   { dh = A4H; dw = A4H * ratio; ox = (A4W - dw) / 2; }
+
+      if (i > 0) pdf.addPage();
+      pdf.addImage(dataUrl, images[i].file.type === 'image/png' ? 'PNG' : 'JPEG', ox, oy, dw, dh, undefined, 'FAST');
+    }
+
+    progressText.textContent = '파일 저장 중...';
+    progressBar.style.width = '96%';
+    await tick();
+
+    const n = new Date();
+    pdf.save(`images_${n.getFullYear()}${p2(n.getMonth()+1)}${p2(n.getDate())}_${p2(n.getHours())}${p2(n.getMinutes())}.pdf`);
+    progressBar.style.width = '100%';
+    await new Promise(r => setTimeout(r, 300));
+    const savedCount = images.length;
+    overlay.classList.remove('show');
+    // 자동 초기화
+    images.forEach(i => URL.revokeObjectURL(i.url));
+    images = [];
+    render();
+    fileInput.value = '';
+    toast(`✅ PDF 저장 완료 (${savedCount}장) · 목록을 초기화했습니다`);
+  } catch(err) {
+    overlay.classList.remove('show');
+    console.error(err);
+    toast('❌ 오류: ' + (err.message || String(err)));
+  }
+});
+
+function imgToDataUrl(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      res({ dataUrl: c.toDataURL('image/jpeg', 0.92), w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+
+function tick() { return new Promise(r => setTimeout(r, 16)); }
+function p2(n)  { return String(n).padStart(2, '0'); }
+
+let tTimer2;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(tTimer2);
+  tTimer2 = setTimeout(() => toastEl.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

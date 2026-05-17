@@ -868,7 +868,8 @@ function startVoice() {
   const ta = document.getElementById('editorText');
   const bar = document.getElementById('voiceBar');
   const statusEl = document.getElementById('voiceStatus');
-  let finalText = ta.value; // 기존 텍스트 보존
+  let baseText = ta.value;   // 음성 시작 전 기존 텍스트
+  let confirmedText = '';    // 이번 세션에서 isFinal로 확정된 텍스트
 
   recognition.onstart = () => {
     voiceActive = true;
@@ -877,20 +878,24 @@ function startVoice() {
   };
 
   recognition.onresult = (e) => {
+    // 이번 이벤트에서의 interim 텍스트만 수집
     let interim = '';
-    let final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
       if (e.results[i].isFinal) {
-        final += t;
+        // 확정된 텍스트는 confirmedText에 누적
+        confirmedText += t;
       } else {
         interim += t;
       }
     }
-    if (final) {
-      finalText += (finalText && !finalText.endsWith('\n') ? '\n' : '') + final;
-    }
-    ta.value = finalText + (interim ? interim : '');
+
+    // 전체 표시: 기존텍스트 + 확정텍스트 + 현재 interim
+    const combined = baseText
+      + (baseText && confirmedText ? (baseText.endsWith('\n') ? '' : '') : '')
+      + confirmedText
+      + interim;
+    ta.value = combined;
     ta.scrollTop = ta.scrollHeight;
   };
 
@@ -904,6 +909,9 @@ function startVoice() {
 
   recognition.onend = () => {
     if (voiceActive) {
+      // 재시작 전에 지금까지 확정된 텍스트를 baseText에 반영
+      baseText = baseText + confirmedText;
+      confirmedText = '';
       // 자동 재시작 (continuous가 끊길 때 대비)
       try { recognition.start(); } catch(_) { stopVoice(); }
     }

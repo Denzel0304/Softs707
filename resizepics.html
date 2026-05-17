@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이미지 리사이즈</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #dddbd3;
+    --accent: #2563eb;
+    --accent2: #1d4ed8;
+    --accent-light: #eff6ff;
+    --text: #1a1916;
+    --text-muted: #6b6960;
+    --text-hint: #9c9a93;
+    --radius: 14px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; min-height: 100dvh; }
+
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(245,244,240,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo span { color: var(--accent); }
+  .count-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .count-badge.has { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  main { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* DROP ZONE */
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 14px 20px; cursor: pointer; transition: all 0.2s;
+    background: var(--surface); display: flex; align-items: center; gap: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .drop-zone:active, .drop-zone.over { border-color: var(--accent); background: var(--accent-light); }
+  .drop-icon { font-size: 26px; flex-shrink: 0; }
+  .drop-texts { text-align: left; }
+  .drop-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .drop-sub { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .drop-sub strong { color: var(--accent); font-weight: 600; }
+  .drop-arrow { margin-left: auto; font-size: 22px; color: var(--accent); flex-shrink: 0; font-weight: 300; }
+  #fileInput { display: none; }
+
+  /* RESIZE CONFIG CARD */
+  #configCard {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);
+    display: none; flex-direction: column; gap: 14px;
+  }
+  .config-title {
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px;
+  }
+  .config-row { display: flex; align-items: center; gap: 12px; }
+  .config-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; min-width: 64px; }
+  .config-input {
+    flex: 1; height: 40px; border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 0 12px; font-size: 15px; font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif; color: var(--text);
+    background: var(--surface2); transition: border-color 0.15s;
+    outline: none;
+  }
+  .config-input:focus { border-color: var(--accent); background: var(--accent-light); }
+  .config-unit { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+  .config-hint { font-size: 11px; color: var(--text-hint); line-height: 1.5; }
+  .config-hint strong { color: var(--accent); font-weight: 600; }
+
+  /* INFO BOX */
+  .info-box {
+    background: var(--accent-light); border: 1px solid #bfdbfe;
+    border-radius: 10px; padding: 10px 14px; font-size: 12px;
+    color: #1e40af; line-height: 1.5;
+  }
+
+  /* SECTION */
+  .section-header { display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .btn-clear {
+    font-size: 12px; font-weight: 600; color: #dc2626;
+    background: transparent; border: 1.5px solid #fca5a5; cursor: pointer;
+    padding: 5px 12px; border-radius: 20px; font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s; touch-action: manipulation;
+  }
+  .btn-clear:active { background: #fef2f2; }
+
+  /* EMPTY */
+  #emptyMsg {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 10px; color: var(--text-muted); pointer-events: none; padding-bottom: 100px;
+  }
+  #emptyMsg .empty-icon { font-size: 48px; opacity: 0.35; }
+  #emptyMsg .empty-text { font-size: 15px; font-weight: 600; opacity: 0.45; }
+  #emptyMsg .empty-sub { font-size: 13px; opacity: 0.3; }
+
+  /* DRAG HINT */
+  .drag-hint { text-align: center; font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 6px; }
+  .drag-hint::before, .drag-hint::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* GRID */
+  #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  .thumb {
+    position: relative; border-radius: 10px; overflow: hidden;
+    background: var(--surface2); aspect-ratio: 3/4;
+    border: 2px solid transparent; transition: border-color 0.15s, opacity 0.15s, box-shadow 0.15s, transform 0.18s ease;
+    touch-action: pan-y; -webkit-user-select: none; user-select: none; cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+  .thumb.drag-lock { touch-action: none; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .thumb-num {
+    position: absolute; top: 6px; left: 6px;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(4px);
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; pointer-events: none;
+    border: 1px solid rgba(37,99,235,0.2);
+  }
+  .thumb-del {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(255,255,255,0.88); border: 1px solid rgba(0,0,0,0.1); color: #6b6960;
+    width: 26px; height: 26px; border-radius: 6px; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; touch-action: manipulation; pointer-events: auto;
+  }
+  .thumb-del:active { background: #fee2e2; color: #dc2626; }
+
+  /* size badge on thumb */
+  .thumb-size {
+    position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(4px);
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 6px;
+    font-size: 10px; font-weight: 600; color: var(--text-muted);
+    padding: 2px 6px; white-space: nowrap; pointer-events: none;
+  }
+  .thumb-size.landscape { color: #0369a1; border-color: #bae6fd; background: rgba(240,249,255,0.92); }
+  .thumb-size.portrait { color: #7c3aed; border-color: #ddd6fe; background: rgba(245,243,255,0.92); }
+  .thumb-size.square { color: #047857; border-color: #a7f3d0; background: rgba(240,253,250,0.92); }
+
+  .thumb.dragging { opacity: 0.2; border-color: var(--accent); transform: scale(0.94); }
+  .thumb.shift-right { transform: translateX(6px) scale(0.97); border-color: rgba(37,99,235,0.35); box-shadow: -3px 0 0 0 var(--accent); }
+  .thumb.shift-left  { transform: translateX(-6px) scale(0.97); border-color: rgba(37,99,235,0.35); box-shadow: 3px 0 0 0 var(--accent); }
+
+  /* FOOTER */
+  footer {
+    position: sticky; bottom: 0;
+    background: linear-gradient(to top, var(--bg) 55%, transparent);
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .btn-resize {
+    width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 16px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s; box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+  }
+  .btn-resize:active { transform: scale(0.97); background: var(--accent2); }
+  .btn-resize:disabled { background: var(--surface2); color: var(--text-hint); cursor: not-allowed; box-shadow: none; transform: none; opacity: 0; pointer-events: none; }
+
+  /* OVERLAY */
+  #overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(245,244,240,0.88); backdrop-filter: blur(8px);
+    z-index: 998; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #overlay.show { display: flex; }
+  .progress-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 32px 36px; text-align: center; width: min(320px, calc(100vw - 40px));
+    box-shadow: var(--shadow);
+  }
+  .progress-emoji { font-size: 36px; margin-bottom: 12px; }
+  .progress-text { font-size: 15px; font-weight: 600; margin-bottom: 18px; color: var(--text); }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 100px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.3s; width: 0%; }
+  .progress-sub { font-size: 12px; color: var(--text-muted); margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* DIALOGS */
+  #confirmDlg, #errorDlg, #previewDlg {
+    display: none; position: fixed; inset: 0; z-index: 997;
+    background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  #confirmDlg.show, #errorDlg.show, #previewDlg.show { display: flex; }
+  .dlg-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 28px 24px 20px; width: min(300px, calc(100vw - 40px)); text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .dlg-box.wide { width: min(360px, calc(100vw - 40px)); }
+  .dlg-icon { font-size: 32px; margin-bottom: 10px; }
+  .dlg-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .dlg-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.6; }
+  .dlg-btns { display: flex; gap: 10px; }
+  .dlg-btn {
+    flex: 1; padding: 13px; border-radius: 12px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s; touch-action: manipulation;
+  }
+  .dlg-btn.cancel { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .dlg-btn.cancel:active { background: var(--border); }
+  .dlg-btn.primary { background: var(--accent); color: #fff; }
+  .dlg-btn.primary:active { background: var(--accent2); transform: scale(0.97); }
+  .dlg-btn.danger { background: #dc2626; color: #fff; }
+  .dlg-btn.danger:active { background: #b91c1c; }
+
+
+
+  /* ERROR LIST */
+  .error-list { text-align: left; margin-bottom: 18px; max-height: 160px; overflow-y: auto; }
+  .error-item { font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-start; color: var(--text-muted); line-height: 1.4; }
+  .error-item:last-child { border-bottom: none; }
+  .error-item-icon { flex-shrink: 0; font-size: 13px; }
+  .error-item-name { font-weight: 600; color: #dc2626; font-size: 11px; }
+
+  /* PREVIEW */
+  #previewDlg { z-index: 500; }
+  #previewImg { max-width: 90vw; max-height: calc(100dvh - 160px); object-fit: contain; display: block; border-radius: 10px; box-shadow: var(--shadow); }
+  .preview-footer-inner {
+    margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 90vw; max-width: 480px;
+  }
+  .preview-info { font-size: 13px; color: rgba(255,255,255,0.7); }
+  .preview-info strong { color: #fff; }
+  .preview-close {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; border-radius: 50px; padding: 8px 24px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif; touch-action: manipulation;
+  }
+  #previewDlg { background: rgba(0,0,0,0.88); flex-direction: column; }
+  #previewDlg.show { display: flex; }
+  .preview-nav-btn { display: none; }
+
+  /* preview individual size setter */
+  .preview-size-row {
+    margin-top: 12px; display: flex; align-items: center; justify-content: center;
+    gap: 8px; width: 90vw; max-width: 480px;
+  }
+  .preview-size-label { font-size: 13px; color: rgba(255,255,255,0.7); white-space: nowrap; }
+  .preview-size-input {
+    width: 100px; height: 38px; border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1); color: #fff; border-radius: 8px;
+    padding: 0 10px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    text-align: center; outline: none; -webkit-appearance: none; appearance: none;
+  }
+  .preview-size-input::placeholder { color: rgba(255,255,255,0.35); }
+  .preview-size-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+  .preview-size-unit { font-size: 13px; color: rgba(255,255,255,0.7); }
+  .preview-size-apply {
+    background: var(--accent); border: none; color: #fff;
+    border-radius: 8px; padding: 0 16px; height: 38px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif; touch-action: manipulation;
+  }
+  .preview-size-apply:active { background: var(--accent2); transform: scale(0.97); }
+  .preview-size-current { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 6px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 100px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--text); color: #fff;
+    border-radius: 100px; padding: 10px 20px; font-size: 13px;
+    opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999;
+    white-space: nowrap; box-shadow: var(--shadow);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* WARN BADGE */
+  .warn-badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+    background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;
+    border-radius: 6px; padding: 2px 7px;
+  }
+
+  /* ===== PC ONLY (768px 이상) : 가운데 정렬 + 폭 제한 ===== */
+  @media (min-width: 768px) {
+    body {
+      align-items: center;
+      background: #ebe9e2;
+    }
+    header, main, footer {
+      width: 100%;
+      max-width: 520px;
+    }
+    header {
+      align-self: center;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    main {
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    footer {
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    /* PC 전용 : 미리보기 좌/우 네비 버튼 */
+    .preview-nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: background 0.15s, transform 0.15s, opacity 0.15s;
+      z-index: 510;
+      padding: 0 0 4px 0;
+    }
+    #prevBtn { left: 24px; }
+    #nextBtn { right: 24px; }
+    .preview-nav-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.22);
+      transform: translateY(-50%) scale(1.05);
+    }
+    .preview-nav-btn:active:not(:disabled) {
+      transform: translateY(-50%) scale(0.95);
+    }
+    .preview-nav-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">이미지 <span>리사이즈</span></div>
+  <div class="count-badge" id="countBadge">0장</div>
+</header>
+
+<main>
+  <!-- DROP ZONE -->
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <span class="drop-icon">🖼️</span>
+    <div class="drop-texts">
+      <div class="drop-title">이미지 불러오기</div>
+      <div class="drop-sub"><strong>JPG / PNG</strong> · 여러 장 동시 선택 가능</div>
+    </div>
+    <span class="drop-arrow">＋</span>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple>
+  </div>
+
+  <!-- CONFIG CARD -->
+  <div id="configCard">
+    <div class="config-title">리사이즈 설정</div>
+
+    <div class="config-row">
+      <span class="config-label">긴축 크기</span>
+      <input type="number" id="longSide" class="config-input" placeholder="예: 1920" min="1" style="max-width: 130px;">
+      <span class="config-unit">px</span>
+      <button id="applyAll" style="flex:1; height:40px; border:1.5px solid var(--accent); background:var(--accent-light); color:var(--accent); border-radius:10px; font-size:13px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:all 0.15s;" onclick="applyLongSide()">일괄 적용</button>
+    </div>
+
+    <div class="config-hint">
+      📐 <strong>긴축</strong>이란 — 가로 사진이면 가로, 세로 사진이면 세로. 비율은 유지됩니다.<br>
+      ⚠️ 원본보다 크게 확대는 불가합니다.
+    </div>
+
+    <div class="info-box" id="selectionInfo" style="display:none;"></div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyMsg">
+    <div class="empty-icon">📂</div>
+    <div class="empty-text">이미지를 먼저 추가하세요</div>
+    <div class="empty-sub">위 버튼을 탭해서 사진을 불러오세요</div>
+  </div>
+
+  <!-- GRID -->
+  <div id="gridWrap" style="display:none; flex-direction:column; gap:10px;">
+    <div class="section-header">
+      <span class="section-title">이미지 목록</span>
+      <button class="btn-clear" id="btnClear">전체 삭제</button>
+    </div>
+    <div class="drag-hint">꾹 눌러 드래그로 순서 변경 · 탭하면 크게 보기</div>
+    <div id="grid"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="btn-resize" id="btnResize" disabled>
+    <span>✂️</span><span id="btnResizeText">이미지를 먼저 추가하세요</span>
+  </button>
+</footer>
+
+<!-- CONFIRM CLEAR -->
+<div id="confirmDlg">
+  <div class="dlg-box">
+    <div class="dlg-icon">🗑️</div>
+    <div class="dlg-title">전체 삭제</div>
+    <div class="dlg-sub"><strong id="dlgCount"></strong>장을 모두 삭제할까요?</div>
+    <div class="dlg-btns">
+      <button class="dlg-btn cancel" id="dlgCancel">취소</button>
+      <button class="dlg-btn danger" id="dlgConfirm">삭제</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ERROR MODAL -->
+<div id="errorDlg">
+  <div class="dlg-box wide">
+    <div class="dlg-icon">⚠️</div>
+    <div class="dlg-title">오류 발생 — 작업 중지</div>
+    <div class="dlg-sub" id="errorDlgSub"></div>
+    <div class="error-list" id="errorList"></div>
+    <div class="dlg-btns">
+      <button class="dlg-btn primary" id="errorDlgClose">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW -->
+<div id="previewDlg">
+  <img id="previewImg" src="" alt="">
+  <button id="prevBtn" class="preview-nav-btn" aria-label="이전">‹</button>
+  <button id="nextBtn" class="preview-nav-btn" aria-label="다음">›</button>
+  <div class="preview-footer-inner">
+    <div class="preview-info"><strong id="previewNum"></strong>&nbsp;<span id="previewName"></span></div>
+    <button class="preview-close" id="previewClose">닫기</button>
+  </div>
+  <div class="preview-size-row">
+    <span class="preview-size-label">긴축</span>
+    <input type="number" id="previewSizeInput" class="preview-size-input" placeholder="px" min="1" inputmode="numeric">
+    <span class="preview-size-unit">px</span>
+    <button class="preview-size-apply" id="previewSizeApply">이 사진에 적용</button>
+  </div>
+  <div class="preview-size-current" id="previewSizeCurrent"></div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="progress-box">
+    <div class="progress-emoji">⚙️</div>
+    <div class="progress-text" id="progressText">처리 중...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-sub" id="progressSub"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- JSZip for ZIP export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+// ── ELEMENTS ──
+const fileInput    = document.getElementById('fileInput');
+const dropZone     = document.getElementById('dropZone');
+const grid         = document.getElementById('grid');
+const gridWrap     = document.getElementById('gridWrap');
+const btnResize    = document.getElementById('btnResize');
+const btnResizeText= document.getElementById('btnResizeText');
+const btnClear     = document.getElementById('btnClear');
+const countBadge   = document.getElementById('countBadge');
+const overlay      = document.getElementById('overlay');
+const progressText = document.getElementById('progressText');
+const progressBar  = document.getElementById('progressBar');
+const progressSub  = document.getElementById('progressSub');
+const toastEl      = document.getElementById('toast');
+const previewDlg   = document.getElementById('previewDlg');
+const previewImg   = document.getElementById('previewImg');
+const previewNum   = document.getElementById('previewNum');
+const previewName  = document.getElementById('previewName');
+const previewSizeInput   = document.getElementById('previewSizeInput');
+const previewSizeApply   = document.getElementById('previewSizeApply');
+const previewSizeCurrent = document.getElementById('previewSizeCurrent');
+const emptyMsg     = document.getElementById('emptyMsg');
+const configCard   = document.getElementById('configCard');
+const selectionInfo= document.getElementById('selectionInfo');
+const longSideInput= document.getElementById('longSide');
+
+let images = [];
+let idCnt  = 0;
+let pvIdx  = 0;
+
+// ── FILE INPUT ──
+fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value = ''; });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+function addFiles(files) {
+  const valid = Array.from(files).filter(f => f.type === 'image/jpeg' || f.type === 'image/png');
+  if (!valid.length) { toast('JPG 또는 PNG 파일만 추가할 수 있어요'); return; }
+  let loaded = 0;
+  valid.forEach(f => {
+    const id = ++idCnt;
+    const url = URL.createObjectURL(f);
+    const imgEl = new Image();
+    imgEl.onload = () => {
+      images.push({
+        id, file: f, url,
+        name: f.name, type: f.type,
+        origW: imgEl.naturalWidth, origH: imgEl.naturalHeight,
+        targetPx: null
+      });
+      loaded++;
+      if (loaded === valid.length) render();
+    };
+    imgEl.onerror = () => {
+      URL.revokeObjectURL(url);
+      loaded++;
+      if (loaded === valid.length) render();
+      toast(`로드 실패: ${f.name}`);
+    };
+    imgEl.src = url;
+  });
+  if (files.length > valid.length) toast(`${files.length - valid.length}개는 지원하지 않는 형식`);
+}
+
+// ── APPLY BULK LONG SIDE ──
+function applyLongSide() {
+  const val = parseInt(longSideInput.value, 10);
+  if (!val || val < 1) { toast('올바른 픽셀값을 입력하세요'); return; }
+  let blocked = 0;
+  images.forEach(img => {
+    const longOrig = Math.max(img.origW, img.origH);
+    if (val > longOrig) { blocked++; return; }
+    img.targetPx = val;
+  });
+  if (blocked > 0) toast(`⚠️ ${blocked}장은 원본보다 커서 적용 제외`);
+  render();
+  updateSelectionInfo();
+}
+
+function updateSelectionInfo() {
+  const set = images.filter(i => i.targetPx !== null);
+  if (!images.length) { selectionInfo.style.display = 'none'; return; }
+  selectionInfo.style.display = 'block';
+  if (set.length === 0) {
+    selectionInfo.textContent = '아직 리사이즈 크기가 설정된 이미지가 없습니다. 긴축 값을 입력 후 일괄 적용하거나, 각 이미지 카드에서 설정하세요.';
+  } else {
+    selectionInfo.textContent = `✅ ${set.length}/${images.length}장에 리사이즈 크기가 설정됨. 설정되지 않은 이미지는 변환에서 제외됩니다.`;
+  }
+}
+
+// ── RENDER ──
+function render() {
+  grid.innerHTML = '';
+  const hasImages = images.length > 0;
+  gridWrap.style.display = hasImages ? 'flex' : 'none';
+  emptyMsg.style.display  = hasImages ? 'none'  : 'flex';
+  configCard.style.display = hasImages ? 'flex' : 'none';
+
+  images.forEach((img, idx) => {
+    const el = document.createElement('div');
+    el.className = 'thumb';
+    el.dataset.id = img.id;
+
+    const longOrig = Math.max(img.origW, img.origH);
+    const isLandscape = img.origW > img.origH;
+    const isSquare    = img.origW === img.origH;
+    const orient = isSquare ? 'square' : (isLandscape ? 'landscape' : 'portrait');
+    const sizeLabel = `${img.origW}×${img.origH}`;
+    const targetLabel = img.targetPx ? `→ ${img.targetPx}px` : '';
+
+    el.innerHTML = `
+      <img src="${img.url}" loading="lazy">
+      <div class="thumb-num">${idx + 1}</div>
+      <button class="thumb-del" data-id="${img.id}">✕</button>
+      <div class="thumb-size ${orient}">${sizeLabel}${targetLabel ? ' ' + targetLabel : ''}</div>
+    `;
+    grid.appendChild(el);
+
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('thumb-del')) return;
+      openPreview(idx);
+    });
+    el.querySelector('.thumb-del').addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +e.currentTarget.dataset.id;
+      URL.revokeObjectURL(images.find(i => i.id === id)?.url);
+      images = images.filter(i => i.id !== id);
+      render();
+      updateSelectionInfo();
+    });
+
+    setupDrag(el);
+  });
+
+  const readyCount = images.filter(i => i.targetPx !== null).length;
+  btnResize.disabled = !images.length || readyCount === 0;
+  if (!images.length) {
+    btnResizeText.textContent = '이미지를 먼저 추가하세요';
+  } else if (readyCount === 0) {
+    btnResizeText.textContent = '긴축 크기를 설정하세요';
+  } else {
+    btnResizeText.textContent = `리사이즈 저장 (${readyCount}장)`;
+  }
+  countBadge.textContent = `${images.length}장`;
+  countBadge.className = 'count-badge' + (images.length ? ' has' : '');
+  updateSelectionInfo();
+}
+
+// ── CONFIRM CLEAR ──
+const confirmDlg = document.getElementById('confirmDlg');
+const dlgCount   = document.getElementById('dlgCount');
+
+btnClear.addEventListener('click', () => {
+  dlgCount.textContent = `${images.length}장`;
+  confirmDlg.classList.add('show');
+  history.pushState({ modal: 'confirm' }, '');
+});
+document.getElementById('dlgCancel').addEventListener('click', () => {
+  confirmDlg.classList.remove('show');
+  if (history.state?.modal === 'confirm') history.back();
+});
+document.getElementById('dlgConfirm').addEventListener('click', () => {
+  confirmDlg.classList.remove('show');
+  if (history.state?.modal === 'confirm') history.back();
+  images.forEach(i => URL.revokeObjectURL(i.url));
+  images = [];
+  render();
+});
+confirmDlg.addEventListener('click', e => {
+  if (e.target === confirmDlg) { confirmDlg.classList.remove('show'); if (history.state?.modal === 'confirm') history.back(); }
+});
+
+// ── PREVIEW ──
+function openPreview(idx) {
+  pvIdx = idx;
+  const img = images[pvIdx];
+  previewImg.src = img.url;
+  previewNum.textContent = `${pvIdx + 1} / ${images.length}`;
+  previewName.textContent = `${img.name}  (${img.origW}×${img.origH})`;
+  previewSizeInput.value = img.targetPx ?? '';
+  previewSizeCurrent.textContent = img.targetPx
+    ? `현재 설정: ${img.targetPx}px`
+    : '아직 설정되지 않음';
+  document.getElementById('prevBtn').disabled = pvIdx === 0;
+  document.getElementById('nextBtn').disabled = pvIdx === images.length - 1;
+  previewDlg.classList.add('show');
+  if (!history.state?.preview) history.pushState({ preview: true }, '');
+}
+previewSizeApply.addEventListener('click', () => {
+  const val = parseInt(previewSizeInput.value, 10);
+  if (!val || val < 1) { toast('올바른 픽셀값을 입력하세요'); return; }
+  const img = images[pvIdx];
+  const longOrig = Math.max(img.origW, img.origH);
+  if (val > longOrig) { toast(`⚠️ 원본 긴축(${longOrig}px)보다 클 수 없습니다`); return; }
+  img.targetPx = val;
+  previewSizeCurrent.textContent = `현재 설정: ${val}px`;
+  toast(`✅ ${pvIdx + 1}번 사진에 ${val}px 적용됨`);
+  render();
+  updateSelectionInfo();
+});
+previewSizeInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') previewSizeApply.click();
+});
+document.getElementById('previewClose').addEventListener('click', () => {
+  previewDlg.classList.remove('show');
+  if (history.state?.preview) history.back();
+});
+previewDlg.addEventListener('click', e => {
+  if (e.target === previewDlg) {
+    previewDlg.classList.remove('show');
+    if (history.state?.preview) history.back();
+  }
+});
+let swX = 0;
+previewImg.addEventListener('touchstart', e => { swX = e.touches[0].clientX; }, { passive: true });
+previewImg.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - swX;
+  if (dx < -50 && pvIdx < images.length - 1) { pvIdx++; openPreview(pvIdx); }
+  if (dx >  50 && pvIdx > 0) { pvIdx--; openPreview(pvIdx); }
+});
+
+// PC 전용 : 좌/우 버튼 + 키보드 화살표
+document.getElementById('prevBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  if (pvIdx > 0) openPreview(pvIdx - 1);
+});
+document.getElementById('nextBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  if (pvIdx < images.length - 1) openPreview(pvIdx + 1);
+});
+window.addEventListener('keydown', e => {
+  if (!previewDlg.classList.contains('show')) return;
+  if (document.activeElement === previewSizeInput) return; // 입력칸 포커스 중엔 무시
+  if (e.key === 'ArrowLeft'  && pvIdx > 0)                 openPreview(pvIdx - 1);
+  if (e.key === 'ArrowRight' && pvIdx < images.length - 1) openPreview(pvIdx + 1);
+  if (e.key === 'Escape') {
+    previewDlg.classList.remove('show');
+    if (history.state?.preview) history.back();
+  }
+});
+
+window.addEventListener('popstate', () => {
+  confirmDlg.classList.remove('show');
+  previewDlg.classList.remove('show');
+  document.getElementById('errorDlg').classList.remove('show');
+});
+
+// ── ERROR MODAL ──
+document.getElementById('errorDlgClose').addEventListener('click', () => {
+  document.getElementById('errorDlg').classList.remove('show');
+});
+
+// ── MAIN BUTTON ──
+btnResize.addEventListener('click', () => {
+  const ready = images.filter(i => i.targetPx !== null);
+  if (!ready.length) return;
+  startResize();
+});
+
+// ── RESIZE CORE ──
+async function startResize() {
+  const ready = images.filter(i => i.targetPx !== null);
+  if (!ready.length) return;
+
+  overlay.classList.add('show');
+  progressBar.style.width = '0%';
+  progressText.textContent = '리사이즈 중...';
+  progressSub.textContent  = '';
+
+  const errors = [];
+  const blobs  = [];
+
+  for (let i = 0; i < ready.length; i++) {
+    const img = ready[i];
+    progressText.textContent = `처리 중... (${i + 1} / ${ready.length})`;
+    progressSub.textContent  = img.name;
+    progressBar.style.width  = (5 + (i / ready.length) * 85) + '%';
+    await tick();
+
+    try {
+      const blob = await resizeImage(img);
+      blobs.push({ blob, img });
+    } catch(err) {
+      errors.push({ name: img.name, reason: err.message || String(err) });
+    }
+  }
+
+  // If any error, stop entirely
+  if (errors.length > 0) {
+    overlay.classList.remove('show');
+    const errorList = document.getElementById('errorList');
+    document.getElementById('errorDlgSub').textContent = `${errors.length}개 파일에서 오류가 발생해 작업을 중지했습니다.`;
+    errorList.innerHTML = errors.map(e =>
+      `<div class="error-item"><span class="error-item-icon">❌</span><div><div class="error-item-name">${escHtml(e.name)}</div>${escHtml(e.reason)}</div></div>`
+    ).join('');
+    document.getElementById('errorDlg').classList.add('show');
+    return;
+  }
+
+  // Save
+  if (blobs.length === 0) { overlay.classList.remove('show'); return; }
+
+  progressText.textContent = '저장 중...';
+  progressBar.style.width  = '93%';
+  await tick();
+
+  if (blobs.length === 1) {
+    // 1장: 바로 저장
+    const { blob, img } = blobs[0];
+    const ext  = img.type === 'image/png' ? 'png' : 'jpg';
+    const base = img.name.replace(/\.[^.]+$/, '');
+    downloadBlob(blob, `${base}_resize1.${ext}`);
+  } else {
+    // 여러 장: 무조건 ZIP
+    progressText.textContent = 'ZIP 생성 중...';
+    const zip = new JSZip();
+    blobs.forEach(({ blob, img }) => {
+      const ext  = img.type === 'image/png' ? 'png' : 'jpg';
+      const base = img.name.replace(/\.[^.]+$/, '');
+      zip.file(`${base}_resize1.${ext}`, blob);
+    });
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const n = new Date();
+    downloadBlob(zipBlob, `resized_${n.getFullYear()}${p2(n.getMonth()+1)}${p2(n.getDate())}_${p2(n.getHours())}${p2(n.getMinutes())}.zip`);
+  }
+
+  progressBar.style.width = '100%';
+  await new Promise(r => setTimeout(r, 300));
+  const savedCount = blobs.length;
+  overlay.classList.remove('show');
+  images.forEach(i => URL.revokeObjectURL(i.url));
+  images = [];
+  longSideInput.value = '';
+  render();
+  toast(`✅ ${savedCount}장 저장 완료 · 목록을 초기화했습니다`);
+}
+
+function resizeImage(imgData) {
+  return new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => {
+      try {
+        const { targetPx, origW, origH, type } = imgData;
+        const longOrig = Math.max(origW, origH);
+        if (targetPx > longOrig) {
+          reject(new Error(`원본(${longOrig}px)보다 큰 값(${targetPx}px)으로 확대 불가`));
+          return;
+        }
+
+        let newW, newH;
+        if (origW >= origH) {
+          // landscape or square: long = width
+          newW = targetPx;
+          newH = Math.round(origH * (targetPx / origW));
+        } else {
+          // portrait: long = height
+          newH = targetPx;
+          newW = Math.round(origW * (targetPx / origH));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = newW;
+        canvas.height = newH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(el, 0, 0, newW, newH);
+
+        const mimeType = type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const quality  = type === 'image/png' ? 1 : 0.92;
+        canvas.toBlob(blob => {
+          if (!blob) { reject(new Error('이미지 변환 실패')); return; }
+          resolve(blob);
+        }, mimeType, quality);
+      } catch(err) { reject(err); }
+    };
+    el.onerror = () => reject(new Error('이미지 로드 실패'));
+    el.src = imgData.url;
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── DRAG REORDER ──
+let dragId = null;
+let tActive = false, tSrcId = null, tClone = null, tTimer = null;
+let tSX = 0, tSY = 0, tOver = null;
+
+function setupDrag(el) {
+  el.setAttribute('draggable', 'true');
+  el.addEventListener('dragstart', e => {
+    dragId = +el.dataset.id;
+    setTimeout(() => el.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', () => { el.classList.remove('dragging'); clearHL(); dragId = null; });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragId || dragId === +el.dataset.id) return;
+    applyShift(dragId, +el.dataset.id);
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    if (!dragId || dragId === +el.dataset.id) return;
+    insert(dragId, +el.dataset.id); dragId = null;
+  });
+
+  el.addEventListener('touchstart', e => {
+    if (e.target.classList.contains('thumb-del')) return;
+    tSrcId = +el.dataset.id;
+    tSX = e.touches[0].clientX; tSY = e.touches[0].clientY;
+    tTimer = setTimeout(() => {
+      tActive = true;
+      el.classList.add('dragging', 'drag-lock');
+      const r = el.getBoundingClientRect();
+      tClone = el.cloneNode(true);
+      Object.assign(tClone.style, {
+        position:'fixed', top:r.top+'px', left:r.left+'px',
+        width:r.width+'px', height:r.height+'px',
+        pointerEvents:'none', zIndex:'900', opacity:'0.88',
+        transform:'scale(1.06)', borderRadius:'10px', overflow:'hidden',
+        border:'2px solid var(--accent)', boxShadow:'0 8px 32px rgba(0,0,0,0.15)'
+      });
+      document.body.appendChild(tClone);
+    }, 200);
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    clearTimeout(tTimer);
+    if (!tActive || !tClone) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const dx = t.clientX - tSX, dy = t.clientY - tSY;
+    const srcEl = grid.querySelector(`.thumb[data-id="${tSrcId}"]`);
+    if (srcEl) {
+      const r = srcEl.getBoundingClientRect();
+      tClone.style.left = (r.left + dx) + 'px';
+      tClone.style.top  = (r.top  + dy) + 'px';
+    }
+    tClone.style.display = 'none';
+    const under = document.elementFromPoint(t.clientX, t.clientY);
+    tClone.style.display = '';
+    const overEl = under?.closest?.('.thumb');
+    if (overEl && +overEl.dataset.id !== tSrcId) {
+      if (tOver !== overEl) { applyShift(tSrcId, +overEl.dataset.id); tOver = overEl; }
+    } else if (!overEl) { clearHL(); tOver = null; }
+  }, { passive: false });
+
+  el.addEventListener('touchend', () => {
+    clearTimeout(tTimer);
+    if (tClone) { tClone.remove(); tClone = null; }
+    el.classList.remove('dragging', 'drag-lock');
+    clearHL();
+    if (tActive && tOver && +tOver.dataset.id !== tSrcId) insert(tSrcId, +tOver.dataset.id);
+    tActive = false; tSrcId = null; tOver = null;
+  }, { passive: true });
+}
+
+function clearHL() { grid.querySelectorAll('.thumb').forEach(t => t.classList.remove('shift-left','shift-right')); }
+function applyShift(srcId, tgtId) {
+  clearHL();
+  const si = images.findIndex(i => i.id === srcId);
+  const ti = images.findIndex(i => i.id === tgtId);
+  if (si < 0 || ti < 0 || si === ti) return;
+  const thumbs = Array.from(grid.querySelectorAll('.thumb'));
+  if (si < ti) thumbs.forEach(t => { const idx = images.findIndex(i => i.id === +t.dataset.id); if (idx > si && idx <= ti) t.classList.add('shift-left'); });
+  else thumbs.forEach(t => { const idx = images.findIndex(i => i.id === +t.dataset.id); if (idx >= ti && idx < si) t.classList.add('shift-right'); });
+}
+function insert(srcId, tgtId) {
+  const si = images.findIndex(i => i.id === srcId);
+  const ti = images.findIndex(i => i.id === tgtId);
+  if (si < 0 || ti < 0 || si === ti) return;
+  const [item] = images.splice(si, 1);
+  images.splice(ti, 0, item);
+  render();
+}
+
+// ── UTILS ──
+function tick() { return new Promise(r => setTimeout(r, 16)); }
+function p2(n)  { return String(n).padStart(2, '0'); }
+function escHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3500);
+}
+
+// longSide input → enable button
+longSideInput.addEventListener('input', () => {
+  const v = parseInt(longSideInput.value, 10);
+  document.getElementById('applyAll').disabled = !v || v < 1;
+  updateSelectionInfo();
+});
+</script>
+</body>
+</html>

@@ -26,6 +26,8 @@
     --c-idea-bg: #eef0e0;
     --c-basic: #6c7a8a;
     --c-basic-bg: #e4e8ee;
+    --c-buy: #9b6bbf;
+    --c-buy-bg: #f0e8f7;
 
     --header-h: 108px;
     --safe-top: env(safe-area-inset-top, 0px);
@@ -137,6 +139,7 @@
   .filter-chip[data-cat="todo"].active { background: var(--c-todo); border-color: var(--c-todo); color: white; }
   .filter-chip[data-cat="idea"].active { background: var(--c-idea); border-color: var(--c-idea); color: white; }
   .filter-chip[data-cat="basic"].active { background: var(--c-basic); border-color: var(--c-basic); color: white; }
+  .filter-chip[data-cat="buy"].active { background: var(--c-buy); border-color: var(--c-buy); color: white; }
 
   /* === List === */
   .list-container {
@@ -176,6 +179,7 @@
   .card[data-cat="todo"] .card-stripe { background: var(--c-todo); }
   .card[data-cat="idea"] .card-stripe { background: var(--c-idea); }
   .card[data-cat="basic"] .card-stripe { background: var(--c-basic); }
+  .card[data-cat="buy"] .card-stripe { background: var(--c-buy); }
 
   .card-body {
     flex: 1;
@@ -198,6 +202,7 @@
   .card[data-cat="todo"] .card-tag { background: var(--c-todo-bg); color: var(--c-todo); }
   .card[data-cat="idea"] .card-tag { background: var(--c-idea-bg); color: var(--c-idea); }
   .card[data-cat="basic"] .card-tag { background: var(--c-basic-bg); color: var(--c-basic); }
+  .card[data-cat="buy"] .card-tag { background: var(--c-buy-bg); color: var(--c-buy); }
   .card-time {
     font-size: 11px;
     color: var(--text-mute);
@@ -335,10 +340,11 @@
   .editor-save:disabled { opacity: 0.5; }
 
   .cat-select {
-    display: flex; gap: 6px; margin-bottom: 14px;
+    display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
   }
   .cat-option {
     flex: 1;
+    min-width: calc(50% - 3px);
     padding: 11px 12px;
     border-radius: 10px;
     background: var(--surface);
@@ -357,6 +363,7 @@
   .cat-option[data-cat="todo"] .dot { background: var(--c-todo); }
   .cat-option[data-cat="idea"] .dot { background: var(--c-idea); }
   .cat-option[data-cat="basic"] .dot { background: var(--c-basic); }
+  .cat-option[data-cat="buy"] .dot { background: var(--c-buy); }
   .cat-option.selected .dot {
     background: white;
     box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
@@ -378,6 +385,12 @@
     border-color: var(--c-basic);
     color: white;
     box-shadow: 0 2px 8px rgba(108, 122, 138, 0.35);
+  }
+  .cat-option[data-cat="buy"].selected {
+    background: var(--c-buy);
+    border-color: var(--c-buy);
+    color: white;
+    box-shadow: 0 2px 8px rgba(155, 107, 191, 0.35);
   }
 
   .editor-textarea {
@@ -516,6 +529,7 @@
     <button class="filter-chip" data-filter="basic" data-cat="basic">기본</button>
     <button class="filter-chip" data-filter="idea" data-cat="idea">글감</button>
     <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
+    <button class="filter-chip" data-filter="buy" data-cat="buy">살 것</button>
   </div>
 </header>
 
@@ -562,6 +576,7 @@
       <button class="cat-option" data-cat="basic"><span class="dot"></span>기본</button>
       <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
       <button class="cat-option" data-cat="todo"><span class="dot"></span>할 일</button>
+      <button class="cat-option" data-cat="buy"><span class="dot"></span>살 것</button>
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
     <div class="editor-actions" id="editorActions" style="display:none;">
@@ -592,8 +607,8 @@
    ========================================================= */
 
 const STORAGE_KEY = 'quick-memo:v1';
-const CATS = ['todo', 'idea', 'basic'];
-const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본' };
+const CATS = ['todo', 'idea', 'basic', 'buy'];
+const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본', buy: '살 것' };
 
 /* ---------- State ---------- */
 let memos = [];
@@ -664,7 +679,10 @@ history.replaceState({ modalDepth: 0 }, '');
 function onModalClosed(id) {
   if (id === 'editorModal') {
     // 입력 내용 초기화 (저장 안 하면 버려짐)
-    document.getElementById('editorText').value = '';
+    const et = document.getElementById('editorText');
+    et.value = '';
+    et._listActive = false;
+    et._listNum = null;
     editingId = null;
     editingCat = null;
     refreshCatUI();
@@ -776,7 +794,10 @@ function refreshCatUI() {
 function openNewMemo() {
   editingId = null;
   editingCat = null;
-  document.getElementById('editorText').value = '';
+  const et = document.getElementById('editorText');
+  et.value = '';
+  et._listActive = false;
+  et._listNum = null;
   document.getElementById('editorActions').style.display = 'none';
   refreshCatUI();
   openModal('editorModal');
@@ -791,7 +812,10 @@ function openEditMemo(id) {
   if (!m) return;
   editingId = id;
   editingCat = m.cat;
-  document.getElementById('editorText').value = m.content;
+  const et2 = document.getElementById('editorText');
+  et2.value = m.content;
+  et2._listActive = false;
+  et2._listNum = null;
   document.getElementById('editorActions').style.display = 'flex';
   refreshCatUI();
   openModal('editorModal');
@@ -982,6 +1006,109 @@ function bindEvents() {
     editingCat = opt.dataset.cat;
     refreshCatUI();
   });
+
+  // Auto-numbering & bullet in textarea
+  const editorText = document.getElementById('editorText');
+  editorText.addEventListener('keydown', (e) => {
+    if (e.key !== ' ') return;
+
+    const ta = e.target;
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText = val.substring(lineStart, pos);
+
+    // '* ' → bullet
+    if (lineText === '*') {
+      e.preventDefault();
+      const before = val.substring(0, lineStart);
+      const after = val.substring(pos);
+      ta.value = before + '• ' + after;
+      ta.selectionStart = ta.selectionEnd = lineStart + 2;
+      return;
+    }
+
+    // '숫자.' → numbered list start
+    const numMatch = lineText.match(/^(\d+)\.$/);
+    if (numMatch) {
+      e.preventDefault();
+      const startNum = parseInt(numMatch[1], 10);
+      const before = val.substring(0, lineStart);
+      const after = val.substring(pos);
+      ta.value = before + startNum + '. ' + after;
+      ta.selectionStart = ta.selectionEnd = lineStart + (startNum + '. ').length;
+      // store list state on element
+      ta._listNum = startNum;
+      ta._listActive = true;
+      return;
+    }
+  });
+
+  editorText.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+
+    const ta = e.target;
+    if (!ta._listActive) return;
+
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText = val.substring(lineStart, pos);
+
+    // Check if current line is a list item: starts with "N. " or "• "
+    const numLine = lineText.match(/^(\d+)\. (.*)$/);
+    const bulletLine = lineText.match(/^• (.*)$/);
+
+    if (numLine) {
+      const content = numLine[2];
+      if (content.trim() === '') {
+        // Empty numbered item → end list, remove prefix
+        e.preventDefault();
+        const before = val.substring(0, lineStart);
+        const after = val.substring(pos);
+        ta.value = before + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = lineStart + 1;
+        ta._listActive = false;
+        ta._listNum = null;
+      } else {
+        // Continue numbering
+        e.preventDefault();
+        const nextNum = ta._listNum + 1;
+        ta._listNum = nextNum;
+        const prefix = nextNum + '. ';
+        const before = val.substring(0, pos);
+        const after = val.substring(pos);
+        ta.value = before + '\n' + prefix + after;
+        ta.selectionStart = ta.selectionEnd = pos + 1 + prefix.length;
+      }
+      return;
+    }
+
+    if (bulletLine) {
+      const content = bulletLine[1];
+      if (content.trim() === '') {
+        // Empty bullet → end list
+        e.preventDefault();
+        const before = val.substring(0, lineStart);
+        const after = val.substring(pos);
+        ta.value = before + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = lineStart + 1;
+        ta._listActive = false;
+      } else {
+        // Continue bullet
+        e.preventDefault();
+        const before = val.substring(0, pos);
+        const after = val.substring(pos);
+        ta.value = before + '\n• ' + after;
+        ta.selectionStart = ta.selectionEnd = pos + 3;
+      }
+      return;
+    }
+
+    // Line doesn't match list pattern → deactivate
+    ta._listActive = false;
+    ta._listNum = null;
+  }, true); // capture phase to run before browser default
 
   // Confirm modal
   document.getElementById('confirmCancel').addEventListener('click', () => closeModal());

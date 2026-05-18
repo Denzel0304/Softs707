@@ -1,0 +1,2581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Memo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f6f3;
+    --bg3: #f0efe9;
+    --text: #1a1917;
+    --text2: #6b6a65;
+    --text3: #a8a7a2;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.18);
+    --accent: #1a1917;
+    --accent-bg: #1a1917;
+    --accent-text: #ffffff;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --success-bg: #eaf3de;
+    --success-text: #27500a;
+    --error-bg: #fcebeb;
+    --error-text: #791f1f;
+    --tag-bg: #efefeb;
+    --tag-text: #5f5e5a;
+  }
+
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  body.modal-open {
+    overflow: hidden;
+    /* 모바일에서 터치 드래그도 차단 */
+    touch-action: none;
+    -webkit-overflow-scrolling: auto;
+  }
+  body.modal-open .main {
+    overflow: hidden;
+  }
+
+  .layout {
+    display: flex;
+    min-height: 100vh;
+    max-width: 960px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--bg);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-shrink: 0;
+  }
+  .sidebar-logo { padding: 20px 18px 16px; border-bottom: 0.5px solid var(--border); }
+  .sidebar-logo h1 {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+  }
+  .sidebar-logo .logo-icon { font-size: 24px; line-height: 1; }
+  .sidebar-logo p { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Search box */
+  .sidebar-search {
+    padding: 10px 10px 6px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .search-input-wrap {
+    position: relative; flex: 1; min-width: 0;
+  }
+  .sidebar-search input {
+    width: 100%; padding: 7px 28px 7px 11px;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: var(--bg2); font-size: 13px; font-family: inherit;
+    color: var(--text); outline: none; transition: border 0.12s;
+  }
+  .sidebar-search input:focus { border-color: var(--border2); background: var(--bg); }
+  .sidebar-search input::placeholder { color: var(--text3); }
+  .sidebar-search-clear {
+    position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 14px; line-height: 1; padding: 4px;
+    display: none;
+  }
+  .sidebar-search-clear:hover { color: var(--text); }
+  .sidebar-search.has-query .sidebar-search-clear { display: block; }
+
+  .sidebar-nav { padding: 10px; overflow-y: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: var(--radius);
+    cursor: pointer; color: var(--text2); font-size: 13.5px;
+    transition: all 0.12s; margin-bottom: 2px;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+  .nav-icon { font-size: 16px; opacity: 0.7; flex-shrink: 0; }
+  .sidebar-footer { padding: 12px 10px; margin-top: 130px; }
+  .copy-all-btn {
+    width: 100%; padding: 9px 14px;
+    background: var(--accent-bg); color: var(--accent-text);
+    border: none; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: opacity 0.15s;
+  }
+  .copy-all-btn:hover { opacity: 0.82; }
+
+  /* Search results panel */
+  .search-result-group {
+    margin-bottom: 22px;
+  }
+  .search-result-group-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .search-result-group-count {
+    font-weight: 500; color: var(--text2); letter-spacing: 0;
+    text-transform: none;
+  }
+  .search-hit-card {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 11px 14px;
+    margin-bottom: 7px; cursor: pointer;
+    transition: all 0.12s;
+  }
+  .search-hit-card:hover { border-color: var(--border2); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .search-hit-meta { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .search-hit-title { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .search-hit-preview { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .search-hit-preview mark {
+    background: #fff3a8; color: inherit; padding: 0 1px; border-radius: 2px;
+  }
+  .search-empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--text3); font-size: 13px;
+  }
+
+  /* 누적 선택 (검색 기반) - 검색창 우측 컴팩트 토글 */
+  .pick-toggle {
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+    padding: 4px 7px;
+    font-size: 11px; color: var(--text2);
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer; user-select: none;
+    height: 30px;
+  }
+  .pick-toggle input { cursor: pointer; margin: 0; }
+  .pick-toggle .pick-label {
+    font-size: 11px; color: var(--text2); white-space: nowrap;
+  }
+  .pick-toggle .pick-count {
+    font-size: 11px; color: var(--text3); min-width: 10px; text-align: center;
+  }
+  .pick-toggle .pick-count.has {
+    color: var(--accent); font-weight: 600;
+  }
+  .search-hit-card.pickable {
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .pick-cb {
+    width: 20px; height: 20px; cursor: pointer;
+  }
+  @media (min-width: 641px) {
+    .pick-cb {
+      width: 22px; height: 22px;
+    }
+  }
+  .search-hit-card.pickable .pick-cb {
+    flex-shrink: 0; margin-top: 2px; cursor: pointer;
+    width: 20px; height: 20px;
+  }
+  @media (min-width: 641px) {
+    .search-hit-card.pickable .pick-cb {
+      width: 22px; height: 22px;
+    }
+  }
+  .search-hit-card.pickable .pick-cb-wrap {
+    flex-shrink: 0; padding: 2px 0 0 0;
+  }
+  .search-hit-card.pickable .pick-body {
+    flex: 1; min-width: 0;
+  }
+
+  /* Main */
+  .main { flex: 1; padding: 32px 36px; overflow-y: auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .panel-title-row { display: flex; align-items: center; gap: 10px; }
+  .panel-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+  .panel-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border: 0.5px solid var(--border2);
+    background: var(--bg); border-radius: var(--radius);
+    font-size: 12.5px; color: var(--text2); cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn:hover { background: var(--bg2); color: var(--text); }
+  .btn.primary { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+  .btn.primary:hover { opacity: 0.82; }
+  .btn.icon-only { padding: 7px 11px; font-size: 16px; line-height: 1; }
+
+  /* Toolbar buttons (bullet/number) */
+  .toolbar-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: 1px solid var(--border2); background: var(--bg);
+    border-radius: var(--radius); font-size: 15px;
+    color: var(--text2); cursor: pointer;
+    transition: all 0.12s; user-select: none; flex-shrink: 0;
+  }
+  .toolbar-btn:hover { background: var(--bg2); color: var(--text); }
+  .toolbar-btn.on {
+    background: var(--accent-bg); color: var(--accent-text);
+    border-color: var(--accent-bg);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.25);
+  }
+
+  /* Memo list */
+  .memo-list { display: flex; flex-direction: column; gap: 8px; }
+  .memo-card {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 13px 16px;
+    cursor: pointer; transition: border 0.12s, box-shadow 0.12s;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .memo-card:hover { border-color: var(--border2); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .memo-card-body { flex: 1; min-width: 0; }
+  .memo-card-date { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .memo-card-title { font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .memo-card-preview { font-size: 12px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .memo-card-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 15px; padding: 2px; flex-shrink: 0;
+    border-radius: 4px; transition: all 0.12s;
+  }
+  .memo-card-del:hover { color: #e24b4a; background: #fff0f0; }
+  .memo-empty {
+    text-align: center; padding: 48px 20px;
+    color: var(--text3); font-size: 13px;
+    background: var(--bg); border: 0.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+  }
+  .memo-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+  /* Textarea */
+  textarea {
+    width: 100%; border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px; font-size: 14px;
+    font-family: 'Courier New', 'Menlo', monospace;
+    color: var(--text); background: var(--bg);
+    resize: none; line-height: 1.85;
+    transition: border 0.15s;
+    white-space: pre-wrap; overflow-wrap: break-word; overflow-x: hidden;
+  }
+  textarea:focus { outline: none; border-color: var(--border2); }
+
+  /* Add form */
+  .add-form {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 18px;
+  }
+  .add-form-title { font-size: 12px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+  .field label { font-size: 11px; color: var(--text2); }
+  .field input, .field select, .field textarea {
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 7px 10px; font-size: 13px; color: var(--text);
+    background: var(--bg2); transition: border 0.15s; font-family: inherit;
+  }
+  .field textarea {
+    resize: vertical; min-height: 60px; line-height: 1.5;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--border2); background: var(--bg);
+  }
+
+  /* Entry cards */
+  .entries { display: flex; flex-direction: column; gap: 8px; }
+  .entry-card {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    display: flex; align-items: flex-start; gap: 12px; transition: border 0.12s;
+  }
+  .entry-card:hover { border-color: var(--border2); }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-date { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .entry-main { font-size: 13.5px; color: var(--text); line-height: 1.55; }
+  .entry-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: var(--tag-bg); color: var(--tag-text); margin: 0 3px 0 0; }
+  .del-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 16px; padding: 2px; flex-shrink: 0;
+    border-radius: 4px; transition: all 0.12s;
+  }
+  .del-btn:hover { color: #e24b4a; background: #fff0f0; }
+
+  /* Hospital card */
+  .hospital-card { cursor: pointer; }
+  .hospital-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .hosp-head {
+    display: flex; align-items: baseline; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 2px;
+  }
+  .hosp-disease {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .hosp-name {
+    font-size: 12px; color: var(--text2);
+  }
+  .hosp-content {
+    font-size: 12.5px; color: var(--text2);
+    margin-top: 4px; line-height: 1.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Empty */
+  .empty {
+    text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px;
+    background: var(--bg); border: 0.5px dashed var(--border2); border-radius: var(--radius-lg);
+  }
+  .empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+
+  /* Copy picker */
+  .copy-picker-body {
+    padding: 6px 0; overflow-y: auto; flex: 1; min-height: 0;
+  }
+  .cp-tab-group { border-bottom: 0.5px solid var(--border); }
+  .cp-tab-group:last-child { border-bottom: none; }
+  .cp-tab-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 20px; cursor: pointer;
+    background: var(--bg2); user-select: none;
+    transition: background 0.12s;
+  }
+  .cp-tab-header:hover { background: var(--bg3); }
+  .cp-tab-title { font-size: 13.5px; font-weight: 600; flex: 1; }
+  .cp-tab-count { font-size: 11.5px; color: var(--text3); }
+  .cp-tab-toggle {
+    width: 22px; height: 22px; display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 13px; color: var(--text3);
+    transition: transform 0.15s;
+  }
+  .cp-tab-toggle.open { transform: rotate(90deg); }
+  .cp-items {
+    display: none; padding: 4px 0 10px;
+  }
+  .cp-items.open { display: block; }
+  .cp-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 20px 8px 44px; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .cp-item:hover { background: var(--bg2); }
+  .cp-checkbox {
+    appearance: none; -webkit-appearance: none;
+    width: 16px; height: 16px; border: 1.2px solid var(--border2);
+    border-radius: 3px; background: var(--bg); flex-shrink: 0;
+    cursor: pointer; position: relative; margin-top: 2px;
+    transition: all 0.12s;
+  }
+  .cp-checkbox:checked {
+    background: var(--accent-bg); border-color: var(--accent-bg);
+  }
+  .cp-checkbox:checked::after {
+    content: ''; position: absolute; left: 4px; top: 1px;
+    width: 5px; height: 9px; border: solid var(--accent-text);
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .cp-checkbox.indeterminate {
+    background: var(--accent-bg); border-color: var(--accent-bg);
+  }
+  .cp-checkbox.indeterminate::after {
+    content: ''; position: absolute; left: 3px; top: 6.5px;
+    width: 8px; height: 2px; background: var(--accent-text);
+  }
+  .cp-item-text {
+    font-size: 13px; color: var(--text); line-height: 1.45;
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .cp-item-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .cp-empty { padding: 32px 20px; text-align: center; color: var(--text3); font-size: 12.5px; }
+  .copy-picker-count { font-size: 12px; color: var(--text2); margin-right: auto; }
+
+  /* Sync indicator */
+  .sync-indicator {
+    font-size: 11px; color: var(--text3); text-align: center;
+    margin-bottom: 8px; padding: 4px; transition: color 0.15s;
+  }
+  .sync-indicator.ok { color: #27500a; }
+  .sync-indicator.err { color: #791f1f; }
+  .sync-indicator.pending { color: var(--text2); }
+
+  /* Logout button */
+  .logout-btn {
+    width: 100%; padding: 7px 14px; margin-top: 6px;
+    background: none; color: var(--text2);
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.12s;
+  }
+  .logout-btn:hover { background: var(--bg2); color: var(--text); }
+
+  /* Mobile menu button (gear) — PC에선 숨김, 모바일에서만 표시 */
+  .mobile-menu-btn { display: none; }
+
+  /* Mobile menu modal items (공통 스타일 — 모바일에서만 노출되지만 PC에서도 안전) */
+  .mobile-menu-modal { max-width: 360px; }
+  .mobile-menu-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .mobile-menu-item {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 14px 14px;
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14.5px; color: var(--text);
+    cursor: pointer; transition: background 0.12s, border-color 0.12s;
+    text-align: left; font-family: inherit;
+  }
+  .mobile-menu-item:hover { background: var(--bg2); border-color: var(--border2); }
+  .mobile-menu-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+
+  /* Login overlay */
+  .login-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg2);
+    display: none; align-items: center; justify-content: center;
+    z-index: 99999;
+  }
+  .login-overlay.active { display: flex; }
+  .login-box {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 36px 32px;
+    width: 320px; text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  .login-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .login-sub { font-size: 12.5px; color: var(--text2); margin-bottom: 22px; }
+  .pin-input {
+    width: 100%; padding: 14px; font-size: 22px; text-align: center;
+    letter-spacing: 12px; font-weight: 600;
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg2); color: var(--text);
+    outline: none; transition: border 0.12s;
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; padding: 11px; margin-top: 14px;
+    background: var(--accent-bg); color: var(--accent-text);
+    border: none; border-radius: var(--radius);
+    font-size: 13.5px; font-weight: 500; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .login-btn:hover { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-msg {
+    font-size: 12.5px; margin-top: 14px; min-height: 18px;
+    color: var(--text3);
+  }
+  .login-msg.err { color: var(--error-text); }
+  .login-msg.ok { color: var(--success-text); }
+
+  /* Confirm modal */
+  .confirm-modal { max-width: 340px; }
+  .confirm-body { padding: 18px 20px 10px; font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--accent-bg); color: var(--accent-text);
+    padding: 9px 20px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 9999;
+    white-space: nowrap;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.36);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; transition: opacity 0.18s;
+    pointer-events: none;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--bg); border-radius: var(--radius-lg);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    width: 100%; max-width: 640px; max-height: 90vh;
+    display: flex; flex-direction: column;
+    transform: translateY(16px) scale(0.98); transition: transform 0.18s;
+    touch-action: auto;
+  }
+  .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+
+  .modal-header {
+    padding: 18px 20px 14px; border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; flex: 1; }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 20px; line-height: 1;
+    border-radius: 4px; padding: 2px 6px; transition: all 0.12s;
+  }
+  .modal-close:hover { color: var(--text); background: var(--bg2); }
+
+
+  .modal-body {
+    padding: 16px 20px; flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  /* 메모용 큰 textarea (modal-body 바로 자식일 때만) */
+  .modal-body > textarea { flex: 1; min-height: 280px; border-radius: var(--radius); }
+  /* 새 메모/보기 모달 내용 textarea의 placeholder는 제목란(modal-title-input)과 동일한 글씨체로
+     ※ 입력 글자는 monospace 유지 (자동 넘버링 정렬 때문에 필요), placeholder만 시스템 폰트 */
+  #add-text::placeholder,
+  #view-content::placeholder {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    color: var(--text3);
+  }
+  /* 편집 모달 내부의 폼 textarea는 .field 스타일 따라감 (위 .field textarea 참조) */
+
+  .modal-footer {
+    padding: 12px 20px; border-top: 0.5px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+  }
+
+  /* Title input in modal */
+  .modal-title-input {
+    width: 100%; border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 8px 12px; font-size: 14px; font-weight: 500; font-family: inherit;
+    color: var(--text); background: var(--bg2); transition: border 0.15s;
+  }
+  .modal-title-input:focus { outline: none; border-color: var(--border2); background: var(--bg); }
+  .modal-title-input::placeholder { font-weight: 400; color: var(--text3); }
+
+  /* View memo content */
+  .view-meta { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .view-memo-content {
+    font-family: 'Courier New', 'Menlo', monospace;
+    font-size: 13.5px; line-height: 1.85; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+    background: var(--bg2); border-radius: var(--radius);
+    padding: 16px; flex: 1; min-height: 200px; overflow-y: auto;
+  }
+  /* textarea로 편집 가능한 메모 내용 */
+  textarea.view-memo-content {
+    border: 0.5px solid var(--border);
+    width: 100%; resize: vertical; outline: none;
+    transition: border 0.15s;
+  }
+  textarea.view-memo-content:focus { border-color: var(--border2); background: var(--bg); }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    /* ===== 모바일 전용 레이아웃 ===== */
+    html, body { height: 100%; overflow: hidden; }
+    body { display: flex; flex-direction: column; }
+
+    .layout {
+      flex-direction: column; max-width: 100%;
+      /* iOS Safari 주소창이 100vh를 잘못 계산해 .main 하단이 화면 밖으로 밀려
+         스크롤이 안 되는 것처럼 보이는 문제 → dvh(dynamic viewport)로 보정.
+         dvh 미지원 브라우저용으로 100vh를 fallback으로 먼저 선언 */
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ----- 사이드바 → 상단 헤더 영역 (스크롤 안 됨, 일반 흐름) ----- */
+    .sidebar {
+      width: 100%; height: auto;
+      position: relative;            /* sticky 해제: layout이 100vh 고정이라 불필요 */
+      top: auto;
+      border-right: none; border-bottom: 0.5px solid var(--border);
+      background: var(--bg);
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    /* 헤더 본체: 좌(sync) / 중(로고) / 우(톱니바퀴) — sidebar-logo 한 줄에 모두 배치 */
+    .sidebar-logo {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      padding: 14px 60px;             /* 좌(sync ~95px)·우(톱니 ~40px) 공간만 확보 */
+      border-bottom: 0.5px solid var(--border);
+      min-height: 64px;
+    }
+    .sidebar-logo h1 {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 22px; font-weight: 700; letter-spacing: -0.3px;
+      white-space: nowrap;            /* 줄바꿈 방지 */
+    }
+    .sidebar-logo .logo-icon { font-size: 28px; line-height: 1; }
+
+    /* sidebar-footer를 헤더(.sidebar-logo) 영역에 정확히 겹쳐 배치:
+       .sidebar 기준 absolute이므로 top:0, height는 sidebar-logo와 동일한 64px.
+       sync는 margin-right:auto로 좌끝, 톱니바퀴는 자연스럽게 우끝으로 분리. */
+    .sidebar-footer {
+      position: absolute;
+      left: 10px; right: 10px;
+      top: 0; height: 64px;            /* sidebar-logo의 min-height와 동일 */
+      padding: 0; border-top: none;
+      margin-top: 0;                   /* PC용 margin-top 무력화 */
+      display: flex; align-items: center;
+      gap: 6px;
+      z-index: 2;
+      pointer-events: none;            /* 가운데 빈 공간 클릭 통과 (로고 영역 보호) */
+    }
+    .sidebar-footer > * { pointer-events: auto; }
+
+    /* 좌측: 동기화 표시 — flex 내에서 margin-right:auto로 좌끝 고정 */
+    .sidebar-footer .sync-indicator {
+      position: static;                /* absolute 해제 */
+      margin: 0; padding: 0;
+      margin-right: auto;
+      font-size: 11px; white-space: nowrap;
+      max-width: 95px; overflow: hidden; text-overflow: ellipsis;
+      text-align: left;
+    }
+
+    /* 모바일에선 탭복사·로그아웃 버튼 숨김 → 톱니바퀴 메뉴로 이동 */
+    .copy-all-btn { display: none; }
+    .logout-btn { display: none; }
+
+    /* 우측: 톱니바퀴 버튼 노출 */
+    .mobile-menu-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      background: none; border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      font-size: 18px; line-height: 1; cursor: pointer;
+      color: var(--text2);
+      transition: background 0.12s, color 0.12s;
+      padding: 0;
+    }
+    .mobile-menu-btn:hover { background: var(--bg2); color: var(--text); }
+
+    /* ----- 검색창 (자기 줄에 단독으로) ----- */
+    .sidebar-search { padding: 8px 10px; }
+
+    /* ----- 탭 (자유 메모 / 병원기록) ----- */
+    .sidebar-nav {
+      display: flex; flex-direction: row; flex-wrap: nowrap;
+      padding: 0;
+      border-bottom: 0.5px solid var(--border);
+      overflow: hidden;
+    }
+    .sidebar-nav .nav-item {
+      flex: 1 1 50%;
+      justify-content: center;
+      margin-bottom: 0;
+      padding: 11px 8px;
+      border-radius: 0;
+      border-bottom: 2px solid transparent;
+      font-size: 13.5px;
+      background: var(--bg);
+    }
+    .sidebar-nav .nav-item:hover { background: var(--bg2); }
+    .sidebar-nav .nav-item.active {
+      background: var(--bg);
+      color: var(--text); font-weight: 600;
+      border-bottom-color: var(--accent);
+    }
+
+    /* ----- 메인 영역: 항목이 넘칠 때만 스크롤 ----- */
+    .main {
+      flex: 1 1 0;
+      min-height: 0;
+      padding: 16px 14px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      /* 스크롤이 body로 전파되어 body의 overflow:hidden에 막히는 것을 방지
+         (iOS Safari/Chrome에서 메모 리스트 드래그가 안 먹히는 주요 원인) */
+      overscroll-behavior: contain;
+      /* touch-action 명시: 세로 스크롤만 허용 (수평 제스처는 브라우저 기본) */
+      touch-action: pan-y;
+    }
+
+    /* 패널 헤더(타이틀 + 액션) 살짝 압축 */
+    .panel-header { margin-bottom: 14px; }
+    .panel-title { font-size: 17px; }
+
+    /* ----- 모달은 기존처럼 하단 시트 ----- */
+    .modal-backdrop { padding: 0; align-items: flex-end; }
+    .modal {
+      max-height: 92vh;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      max-width: 100%;
+    }
+  }
+
+  /* ===== PC 전용: 모든 UI 요소 1.3배 확대 (메인 콘텐츠 중앙정렬, 원본 너비 보전) ===== */
+  @media (min-width: 641px) {
+    /* 사이드바 1.3배 */
+    .sidebar { width: 286px; }
+    .sidebar-logo { padding: 26px 23px 21px; }
+    .sidebar-logo h1 { font-size: 26px; }
+    .sidebar-logo .logo-icon { font-size: 31px; }
+    .sidebar-logo p { font-size: 14px; margin-top: 3px; }
+
+    .sidebar-search { padding: 13px 13px 8px; gap: 8px; }
+    .sidebar-search input {
+      padding: 9px 36px 9px 14px;
+      font-size: 17px;
+    }
+    .sidebar-search-clear { font-size: 16px; }
+
+    .sidebar-nav { padding: 13px; }
+    .nav-item {
+      gap: 12px;
+      padding: 10px 13px;
+      font-size: 17.5px;
+      margin-bottom: 3px;
+    }
+    .nav-icon { font-size: 21px; }
+
+    .sidebar-footer { padding: 16px 13px; margin-top: 169px; }
+    .copy-all-btn {
+      padding: 12px 18px;
+      font-size: 17px;
+      gap: 9px;
+    }
+
+    /* 메인 영역: 사이드바가 286px로 늘어난 만큼 메인이 줄어들지만,
+       콘텐츠는 메인 영역 안에서 자연스럽게 표시됨 */
+    .main {
+      padding: 42px 47px;
+    }
+    .panel-header { margin-bottom: 29px; }
+    .panel-title { font-size: 26px; letter-spacing: -0.5px; }
+    .panel-title-row { gap: 13px; }
+    .panel-actions { gap: 10px; }
+
+    /* 버튼 1.3배 */
+    .btn {
+      gap: 8px;
+      padding: 9px 17px;
+      font-size: 16.25px;
+    }
+    .btn.icon-only { padding: 9px 14px; font-size: 21px; }
+
+    .toolbar-btn {
+      width: 42px; height: 42px;
+      font-size: 19.5px;
+    }
+
+    /* 메모 카드(메인 항목들) 1.3배 */
+    .memo-list { gap: 10px; }
+    .memo-card {
+      padding: 17px 21px;
+      gap: 13px;
+    }
+    .memo-card-date { font-size: 14px; margin-bottom: 4px; }
+    .memo-card-title { font-size: 17.5px; }
+    .memo-card-preview { font-size: 15.5px; margin-top: 3px; }
+    .memo-card-del { font-size: 19.5px; padding: 3px; }
+
+    .memo-empty { padding: 62px 26px; font-size: 17px; }
+    .memo-empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+    /* 검색 결과 카드 1.3배 */
+    .search-result-group { margin-bottom: 29px; }
+    .search-result-group-title { font-size: 14px; margin-bottom: 10px; gap: 8px; }
+    .search-hit-card { padding: 14px 18px; margin-bottom: 9px; }
+    .search-hit-meta { font-size: 14px; margin-bottom: 4px; }
+    .search-hit-title { font-size: 17.5px; margin-bottom: 3px; }
+    .search-hit-preview { font-size: 15.5px; }
+    .search-empty { padding: 52px 26px; font-size: 17px; }
+
+    /* 누적 선택 토글 1.3배 */
+    .pick-toggle {
+      gap: 5px;
+      padding: 5px 9px;
+      font-size: 14px;
+      height: 39px;
+    }
+    .pick-toggle .pick-label { font-size: 14px; }
+    .pick-toggle .pick-count { font-size: 14px; min-width: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 로그인 오버레이 ===== -->
+<div id="login-overlay" class="login-overlay active">
+  <div class="login-box">
+    <div class="login-title">AI Memo</div>
+    <div class="login-sub">PIN 4자리를 입력하세요</div>
+    <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    <button id="login-btn" class="login-btn" onclick="doLogin()">로그인</button>
+    <div id="login-msg" class="login-msg"></div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1><span class="logo-icon">🧠</span><span class="logo-text">AI Memo</span></h1>
+    </div>
+    <div class="sidebar-search" id="search-box">
+      <div class="search-input-wrap">
+        <input type="text" id="search-input" placeholder="🔍 검색..." autocomplete="off">
+        <button class="sidebar-search-clear" onclick="clearSearch()" title="검색 지우기">✕</button>
+      </div>
+      <label class="pick-toggle" id="pick-toggle-row" title="누적 선택">
+        <input type="checkbox" id="pick-mode-cb" onchange="togglePickMode(this.checked)">
+        <span class="pick-label">누적 선택</span>
+        <span class="pick-count" id="pick-count">0</span>
+      </label>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="switchTab('memo', this)"><span class="nav-icon">📝</span> 자유 메모</button>
+      <button class="nav-item" onclick="switchTab('hospital', this)"><span class="nav-icon">🏥</span> 병원 기록</button>
+    </div>
+    <div class="sidebar-footer">
+      <div id="sync-indicator" class="sync-indicator">●  대기 중</div>
+      <button class="copy-all-btn" onclick="openCopyPicker()">📋 탭 복사</button>
+      <button class="logout-btn" onclick="doLogout()" title="로그아웃"><span class="logout-icon">🔒</span><span class="logout-text">로그아웃</span></button>
+      <button class="mobile-menu-btn" onclick="HS.open('modal-mobile-menu')" title="메뉴" aria-label="메뉴">⚙️</button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- 검색 결과 -->
+    <div id="panel-search" class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row"><div class="panel-title" id="search-title">검색 결과</div></div>
+      </div>
+      <div id="search-results"></div>
+    </div>
+
+    <!-- 메모 -->
+    <div id="panel-memo" class="panel active">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-title">자유 메모</div>
+        </div>
+        <div class="panel-actions">
+          <button class="btn icon-only" title="새 메모" onclick="openAddModal()">＋</button>
+          <button class="btn" onclick="copyAllMemos()">📋 복사</button>
+        </div>
+      </div>
+      <div id="memo-list" class="memo-list"></div>
+    </div>
+
+
+    <!-- 병원기록 -->
+    <div id="panel-hospital" class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row"><div class="panel-title">병원 기록</div></div>
+        <div class="panel-actions">
+          <button class="btn icon-only" title="새 기록" onclick="openAddHospital()">＋</button>
+          <button class="btn" onclick="copySection('hospital')">📋 복사</button>
+        </div>
+      </div>
+      <div class="entries" id="hospital-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== MODAL: 새 메모 추가 ===== -->
+<div class="modal-backdrop" id="modal-add">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">새 메모</div>
+      <button class="modal-close" onclick="HS.close('modal-add')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input class="modal-title-input" id="add-title" type="text" placeholder="제목을 입력하세요 (필수)">
+      <textarea id="add-text" rows="14" placeholder="내용을 입력하세요 (필수)"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-add')">취소</button>
+      <button class="btn primary" onclick="saveMemo()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 삭제 확인 ===== -->
+<div class="modal-backdrop" id="modal-confirm">
+  <div class="modal confirm-modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="confirm-title">메모 삭제</div>
+    </div>
+    <div class="confirm-body">
+      <p id="confirm-message">이 메모를 삭제할까요?<br>삭제 후에는 복구할 수 없어요.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-confirm')">취소</button>
+      <button class="btn primary" id="confirm-del-btn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 로그아웃 확인 ===== -->
+<div class="modal-backdrop" id="modal-logout-confirm">
+  <div class="modal confirm-modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">로그아웃</div>
+    </div>
+    <div class="confirm-body">
+      <p>로그아웃하시겠어요?<br>이 기기에서 저장된 로그인 정보가 삭제돼요.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-logout-confirm')">취소</button>
+      <button class="btn primary" onclick="confirmLogout()">로그아웃</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 모바일 메뉴 (톱니바퀴) ===== -->
+<div class="modal-backdrop" id="modal-mobile-menu">
+  <div class="modal mobile-menu-modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">메뉴</div>
+      <button class="modal-close" onclick="HS.close('modal-mobile-menu')">✕</button>
+    </div>
+    <div class="mobile-menu-body">
+      <button class="mobile-menu-item" onclick="mobileMenuAction('copy')">
+        <span class="mobile-menu-icon">📋</span><span>탭 복사</span>
+      </button>
+      <button class="mobile-menu-item" onclick="mobileMenuAction('logout')">
+        <span class="mobile-menu-icon">🔒</span><span>로그아웃</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 탭 복사 선택 ===== -->
+<div class="modal-backdrop" id="modal-copy-picker">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">탭 복사</div>
+      <button class="modal-close" onclick="HS.close('modal-copy-picker')">✕</button>
+    </div>
+    <div class="copy-picker-body" id="copy-picker-body">
+      <!-- JS가 채움 -->
+    </div>
+    <div class="modal-footer">
+      <span id="copy-picker-count" class="copy-picker-count">0개 선택됨</span>
+      <button class="btn" onclick="HS.close('modal-copy-picker')">취소</button>
+      <button class="btn primary" onclick="copySelected()">📋 복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 병원기록 편집/추가 ===== -->
+<div class="modal-backdrop" id="modal-edit-hospital">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="eh-modal-title">병원 기록</div>
+      <button class="modal-close" onclick="HS.close('modal-edit-hospital')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field" style="max-width:140px"><label>날짜</label><input type="date" id="eh-date"></div>
+        <div class="field"><label>병명 / 검사</label><input type="text" id="eh-disease" placeholder="예: 갑상선 결절"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>병원 / 과 (선택)</label><input type="text" id="eh-name" placeholder="예: 서울대병원 내과"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>주요 내용</label><textarea id="eh-content" rows="5" placeholder="예: 갑상선 초음파 — 결절 3mm 발견&#10;'숫자.' 또는 '*' 입력 후 스페이스로 자동 목록"></textarea></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>처방 / 처치 (선택)</label><textarea id="eh-rx" rows="3" placeholder="예: 레보티록신 25mcg 처방"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-edit-hospital')">닫기</button>
+      <button class="btn" onclick="copyEditHospital()">📋 복사</button>
+      <button class="btn primary" onclick="saveEditHospital()">저장</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-view">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">메모 편집</div>
+      <button class="modal-close" onclick="HS.close('modal-view')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input class="modal-title-input" id="view-title" type="text" placeholder="제목을 입력하세요 (필수)">
+      <div class="view-meta" id="view-date"></div>
+      <textarea id="view-content" class="view-memo-content" rows="14" placeholder="내용을 입력하세요 (필수)"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-view')">닫기</button>
+      <button class="btn" onclick="copyViewMemo()">📋 복사</button>
+      <button class="btn primary" onclick="saveViewMemo()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   HistoryStack (HS) — 모달 뒤로가기 추상화
+   규칙:
+   - 모달 열 때 HS.open(id) 호출 → history.pushState 1회
+   - 모달 닫을 때 HS.close(id) 호출 (버튼, 백드롭 클릭)
+   - 브라우저 뒤로가기(popstate) → 최상단 모달만 닫음
+   - 스택에 같은 id가 이미 있으면 중복 push 안 함
+   - history 동기화: programmatic close → history.back() 호출
+     popstate 도중 close → history.back() 호출 안 함 (이미 뒤로 간 상태)
+============================================================ */
+const HS = (() => {
+  const stack = []; // string[] — 열린 모달 id 순서대로
+  let handlingPopstate = false;
+
+  function open(id) {
+    if (stack.includes(id)) return; // 중복 방지
+    stack.push(id);
+    history.pushState({ hsModal: id, depth: stack.length }, '');
+    _showModal(id);
+  }
+
+  function close(id) {
+    const idx = stack.indexOf(id);
+    if (idx === -1) return;
+    stack.splice(idx, 1);
+    _hideModal(id);
+    if (!handlingPopstate) {
+      // programmatic close: history를 뒤로 보내 stack과 동기화
+      history.back();
+    }
+  }
+
+  function _showModal(id) {
+    document.getElementById(id).classList.add('open');
+    _updateBodyLock();
+  }
+  function _hideModal(id) {
+    document.getElementById(id).classList.remove('open');
+    _updateBodyLock();
+  }
+  function _updateBodyLock() {
+    if (stack.length > 0) document.body.classList.add('modal-open');
+    else document.body.classList.remove('modal-open');
+  }
+
+  window.addEventListener('popstate', () => {
+    if (stack.length === 0) return;
+    handlingPopstate = true;
+    // 가장 최근에 열린 모달 닫기
+    const top = stack[stack.length - 1];
+    close(top);
+    handlingPopstate = false;
+  });
+
+  return { open, close };
+})();
+
+// 백드롭 클릭 → 닫기
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', () => HS.close(bd.id));
+});
+
+/* ============================================================
+   State
+============================================================ */
+let S = {
+  memos: [],
+  hospital: []
+};
+let viewIdx = -1; // 현재 보기 모달에서 보고 있는 메모 인덱스
+
+/* ============================================================
+   자동 목록 모드 (스페이스 트리거) — 범용
+   - 줄 시작에서 "1." + 스페이스 → 번호 목록 시작
+   - 줄 시작에서 "*"  + 스페이스 → ● 글머리 목록 시작
+   - Enter: 다음 줄 자동 prefix 삽입
+   - 빈 prefix 줄에서 Enter: 모드 해제
+   - 줄바꿈 시 prefix 뒤로 들여쓰기 — CSS textarea의 text-indent로 구현 불가하므로,
+     실제로는 prefix 후 \u00a0 같은 들여쓰기 문자열을 추가하는 방식이 아니라
+     CSS로 hanging-indent를 흉내내기 어려움.
+     대안: textarea 글꼴을 monospace로 두고, 사용자가 줄이 넘치면 그냥 다음 줄에 이어쓰는 방식
+     → 들여쓰기 정렬이 필요한 경우 CSS로 처리 (아래 .list-textarea 클래스)
+============================================================ */
+function attachListMode(ta) {
+  // 각 textarea에 자체 모드 상태 보관
+  let mode = null; // null | 'bullet' | 'number'
+
+  // ── 공통 처리 함수 ──
+  // (PC keydown 과 모바일 beforeinput 양쪽에서 호출)
+  // returns true if handled (preventDefault 호출했어야 함)
+  function handleSpace(preventFn) {
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    // "숫자." 패턴 → 번호 목록 시작
+    const numMatch = curLine.match(/^(\d+)\.$/);
+    if (numMatch && mode !== 'number') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ta.value.substring(start);
+      const newCursor = lineStart + numMatch[1].length + 2;
+      ta.selectionStart = ta.selectionEnd = newCursor;
+      mode = 'number';
+      return true;
+    }
+
+    // "*" 패턴 → 글머리 목록 시작
+    if (curLine === '*' && mode !== 'bullet') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + '● ' + ta.value.substring(start);
+      ta.selectionStart = ta.selectionEnd = lineStart + 2;
+      mode = 'bullet';
+      return true;
+    }
+    return false;
+  }
+
+  function handleEnter(preventFn) {
+    if (!mode) return false;
+    preventFn();
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const after = ta.value.substring(ta.selectionEnd);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    if (mode === 'bullet') {
+      if (curLine === '● ') {
+        ta.value = before.slice(0, -2) + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = start - 2 + 1;
+        mode = null;
+        return true;
+      }
+      const insert = '\n● ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+
+    } else if (mode === 'number') {
+      const match = curLine.match(/^(\d+)\.\s/);
+      if (match && curLine === match[0]) {
+        const trim = before.slice(0, -match[0].length);
+        ta.value = trim + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = trim.length + 1;
+        mode = null;
+        return true;
+      }
+      const nextNum = match ? parseInt(match[1]) + 1 : 1;
+      const insert = '\n' + nextNum + '. ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+    }
+    return true;
+  }
+
+  // ── PC: keydown ── (e.key가 정상적으로 들어옴)
+  ta.addEventListener('keydown', function(e) {
+    let handled = false;
+    if (e.key === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    } else if (e.key === 'Enter') {
+      handled = handleEnter(() => e.preventDefault());
+    }
+    // 자동 넘버링이 작동했다면 preventDefault 때문에 input 이벤트가
+    // 발생하지 않아 attachCaretScroll이 못 듣는다 → 직접 호출.
+    if (handled && typeof ta._scrollCaretIntoView === 'function') {
+      // value/selection 변경이 적용된 다음 프레임에 호출해야 정확함
+      requestAnimationFrame(ta._scrollCaretIntoView);
+    }
+  });
+
+  // ── 모바일: beforeinput ──
+  // 가상 키보드는 keydown에서 e.key를 'Unidentified'로 보내거나
+  // 아예 keydown을 발생시키지 않는 경우가 많음 (특히 한국어 IME, GBoard 등).
+  // beforeinput은 inputType과 data로 정확히 어떤 입력인지 알려주므로 안전함.
+  ta.addEventListener('beforeinput', function(e) {
+    let handled = false;
+    // 스페이스 입력
+    if (e.inputType === 'insertText' && e.data === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    }
+    // Enter 입력 (줄바꿈) — 모바일 가상키보드의 엔터키
+    else if (e.inputType === 'insertLineBreak' ||
+             (e.inputType === 'insertText' && e.data === '\n')) {
+      handled = handleEnter(() => e.preventDefault());
+    }
+    if (handled && typeof ta._scrollCaretIntoView === 'function') {
+      requestAnimationFrame(ta._scrollCaretIntoView);
+    }
+  });
+
+  // textarea 값이 외부에서 리셋되면 (.value = '') 모드도 초기화되도록
+  ta.addEventListener('input', function() {
+    if (ta.value === '') mode = null;
+  });
+}
+
+// 메모 textarea에 자동 목록 모드 적용
+attachListMode(document.getElementById('add-text'));
+attachListMode(document.getElementById('view-content'));
+// 병원 편집/추가 모달 textarea들에 적용
+attachListMode(document.getElementById('eh-content'));
+attachListMode(document.getElementById('eh-rx'));
+
+/* ============================================================
+   PC에서 모달 내 textarea 입력 시 스크롤이 커서를 따라가도록 보정
+   ----------
+   증상 1 (자유 메모): textarea 자체에 자체 스크롤이 있는 구조.
+        키 입력 시 브라우저가 항상 caret을 즉시 보이는 영역으로
+        스크롤하지 않는 경우가 있음 → textarea의 scrollTop을 조절.
+   증상 2 (병원 기록): textarea가 .field 안에 있어 자체 스크롤이
+        없고 내용에 따라 늘어남(resize: vertical). 이 경우 스크롤
+        컨테이너는 .modal-body. 특히 자동 넘버링 Enter는 JS로
+        value를 통째로 바꾸기 때문에 브라우저의 자동 caret 스크롤이
+        아예 작동하지 않음 → 직접 부모(.modal-body)의 scrollTop을 조절.
+   해결: textarea에 자체 스크롤이 있으면 textarea를, 없으면 가장
+        가까운 스크롤 가능한 조상(보통 .modal-body)을 찾아 스크롤.
+        (모바일은 OS 가상 키보드가 자동으로 맞춰주므로 영향 없음)
+============================================================ */
+function attachCaretScroll(ta) {
+  // 같은 폰트/패딩으로 caret 위치를 측정하기 위한 mirror div
+  let mirror = null;
+  function ensureMirror() {
+    if (mirror) return mirror;
+    mirror = document.createElement('div');
+    const cs = getComputedStyle(ta);
+    // textarea와 동일한 스타일을 거울로 복사
+    [
+      'fontFamily','fontSize','fontWeight','fontStyle','lineHeight','letterSpacing',
+      'padding','border','boxSizing','whiteSpace','wordBreak','overflowWrap','tabSize'
+    ].forEach(p => { mirror.style[p] = cs[p]; });
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.left = '-9999px';
+    mirror.style.top = '0';
+    mirror.style.height = 'auto';
+    mirror.style.overflow = 'hidden';
+    document.body.appendChild(mirror);
+    return mirror;
+  }
+
+  // textarea의 가장 가까운 "스크롤 가능한" 조상 찾기
+  // (overflow-y가 auto/scroll이고 실제로 스크롤이 가능한 요소)
+  function findScrollParent(el) {
+    let p = el.parentElement;
+    while (p && p !== document.body) {
+      const cs = getComputedStyle(p);
+      const oy = cs.overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) {
+        return p;
+      }
+      p = p.parentElement;
+    }
+    return null;
+  }
+
+  function scrollCaretIntoView() {
+    // 1) textarea 자체 스크롤이 있으면 그쪽 우선 처리 (자유 메모 케이스)
+    const taHasOwnScroll = ta.scrollHeight > ta.clientHeight + 1;
+
+    const m = ensureMirror();
+    m.style.width = ta.clientWidth + 'px';
+    const caretPos = ta.selectionEnd;
+    const before = ta.value.substring(0, caretPos);
+    m.textContent = before;
+    const marker = document.createElement('span');
+    marker.textContent = 'X';
+    m.appendChild(marker);
+
+    const caretTopInTA = marker.offsetTop; // textarea 내용 좌표계 기준
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 22;
+
+    if (taHasOwnScroll) {
+      // ── 자유 메모 케이스: textarea 자체를 스크롤 ──
+      const visibleTop = ta.scrollTop;
+      const visibleBottom = visibleTop + ta.clientHeight;
+      const caretBottom = caretTopInTA + lineHeight;
+
+      if (caretBottom > visibleBottom - 4) {
+        ta.scrollTop = caretBottom - ta.clientHeight + 4;
+      } else if (caretTopInTA < visibleTop + 4) {
+        ta.scrollTop = Math.max(0, caretTopInTA - 4);
+      }
+    } else {
+      // ── 병원 기록 케이스: textarea는 안 늘어나는 상태가 없고,
+      //    실제 스크롤 컨테이너는 .modal-body ──
+      const scrollParent = findScrollParent(ta);
+      if (!scrollParent) return;
+
+      // textarea의 padding-top 보정
+      const cs = getComputedStyle(ta);
+      const paddingTop = parseFloat(cs.paddingTop) || 0;
+
+      // 화면 좌표 기준 caret 위치 계산
+      const taRect = ta.getBoundingClientRect();
+      const parentRect = scrollParent.getBoundingClientRect();
+      // caret의 부모(스크롤 컨테이너) 내부 좌표
+      const caretTopInParent =
+        (taRect.top - parentRect.top) + scrollParent.scrollTop + paddingTop + caretTopInTA;
+      const caretBottomInParent = caretTopInParent + lineHeight;
+
+      const visibleTop = scrollParent.scrollTop;
+      const visibleBottom = visibleTop + scrollParent.clientHeight;
+      const PAD = 12; // 모달 푸터 위 여유
+
+      if (caretBottomInParent > visibleBottom - PAD) {
+        scrollParent.scrollTop = caretBottomInParent - scrollParent.clientHeight + PAD;
+      } else if (caretTopInParent < visibleTop + PAD) {
+        scrollParent.scrollTop = Math.max(0, caretTopInParent - PAD);
+      }
+    }
+  }
+
+  // 입력/Enter 직후에 caret 따라가도록 스크롤
+  ta.addEventListener('input', scrollCaretIntoView);
+  // 키를 누른 직후에도 한 번 더 (Enter 같이 줄 추가가 클 때 대비)
+  ta.addEventListener('keyup', function(e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key.length === 1) {
+      scrollCaretIntoView();
+    }
+  });
+  // attachListMode의 자동 넘버링은 preventDefault 후 ta.value를 직접 바꾸므로
+  // input 이벤트가 안 날 수 있음 → 외부에서 강제로 호출할 수 있게 노출
+  ta._scrollCaretIntoView = scrollCaretIntoView;
+}
+
+// PC 모달 내 textarea들에 적용 (모바일은 OS가 처리해주므로 영향 없음)
+attachCaretScroll(document.getElementById('add-text'));
+attachCaretScroll(document.getElementById('view-content'));
+// 병원 기록 모달의 textarea들도 동일하게 처리
+attachCaretScroll(document.getElementById('eh-content'));
+attachCaretScroll(document.getElementById('eh-rx'));
+
+/* ============================================================
+   메모 CRUD
+============================================================ */
+function openAddModal() {
+  document.getElementById('add-title').value = '';
+  document.getElementById('add-text').value = '';
+  HS.open('modal-add');
+  setTimeout(() => document.getElementById('add-title').focus(), 80);
+}
+
+function saveMemo() {
+  const content = document.getElementById('add-text').value;
+  const titleRaw = document.getElementById('add-title').value.trim();
+  if (!titleRaw) { toast('제목을 입력해요'); document.getElementById('add-title').focus(); return; }
+  if (!content.trim()) { toast('내용을 입력해요'); document.getElementById('add-text').focus(); return; }
+  const title = titleRaw;
+  S.memos.unshift({ id: Date.now(), title, content, date: today() });
+  saveLocal();
+  renderMemos();
+  refreshSearchIfActive();
+  HS.close('modal-add');
+  toast('저장됨 ✓');
+}
+
+function openViewModal(idx) {
+  const m = S.memos[idx];
+  if (!m) return;
+  viewIdx = idx;
+  document.getElementById('view-title').value = m.title || '';
+  document.getElementById('view-date').textContent = m.date;
+  const contentEl = document.getElementById('view-content');
+  contentEl.value = m.content || '';
+  HS.open('modal-view');
+  // 포커스는 아무데도 두지 않음 (요구사항)
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  // 모달은 항상 최상위(스크롤 0)에서 열리도록 — 직전 스크롤 위치 영향 제거
+  const modalBody = document.querySelector('#modal-view .modal-body');
+  contentEl.scrollTop = 0;
+  if (modalBody) modalBody.scrollTop = 0;
+  // iOS Safari 등에서 첫 프레임에 무시되는 경우 보정
+  requestAnimationFrame(() => {
+    contentEl.scrollTop = 0;
+    if (modalBody) modalBody.scrollTop = 0;
+  });
+}
+
+function saveViewMemo() {
+  if (viewIdx < 0) return;
+  const m = S.memos[viewIdx];
+  if (!m) { HS.close('modal-view'); return; }
+  const title = document.getElementById('view-title').value.trim();
+  const content = document.getElementById('view-content').value;
+  if (!title) { toast('제목을 입력해요'); return; }
+  if (!content.trim()) { toast('내용을 입력해요'); return; }
+  m.title = title;
+  m.content = content;
+  saveLocal();
+  renderMemos();
+  refreshSearchIfActive();
+  HS.close('modal-view');
+  toast('저장됨 ✓');
+}
+
+function copyViewMemo() {
+  if (viewIdx < 0) return;
+  const title = document.getElementById('view-title').value.trim();
+  const content = document.getElementById('view-content').value;
+  const header = (title && title !== '메모') ? '[ ' + title + ' ]\n' : '';
+  navigator.clipboard.writeText(header + content).then(() => toast('복사됨 ✓'));
+}
+
+let pendingDelIdx = -1;
+let pendingDelType = null; // 'memo' | 'hospital'
+let pendingDelHospitalId = null;
+
+function delMemo(idx) {
+  pendingDelType = 'memo';
+  pendingDelIdx = idx;
+  pendingDelHospitalId = null;
+  document.getElementById('confirm-title').textContent = '메모 삭제';
+  document.getElementById('confirm-message').innerHTML = '이 메모를 삭제할까요?<br>삭제 후에는 복구할 수 없어요.';
+  HS.open('modal-confirm');
+}
+
+function delHospital(id) {
+  pendingDelType = 'hospital';
+  pendingDelHospitalId = id;
+  pendingDelIdx = -1;
+  document.getElementById('confirm-title').textContent = '병원 기록 삭제';
+  document.getElementById('confirm-message').innerHTML = '이 기록을 삭제할까요?<br>삭제 후에는 복구할 수 없어요.';
+  HS.open('modal-confirm');
+}
+
+document.getElementById('confirm-del-btn').addEventListener('click', function() {
+  if (pendingDelType === 'memo') {
+    if (pendingDelIdx < 0) return;
+    // 누적 선택 동기화: 삭제 직전에 id 확보 후 pickedSet에서 제거
+    const deletedMemoId = S.memos[pendingDelIdx] && S.memos[pendingDelIdx].id;
+    S.memos.splice(pendingDelIdx, 1);
+    if (deletedMemoId !== undefined && pickedSet.delete('memo::' + deletedMemoId)) {
+      updatePickCountUI();
+    }
+    saveLocal();
+    renderMemos();
+  } else if (pendingDelType === 'hospital') {
+    if (pendingDelHospitalId === null) return;
+    const idx = S.hospital.findIndex(e => e.id === pendingDelHospitalId);
+    if (idx < 0) {
+      pendingDelHospitalId = null;
+      pendingDelType = null;
+      HS.close('modal-confirm');
+      return;
+    }
+    S.hospital.splice(idx, 1);
+    // 누적 선택 동기화
+    if (pickedSet.delete('hospital::' + pendingDelHospitalId)) {
+      updatePickCountUI();
+    }
+    sortHospital();
+    saveLocal();
+    renderHospital();
+  }
+  pendingDelIdx = -1;
+  pendingDelHospitalId = null;
+  pendingDelType = null;
+  refreshSearchIfActive();
+  HS.close('modal-confirm');
+  toast('삭제됨');
+});
+
+/* ── 자유 메모 정렬: 제목 오름차순. 한글 먼저, 영어 나중. 둘 다 ㄱㄴㄷ / A→Z 순. ── */
+function sortMemos() {
+  const isHangul = (s) => {
+    if (!s) return false;
+    // 제목의 첫 글자(공백/특수문자 건너뛰고) 기준
+    for (const ch of s) {
+      if (/\s/.test(ch)) continue;
+      const code = ch.charCodeAt(0);
+      // 한글 음절(가-힣), 한글 자모, 한글 호환 자모
+      if ((code >= 0xAC00 && code <= 0xD7A3) ||
+          (code >= 0x1100 && code <= 0x11FF) ||
+          (code >= 0x3130 && code <= 0x318F)) return true;
+      return false; // 첫 비공백 문자가 한글이 아니면 false
+    }
+    return false;
+  };
+  S.memos.sort((a, b) => {
+    const ka = isHangul(a.title) ? 0 : 1;
+    const kb = isHangul(b.title) ? 0 : 1;
+    if (ka !== kb) return ka - kb;
+    return (a.title || '').localeCompare(b.title || '', 'ko');
+  });
+}
+
+function renderMemos() {
+  const el = document.getElementById('memo-list');
+  if (!S.memos.length) {
+    el.innerHTML = '<div class="memo-empty"><div class="memo-empty-icon">📝</div>메모가 없어요. ＋ 버튼으로 추가해보세요</div>';
+    return;
+  }
+  // 렌더 직전에 정렬 보장 — 추가/수정/삭제 어느 경로든 재정렬됨
+  sortMemos();
+  el.innerHTML = S.memos.map((m, i) => {
+    const preview = m.content.replace(/\n/g, ' ');
+    const key = 'memo::' + m.id;
+    const pickCb = pickMode
+      ? `<div class="pick-cb-wrap" onclick="event.stopPropagation()">
+          <input type="checkbox" class="pick-cb"${pickedSet.has(key) ? ' checked' : ''} onchange="onPickCheckboxChange(this, '${key}')">
+        </div>`
+      : '';
+    return `<div class="memo-card${pickMode ? ' pickable' : ''}" onclick="openViewModal(${i})">
+      ${pickCb}
+      <div class="memo-card-body">
+        <div class="memo-card-title">${esc(m.title)}</div>
+        <div class="memo-card-preview">${esc(preview.substring(0, 70))}${preview.length > 70 ? '…' : ''}</div>
+      </div>
+      <button class="memo-card-del" onclick="event.stopPropagation();delMemo(${i})" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function copyAllMemos() {
+  if (!S.memos.length) { toast('메모가 없어요'); return; }
+  const text = S.memos.map(m => {
+    const h = (m.title && m.title !== '메모') ? '[ ' + m.title + ' ]\n' : '';
+    return h + m.content;
+  }).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(() => toast('전체 메모 복사됨 ✓'));
+}
+
+/* ============================================================
+   데이터 저장/로드 (zaim73_data, 기존 ctx-v3 마이그레이션)
+============================================================ */
+function saveLocal() {
+  localStorage.setItem('zaim73_data', JSON.stringify(S));
+  // 29차 픽스: debounce(queueSync) 사이에 autoPull이 끼어들어 서버 옛 데이터로
+  // 로컬을 덮어쓰는 race 차단. 즉시 push + autoPull 진입 차단을 위해 lastPushAt 선점.
+  if (!getAccessKey()) return;
+  setSyncIndicator('pending', '● 변경됨');
+  clearTimeout(syncTimer); syncTimer = null;
+  lastPushAt = Date.now(); // autoPull의 POST_PUSH_SKIP 조건을 즉시 활성화
+  pushToServer();
+}
+
+function loadLocal() {
+  try {
+    // 새 키 먼저 시도
+    let raw = localStorage.getItem('zaim73_data');
+    if (!raw) {
+      // 기존 ctx-v3에서 마이그레이션
+      const old3 = localStorage.getItem('ctx-v3');
+      if (old3) {
+        const p = JSON.parse(old3);
+        delete p.gh; // 더 이상 사용 안함
+        localStorage.setItem('zaim73_data', JSON.stringify(p));
+        localStorage.removeItem('ctx-v3');
+        raw = JSON.stringify(p);
+      }
+    }
+    if (raw) {
+      const p = JSON.parse(raw);
+      S = { ...S, ...p };
+      delete S.gh; // 안전장치
+      delete S.vitamins; // 폐기된 섹션
+      delete S.custom;   // 폐기된 섹션
+      if (!Array.isArray(S.memos))    S.memos = [];
+      if (!Array.isArray(S.hospital)) S.hospital = [];
+    } else {
+      // v2 마이그레이션
+      const old = localStorage.getItem('ctx-v2');
+      if (old) {
+        const op = JSON.parse(old);
+        if (op.memo && op.memo.trim()) {
+          S.memos = [{ id: Date.now(), title: '이전 메모', content: op.memo, date: today() }];
+        }
+        S.hospital = op.hospital || [];
+      }
+    }
+  } catch(e) { console.warn('loadLocal error', e); }
+
+  // 병원 항목 마이그레이션: id 없는 옛 항목에 자동 부여
+  migrateHospital();
+  migrateMemos();
+  if (S.hospital.length) sortHospital();
+
+  renderAll();
+}
+
+/* 옛 형식 병원 항목에 id, disease 부여 */
+function migrateHospital() {
+  let nextId = Date.now();
+  let changed = false;
+  S.hospital.forEach(e => {
+    if (!e.id) { e.id = nextId++; changed = true; }
+    if (e.disease === undefined) { e.disease = ''; changed = true; }
+  });
+  return changed;
+}
+
+/* 옛 메모 데이터에 id 없는 경우 부여 — pickedSet/cpChecked의 ID 키 안정성 보장 */
+function migrateMemos() {
+  let nextId = Date.now() + 1000000; // hospital과 충돌 방지용 오프셋
+  let changed = false;
+  S.memos.forEach(m => {
+    if (!m.id) { m.id = nextId++; changed = true; }
+  });
+  return changed;
+}
+
+function refreshSearchIfActive() {
+  const si = document.getElementById('search-input');
+  if (si && si.value.trim()) runSearch(si.value);
+}
+
+function renderAll() {
+  renderMemos();
+  renderHospital();
+  refreshSearchIfActive();
+}
+
+/* ============================================================
+   탭 전환
+============================================================ */
+function switchTab(id, el) {
+  // 검색 모드에서 탭으로 돌아갈 때 검색 종료
+  exitSearchMode();
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+/* ── 모바일 메뉴(톱니바퀴) 항목 클릭 ── */
+function mobileMenuAction(action) {
+  // 1) 메뉴 먼저 닫기 (history.back으로 스택 정리)
+  HS.close('modal-mobile-menu');
+  // 2) popstate 처리가 끝난 뒤 다음 모달 열기 (이중 스택 방지)
+  setTimeout(() => {
+    if (action === 'copy') openCopyPicker();
+    else if (action === 'logout') doLogout();
+  }, 60);
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+/* ============================================================
+   검색
+   - 자유 메모 + 병원기록 동시 검색 (대소문자 무시, 부분 일치)
+   - 결과 클릭 → 해당 편집 모달 열림
+============================================================ */
+let lastActiveTab = 'memo'; // 검색 종료 시 돌아올 탭
+
+/* ----- 누적 선택 (검색 기반) ----- */
+let pickMode = false;
+let pickedSet = new Set(); // 키: 'memo::{id}' / 'hospital::{id}' (ID 기반 — 정렬/삭제 시에도 안정)
+
+function togglePickMode(on) {
+  pickMode = !!on;
+  if (!pickMode) {
+    // 끄면 누적된 것도 비움
+    pickedSet.clear();
+    updatePickCountUI();
+  }
+  // 모든 카드(검색결과 + 메모탭 + 병원탭) 재렌더 → 체크박스 표시/제거
+  renderMemos();
+  renderHospital();
+  const si = document.getElementById('search-input');
+  if (si && si.value.trim()) runSearch(si.value);
+}
+
+function updatePickCountUI() {
+  const cnt = document.getElementById('pick-count');
+  if (!cnt) return;
+  const n = pickedSet.size;
+  cnt.textContent = n;
+  cnt.classList.toggle('has', n > 0);
+}
+
+function onPickCheckboxChange(cb, key) {
+  if (cb.checked) pickedSet.add(key);
+  else pickedSet.delete(key);
+  updatePickCountUI();
+}
+
+function getCurrentTabId() {
+  const active = document.querySelector('.panel.active');
+  if (!active) return 'memo';
+  const id = active.id || '';
+  return id.replace(/^panel-/, '') || 'memo';
+}
+
+function enterSearchMode() {
+  const cur = getCurrentTabId();
+  if (cur !== 'search') lastActiveTab = cur;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-search').classList.add('active');
+}
+
+function exitSearchMode() {
+  // 검색창 비우고 사이드바 표시 정리
+  const input = document.getElementById('search-input');
+  if (input) input.value = '';
+  document.getElementById('search-box').classList.remove('has-query');
+}
+
+function clearSearch() {
+  const input = document.getElementById('search-input');
+  input.value = '';
+  document.getElementById('search-box').classList.remove('has-query');
+  // 누적 선택 상태(pickMode, pickedSet)는 그대로 유지 — 사용자가 토글로만 끔
+  // 검색 시작 전 탭으로 복귀
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const back = lastActiveTab || 'memo';
+  document.getElementById('panel-' + back).classList.add('active');
+  // 사이드바 nav 항목 active 복원
+  const navBtns = document.querySelectorAll('.sidebar-nav .nav-item');
+  navBtns.forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    if (onclick.indexOf("'" + back + "'") !== -1) btn.classList.add('active');
+  });
+}
+
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function highlight(text, q) {
+  if (!q) return esc(text);
+  const re = new RegExp(escRegex(q), 'gi');
+  const escaped = esc(text);
+  // esc 후 정규식 — 한글/숫자/영문은 그대로 보존되므로 안전
+  return escaped.replace(re, m => '<mark>' + m + '</mark>');
+}
+
+function makePreview(text, q, maxLen) {
+  if (!text) return '';
+  const t = String(text).replace(/\n/g, ' ');
+  if (!q) return t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
+  const idx = t.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
+  // 검색어 주변 컨텍스트 잘라내기
+  const ctxBefore = 20;
+  const start = Math.max(0, idx - ctxBefore);
+  const end = Math.min(t.length, start + maxLen);
+  let snippet = t.slice(start, end);
+  if (start > 0) snippet = '…' + snippet;
+  if (end < t.length) snippet = snippet + '…';
+  return snippet;
+}
+
+function runSearch(rawQuery) {
+  const q = (rawQuery || '').trim();
+  const box = document.getElementById('search-box');
+  if (!q) {
+    box.classList.remove('has-query');
+    // 빈 검색어 — 결과 비우고 원래 탭으로 복귀
+    clearSearch();
+    return;
+  }
+  box.classList.add('has-query');
+  enterSearchMode();
+
+  const ql = q.toLowerCase();
+
+  // 메모 검색: title + content
+  const memoHits = [];
+  S.memos.forEach((m, idx) => {
+    const hay = ((m.title || '') + ' ' + (m.content || '')).toLowerCase();
+    if (hay.indexOf(ql) !== -1) memoHits.push({ m, idx });
+  });
+
+  // 병원 검색: disease + name + content + rx
+  const hospHits = [];
+  S.hospital.forEach((e, idx) => {
+    const hay = ((e.disease || '') + ' ' + (e.name || '') + ' ' + (e.content || '') + ' ' + (e.rx || '')).toLowerCase();
+    if (hay.indexOf(ql) !== -1) hospHits.push({ e, idx });
+  });
+
+  const totalCount = memoHits.length + hospHits.length;
+  document.getElementById('search-title').textContent = '검색 결과: "' + q + '" (' + totalCount + ')';
+
+  const resEl = document.getElementById('search-results');
+  if (totalCount === 0) {
+    resEl.innerHTML = '<div class="search-empty">일치하는 항목이 없어요</div>';
+    return;
+  }
+
+  const parts = [];
+  if (memoHits.length) {
+    parts.push('<div class="search-result-group">' +
+      '<div class="search-result-group-title">📝 자유 메모 <span class="search-result-group-count">(' + memoHits.length + ')</span></div>' +
+      memoHits.map(({ m, idx }) => {
+        const preview = makePreview(m.content || '', q, 90);
+        const key = 'memo::' + m.id;
+        if (pickMode) {
+          const checked = pickedSet.has(key) ? ' checked' : '';
+          return '<div class="search-hit-card pickable">' +
+            '<div class="pick-cb-wrap" onclick="event.stopPropagation()">' +
+              '<input type="checkbox" class="pick-cb"' + checked +
+              ' onchange="onPickCheckboxChange(this, \'' + key + '\')">' +
+            '</div>' +
+            '<div class="pick-body" onclick="openViewModalFromSearch(' + idx + ')">' +
+              '<div class="search-hit-meta">' + esc(m.date || '') + '</div>' +
+              '<div class="search-hit-title">' + highlight(m.title || '(제목 없음)', q) + '</div>' +
+              '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' +
+            '</div>' +
+          '</div>';
+        }
+        return '<div class="search-hit-card" onclick="openViewModalFromSearch(' + idx + ')">' +
+          '<div class="search-hit-meta">' + esc(m.date || '') + '</div>' +
+          '<div class="search-hit-title">' + highlight(m.title || '(제목 없음)', q) + '</div>' +
+          '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>');
+  }
+  if (hospHits.length) {
+    parts.push('<div class="search-result-group">' +
+      '<div class="search-result-group-title">🏥 병원 기록 <span class="search-result-group-count">(' + hospHits.length + ')</span></div>' +
+      hospHits.map(({ e, idx }) => {
+        const head = e.disease || e.name || '(병명 없음)';
+        const sub = (e.disease && e.name) ? e.name : '';
+        const previewSrc = (e.content || '') + (e.rx ? ' / 처방: ' + e.rx : '');
+        const preview = makePreview(previewSrc, q, 90);
+        const key = 'hospital::' + e.id;
+        if (pickMode) {
+          const checked = pickedSet.has(key) ? ' checked' : '';
+          return '<div class="search-hit-card pickable">' +
+            '<div class="pick-cb-wrap" onclick="event.stopPropagation()">' +
+              '<input type="checkbox" class="pick-cb"' + checked +
+              ' onchange="onPickCheckboxChange(this, \'' + key + '\')">' +
+            '</div>' +
+            '<div class="pick-body" onclick="openEditHospitalFromSearch(' + e.id + ')">' +
+              '<div class="search-hit-meta">' + esc(e.date || '') + (sub ? ' · ' + highlight(sub, q) : '') + '</div>' +
+              '<div class="search-hit-title">' + highlight(head, q) + '</div>' +
+              (preview ? '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' : '') +
+            '</div>' +
+          '</div>';
+        }
+        return '<div class="search-hit-card" onclick="openEditHospitalFromSearch(' + e.id + ')">' +
+          '<div class="search-hit-meta">' + esc(e.date || '') + (sub ? ' · ' + highlight(sub, q) : '') + '</div>' +
+          '<div class="search-hit-title">' + highlight(head, q) + '</div>' +
+          (preview ? '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' : '') +
+        '</div>';
+      }).join('') +
+    '</div>');
+  }
+  resEl.innerHTML = parts.join('');
+}
+
+function openViewModalFromSearch(idx) {
+  openViewModal(idx);
+}
+function openEditHospitalFromSearch(id) {
+  openEditHospital(id);
+}
+
+// 검색 input 이벤트 연결
+document.getElementById('search-input').addEventListener('input', function(e) {
+  runSearch(e.target.value);
+});
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    clearSearch();
+    e.target.blur();
+  }
+});
+
+
+/* ============================================================
+   병원기록
+   - 항상 최신 날짜순 정렬 유지 (저장 시 sort)
+   - 항목 클릭 시 편집 모달 (HS 시스템 — 뒤로가기로 모달만 닫힘)
+   - 각 항목은 고유 id 보유 (인덱스 의존 제거)
+============================================================ */
+function sortHospital() {
+  // 날짜 내림차순 정렬. 같은 날짜면 id(생성순)로 최신이 위
+  S.hospital.sort((a, b) => {
+    if (a.date !== b.date) return (b.date || '').localeCompare(a.date || '');
+    return (b.id || 0) - (a.id || 0);
+  });
+}
+
+function addHospital() {
+  // 옛 인라인 폼은 제거됨. 이제 모달로 추가.
+  openAddHospital();
+}
+
+/* ── 추가 모달 열기 ── */
+function openAddHospital() {
+  editingHospitalId = null;  // null이면 추가 모드
+  document.getElementById('eh-modal-title').textContent = '새 병원 기록';
+  document.getElementById('eh-date').value    = today();
+  document.getElementById('eh-disease').value = '';
+  document.getElementById('eh-name').value    = '';
+  document.getElementById('eh-content').value = '';
+  document.getElementById('eh-rx').value      = '';
+  HS.open('modal-edit-hospital');
+  setTimeout(() => { const el = document.getElementById('eh-disease'); if (el) el.focus(); }, 50);
+}
+
+function renderHospital() {
+  const el = document.getElementById('hospital-list');
+  if (!S.hospital.length) { el.innerHTML = emptyState('아직 병원 기록이 없어요'); return; }
+  // 안전: 렌더 직전에 정렬 보장
+  sortHospital();
+  el.innerHTML = S.hospital.map((e, idx) => {
+    const disease = e.disease || '';
+    const name = e.name || '';
+    const content = e.content || '';
+    const key = 'hospital::' + e.id;
+    const pickCb = pickMode
+      ? `<div class="pick-cb-wrap" onclick="event.stopPropagation()">
+          <input type="checkbox" class="pick-cb"${pickedSet.has(key) ? ' checked' : ''} onchange="onPickCheckboxChange(this, '${key}')">
+        </div>`
+      : '';
+    return `<div class="entry-card hospital-card${pickMode ? ' pickable' : ''}" onclick="openEditHospital(${e.id})">
+      ${pickCb}
+      <div class="entry-body">
+        <div class="hosp-head">
+          <div class="hosp-disease">${disease ? esc(disease) : '<span style="color:var(--text3);font-weight:500">(병명 없음)</span>'}</div>
+          ${name ? `<div class="hosp-name">${esc(name)}</div>` : ''}
+        </div>
+        <div class="entry-date">${e.date}</div>
+        ${content ? `<div class="hosp-content">${esc(content).split('\n')[0].slice(0,80)}${content.length > 80 || content.includes('\n') ? '…' : ''}</div>` : ''}
+      </div>
+      <button class="del-btn" onclick="event.stopPropagation();delHospital(${e.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/* ── 편집 모달 열기 ── */
+let editingHospitalId = null;
+
+function openEditHospital(id) {
+  const e = S.hospital.find(x => x.id === id);
+  if (!e) return;
+  editingHospitalId = id;
+  document.getElementById('eh-modal-title').textContent = '병원 기록 편집';
+  document.getElementById('eh-date').value    = e.date || today();
+  document.getElementById('eh-disease').value = e.disease || '';
+  document.getElementById('eh-name').value    = e.name || '';
+  document.getElementById('eh-content').value = e.content || '';
+  document.getElementById('eh-rx').value      = e.rx || '';
+  HS.open('modal-edit-hospital');
+  // 포커스는 아무데도 두지 않음 (요구사항)
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+
+function saveEditHospital() {
+  const disease = document.getElementById('eh-disease').value.trim();
+  const name    = document.getElementById('eh-name').value.trim();
+  const content = document.getElementById('eh-content').value.trim();
+  const rx      = document.getElementById('eh-rx').value;
+  const date    = document.getElementById('eh-date').value;
+
+  // 필수: 날짜, 병명, 주요 내용
+  if (!date) {
+    toast('날짜를 입력해요');
+    return;
+  }
+  if (!disease) {
+    toast('병명 / 검사를 입력해요');
+    return;
+  }
+  if (!content) {
+    toast('주요 내용을 입력해요');
+    return;
+  }
+
+  if (editingHospitalId === null) {
+    // 추가 모드
+    S.hospital.push({
+      id: Date.now(),
+      date, disease, name, content: document.getElementById('eh-content').value, rx
+    });
+  } else {
+    // 편집 모드
+    const e = S.hospital.find(x => x.id === editingHospitalId);
+    if (!e) { HS.close('modal-edit-hospital'); return; }
+    e.date = date; e.disease = disease; e.name = name;
+    e.content = document.getElementById('eh-content').value; e.rx = rx;
+  }
+  sortHospital();
+  saveLocal(); renderHospital();
+  refreshSearchIfActive();
+  HS.close('modal-edit-hospital');
+  toast('저장됨 ✓');
+}
+
+function copyEditHospital() {
+  const disease = document.getElementById('eh-disease').value.trim();
+  const name    = document.getElementById('eh-name').value.trim();
+  const content = document.getElementById('eh-content').value;
+  const rx      = document.getElementById('eh-rx').value;
+  const date    = document.getElementById('eh-date').value || today();
+  const text = fmtHospital({ date, disease, name, content, rx });
+  navigator.clipboard.writeText(text).then(() => toast('복사됨 ✓'));
+}
+
+/* ============================================================
+   복사
+============================================================ */
+/* 병원 항목 → 텍스트 변환 (복사용 공통 포맷) */
+function fmtHospital(e) {
+  const head = e.disease ? e.disease : (e.name || '(병명 없음)');
+  const title = `[ ${head} ]\n`;
+  const date = e.date ? e.date : '';
+  const hospital = e.disease && e.name ? (date ? ' ' : '') + `(${e.name})` : '';
+  const dateLine = (date || hospital) ? (date + hospital) : '';
+  const content = e.content ? (dateLine ? '\n' : '') + e.content : '';
+  const rx = e.rx ? '\n처방: ' + e.rx : '';
+  return title + dateLine + content + rx;
+}
+
+function buildText() {
+  const parts = [];
+  if (S.memos.length) {
+    const mt = S.memos.map(m => {
+      const h = (m.title && m.title !== '메모') ? '[ ' + m.title + ' ]\n' : '';
+      return h + m.content;
+    }).join('\n\n---\n\n');
+    parts.push('## 메모\n' + mt);
+  }
+  if (S.hospital.length) parts.push('## 병원기록\n' + S.hospital.map(fmtHospital).join('\n\n'));
+  return parts.join('\n\n');
+}
+function copyAll() {
+  const text = buildText();
+  if (!text) { toast('내용을 먼저 입력해요'); return; }
+  navigator.clipboard.writeText(text).then(() => toast('전체 복사됨! AI에게 붙여넣기 하세요 ✓'));
+}
+function copySection(type) {
+  let text = '';
+  if (type === 'hospital') text = '## 병원기록\n' + (S.hospital.length ? S.hospital.map(fmtHospital).join('\n\n') : '(없음)');
+  navigator.clipboard.writeText(text).then(() => toast('복사됨 ✓'));
+}
+
+/* ============================================================
+   탭 복사 (선택형 picker)
+============================================================ */
+// 현재 picker 상태: 어떤 항목이 체크됐는지
+// 키 형식: "tab_id::index"
+let cpChecked = new Set();
+let cpExpanded = new Set(); // 어떤 탭 그룹이 펼쳐졌는지
+
+function openCopyPicker() {
+  cpChecked = new Set();
+  cpExpanded = new Set();
+  if (pickedSet.size > 0) {
+    // 누적 선택된 것이 있으면 그것만 체크 상태로 시작
+    pickedSet.forEach(k => cpChecked.add(k));
+  } else {
+    // 누적된 것이 없으면 기존처럼 전체 체크
+    S.memos.forEach(m => cpChecked.add('memo::' + m.id));
+    S.hospital.forEach(e => cpChecked.add('hospital::' + e.id));
+  }
+  // 기본은 모든 탭 펼쳐서 보여줌
+  ['memo','hospital'].forEach(t => cpExpanded.add(t));
+
+  renderCopyPicker();
+  HS.open('modal-copy-picker');
+}
+
+function renderCopyPicker() {
+  const body = document.getElementById('copy-picker-body');
+
+  const tabs = [
+    { id: 'memo',     title: '자유 메모',    items: S.memos.map((m, i) => ({ key: 'memo::'+m.id,     text: (m.title && m.title !== '메모' ? '[' + m.title + '] ' : '') + (m.content || ''), meta: m.date })) },
+    { id: 'hospital', title: '병원 기록',     items: S.hospital.map((e, i) => ({ key: 'hospital::'+e.id, text: (e.disease || e.name || '(병명 없음)') + (e.disease && e.name ? ' · ' + e.name : '') + (e.content ? ' — ' + e.content.split('\n')[0] : ''), meta: e.date })) }
+  ];
+
+  body.innerHTML = tabs.map(tab => {
+    if (tab.items.length === 0) {
+      return `<div class="cp-tab-group">
+        <div class="cp-tab-header" style="cursor:default;opacity:0.5">
+          <input type="checkbox" class="cp-checkbox" disabled>
+          <div class="cp-tab-title">${tab.title}</div>
+          <div class="cp-tab-count">비어있음</div>
+        </div>
+      </div>`;
+    }
+
+    const total = tab.items.length;
+    const checkedCount = tab.items.filter(it => cpChecked.has(it.key)).length;
+    const headerState = checkedCount === 0 ? 'none' : (checkedCount === total ? 'all' : 'some');
+    const expanded = cpExpanded.has(tab.id);
+
+    return `<div class="cp-tab-group">
+      <div class="cp-tab-header" onclick="cpToggleExpand('${tab.id}', event)">
+        <input type="checkbox" class="cp-checkbox ${headerState === 'some' ? 'indeterminate' : ''}"
+               ${headerState === 'all' ? 'checked' : ''}
+               onclick="event.stopPropagation();cpToggleTab('${tab.id}')">
+        <div class="cp-tab-title">${tab.title}</div>
+        <div class="cp-tab-count">${checkedCount}/${total}</div>
+        <div class="cp-tab-toggle ${expanded ? 'open' : ''}">▶</div>
+      </div>
+      <div class="cp-items ${expanded ? 'open' : ''}">
+        ${tab.items.map(it => `
+          <label class="cp-item">
+            <input type="checkbox" class="cp-checkbox"
+                   ${cpChecked.has(it.key) ? 'checked' : ''}
+                   onchange="cpToggleItem('${it.key}')">
+            <div class="cp-item-text">${esc(it.text || '(빈 항목)')}${it.meta ? `<div class="cp-item-meta">${esc(it.meta)}</div>` : ''}</div>
+          </label>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  updateCopyPickerCount();
+}
+
+function cpToggleExpand(tabId, ev) {
+  // 체크박스 클릭은 무시
+  if (ev && ev.target && ev.target.classList.contains('cp-checkbox')) return;
+  if (cpExpanded.has(tabId)) cpExpanded.delete(tabId);
+  else cpExpanded.add(tabId);
+  renderCopyPicker();
+}
+
+function cpToggleTab(tabId) {
+  // 해당 탭 항목들 키 모음
+  let keys = [];
+  if (tabId === 'memo')     keys = S.memos.map(m => 'memo::' + m.id);
+  else if (tabId === 'hospital') keys = S.hospital.map(e => 'hospital::' + e.id);
+
+  // 전체 체크 여부 판단
+  const allChecked = keys.every(k => cpChecked.has(k));
+  if (allChecked) keys.forEach(k => cpChecked.delete(k));
+  else keys.forEach(k => cpChecked.add(k));
+  renderCopyPicker();
+}
+
+function cpToggleItem(key) {
+  if (cpChecked.has(key)) cpChecked.delete(key);
+  else cpChecked.add(key);
+  renderCopyPicker();
+}
+
+function updateCopyPickerCount() {
+  document.getElementById('copy-picker-count').textContent = cpChecked.size + '개 선택됨';
+}
+
+function copySelected() {
+  if (cpChecked.size === 0) { toast('선택된 항목이 없어요'); return; }
+
+  const parts = [];
+
+  // 메모
+  const selMemos = S.memos.filter(m => cpChecked.has('memo::' + m.id));
+  if (selMemos.length) {
+    const mt = selMemos.map(m => {
+      const h = (m.title && m.title !== '메모') ? '[ ' + m.title + ' ]\n' : '';
+      return h + (m.content || '');
+    }).join('\n\n---\n\n');
+    parts.push('## 메모\n' + mt);
+  }
+
+  // 병원
+  const selHosp = S.hospital.filter(e => cpChecked.has('hospital::' + e.id));
+  if (selHosp.length) {
+    parts.push('## 병원기록\n' + selHosp.map(e => fmtHospital(e)).join('\n\n'));
+  }
+
+  const text = parts.join('\n\n');
+  if (!text) { toast('선택된 항목이 없어요'); return; }
+
+  navigator.clipboard.writeText(text).then(() => {
+    toast('복사됨 ✓ (' + cpChecked.size + '개)');
+    HS.close('modal-copy-picker');
+    // 누적 선택 자동 비움 + 모든 탭(검색/메모/병원) 다시 그려서 체크박스 해제 반영
+    if (pickedSet.size > 0) {
+      pickedSet.clear();
+      updatePickCountUI();
+      if (pickMode) {
+        renderMemos();
+        renderHospital();
+        const si = document.getElementById('search-input');
+        if (si && si.value.trim()) runSearch(si.value);
+      }
+    }
+  });
+}
+
+/* ============================================================
+   Supabase 인증 + 동기화
+   - localStorage 키 접두사: zaim73_
+   - access_key는 PIN 로그인 시 발급, 로그아웃 시 무효화
+============================================================ */
+const SB_URL  = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+const AK_STORAGE = 'zaim73_ak';
+
+let syncTimer = null;
+let syncing = false;
+
+function getAccessKey() { return localStorage.getItem(AK_STORAGE); }
+function setAccessKey(k) { localStorage.setItem(AK_STORAGE, k); }
+function clearAccessKey() { localStorage.removeItem(AK_STORAGE); }
+
+async function rpc(fn, args) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_ANON,
+      'Authorization': 'Bearer ' + SB_ANON,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args)
+  });
+  return r;
+}
+
+/* ── 로그인 ── */
+async function doLogin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  const msg = document.getElementById('login-msg');
+  const btn = document.getElementById('login-btn');
+  if (!/^\d{4}$/.test(pin)) {
+    msg.className = 'login-msg err'; msg.textContent = 'PIN 4자리 숫자를 입력하세요'; return;
+  }
+  btn.disabled = true; msg.className = 'login-msg'; msg.textContent = '확인 중...';
+  try {
+    const r = await rpc('zaim_login', { p_pin: pin });
+    if (!r.ok) { msg.className = 'login-msg err'; msg.textContent = '서버 오류 (' + r.status + ')'; btn.disabled = false; return; }
+    const data = await r.json();
+    if (data.ok) {
+      setAccessKey(data.key);
+      document.getElementById('pin-input').value = '';
+      msg.className = 'login-msg ok'; msg.textContent = '로그인 성공';
+      await afterLogin();
+    } else if (data.reason === 'wrong_pin') {
+      msg.className = 'login-msg err'; msg.textContent = `PIN 불일치 (남은 시도: ${data.remaining}회)`;
+      document.getElementById('pin-input').value = '';
+      btn.disabled = false;
+    } else if (data.reason === 'locked') {
+      const until = new Date(data.until).toLocaleTimeString('ko-KR');
+      msg.className = 'login-msg err'; msg.textContent = `잠금 상태 (${until}까지)`;
+      btn.disabled = false;
+    } else if (data.reason === 'no_pin') {
+      msg.className = 'login-msg err'; msg.textContent = 'PIN이 등록되지 않았습니다';
+      btn.disabled = false;
+    } else {
+      msg.className = 'login-msg err'; msg.textContent = '로그인 실패';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    msg.className = 'login-msg err'; msg.textContent = '네트워크 오류: ' + e.message;
+    btn.disabled = false;
+  }
+}
+
+async function afterLogin() {
+  document.getElementById('login-overlay').classList.remove('active');
+  await pullFromServer();
+  startPolling();
+}
+
+/* ── 로그아웃 (확인 모달 표시) ── */
+function doLogout() {
+  HS.open('modal-logout-confirm');
+}
+
+/* ── 로그아웃 실제 처리 ── */
+async function confirmLogout() {
+  HS.close('modal-logout-confirm');
+  const key = getAccessKey();
+  clearTimeout(syncTimer); syncTimer = null;
+  stopPolling();
+  if (key) {
+    try { await rpc('zaim_logout', { p_key: key }); } catch(e) {}
+  }
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('zaim73_')) localStorage.removeItem(k); });
+  S = { memos: [], hospital: [] };
+  renderAll();
+  document.getElementById('login-overlay').classList.add('active');
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-msg').textContent = '';
+  authFailCount = 0;
+  setSyncIndicator('idle', '●  대기 중');
+  setTimeout(() => document.getElementById('pin-input').focus(), 50);
+}
+
+/* ── 인증 실패 누적 카운터 (일시 오류와 진짜 만료 구분) ── */
+let authFailCount = 0;
+const AUTH_FAIL_THRESHOLD = 3;
+
+/* ── pull (서버 → 로컬) ── 
+   부팅 시 호출되는 경우 자동 로그아웃 절대 안 함 */
+async function pullFromServer(opts = {}) {
+  const silent = opts.silent === true;  // true면 인증 실패해도 로그아웃 처리 안 함
+  const key = getAccessKey();
+  if (!key) return;
+  setSyncIndicator('pending', '↓ 불러오는 중...');
+  try {
+    const r = await rpc('zaim_pull', { p_key: key });
+    if (r.status === 401 || r.status === 403) {
+      if (!silent) registerAuthFail();
+      else setSyncIndicator('err', '⚠ 동기화 보류');
+      return;
+    }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) {
+        if (!silent) registerAuthFail();
+        else setSyncIndicator('err', '⚠ 동기화 보류');
+        return;
+      }
+      setSyncIndicator('err', '⚠ 불러오기 실패');
+      return;
+    }
+    // 응답 성공 → 인증 카운터 리셋
+    authFailCount = 0;
+    const data = await r.json();
+    if (data && typeof data === 'object') {
+      S.memos    = Array.isArray(data.memos)    ? data.memos    : [];
+      S.hospital = Array.isArray(data.hospital) ? data.hospital : [];
+    }
+    migrateHospital();
+    migrateMemos();
+    sortHospital();
+    localStorage.setItem('zaim73_data', JSON.stringify(S));
+    renderAll();
+    setSyncIndicator('ok', '✓ 동기화됨');
+  } catch(e) {
+    // 네트워크 오류 — 절대 로그아웃하지 않음
+    setSyncIndicator('err', '⚠ 네트워크 오류');
+  }
+}
+
+/* ── push (로컬 → 서버), debounce 3초 ── */
+function queueSync() {
+  if (!getAccessKey()) return;
+  setSyncIndicator('pending', '● 변경됨');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToServer, 3000);
+}
+
+async function pushToServer() {
+  const key = getAccessKey();
+  if (!key) return;
+  if (syncing) { syncTimer = setTimeout(pushToServer, 1500); return; }
+  syncing = true;
+  setSyncIndicator('pending', '↑ 저장 중...');
+  try {
+    const payload = { memos: S.memos, hospital: S.hospital };
+    const r = await rpc('zaim_push', { p_key: key, p_data: payload });
+    if (r.status === 401 || r.status === 403) {
+      registerAuthFail();
+      return;
+    }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) {
+        registerAuthFail();
+        return;
+      }
+      setSyncIndicator('err', '⚠ 저장 실패');
+      return;
+    }
+    // 성공 → 인증 카운터 리셋
+    authFailCount = 0;
+    lastPushAt = Date.now();
+    setSyncIndicator('ok', '✓ 저장됨');
+  } catch(e) {
+    // 네트워크 오류 — 로그아웃 안 함
+    setSyncIndicator('err', '⚠ 네트워크 오류');
+  } finally {
+    syncing = false;
+  }
+}
+
+/* ── 인증 실패 누적 처리 ──
+   연속 N번 unauthorized가 나와야 진짜 키 만료로 판단.
+   1~2번 정도는 일시 오류로 간주하고 무시. */
+function registerAuthFail() {
+  authFailCount++;
+  if (authFailCount >= AUTH_FAIL_THRESHOLD) {
+    forceLogout('세션이 만료되었습니다. 다시 로그인하세요');
+  } else {
+    setSyncIndicator('err', `⚠ 동기화 실패 (${authFailCount}/${AUTH_FAIL_THRESHOLD})`);
+  }
+}
+
+/* ── 강제 로그아웃 (키 진짜 무효일 때만) ── */
+function forceLogout(reason) {
+  clearTimeout(syncTimer); syncTimer = null;
+  stopPolling();
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('zaim73_')) localStorage.removeItem(k); });
+  S = { memos: [], hospital: [] };
+  renderAll();
+  authFailCount = 0;
+  document.getElementById('login-overlay').classList.add('active');
+  document.getElementById('login-msg').className = 'login-msg err';
+  document.getElementById('login-msg').textContent = reason || '다시 로그인하세요';
+  document.getElementById('login-btn').disabled = false;
+  setSyncIndicator('idle', '●  대기 중');
+  setTimeout(() => document.getElementById('pin-input').focus(), 50);
+}
+
+function setSyncIndicator(state, text) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  el.className = 'sync-indicator ' + (state === 'idle' ? '' : state);
+  el.textContent = text;
+}
+
+/* PIN 입력 UX: 4자리 채워지면 자동 로그인 시도, Enter도 동작 */
+document.addEventListener('DOMContentLoaded', () => {
+  const pinInput = document.getElementById('pin-input');
+  if (pinInput) {
+    pinInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+      if (e.target.value.length === 4) doLogin();
+    });
+    pinInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLogin();
+    });
+  }
+});
+
+/* ============================================================
+   Utils
+============================================================ */
+function v(id) { return document.getElementById(id).value.trim(); }
+function clear(id) { document.getElementById(id).value = ''; }
+function emptyState(msg) { return `<div class="empty"><div class="empty-icon">○</div>${msg}</div>`; }
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._to); t._to = setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+loadLocal();
+
+/* ============================================================
+   백그라운드 자동 동기화 (폴링 + 포커스)
+   - 탭이 활성화된 동안만 30초마다 서버 확인
+   - 탭 복귀 시 즉시 1회 pull
+   - 모달 열려있거나 막 push한 직후엔 skip
+============================================================ */
+const POLL_INTERVAL = 30000; // 30초
+const POST_PUSH_SKIP = 5000; // push 후 5초간 polling pull 무시
+let pollTimer = null;
+let lastPushAt = 0;
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(autoPull, POLL_INTERVAL);
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function autoPull() {
+  // 로그인 안 됨 → skip
+  if (!getAccessKey()) return;
+  // 탭 비활성 → skip (보험)
+  if (document.hidden) return;
+  // 모달 열려 있음 (입력 중일 가능성) → skip
+  if (document.querySelector('.modal-backdrop.open')) return;
+  // 막 push한 직후 → skip (메아리 방지)
+  if (Date.now() - lastPushAt < POST_PUSH_SKIP) return;
+  // 동기화 진행 중 → skip
+  if (syncing) return;
+
+  await pullFromServerQuiet();
+}
+
+/* ── 조용한 pull: 화면 변경 없으면 렌더/표시 안 함 ── */
+async function pullFromServerQuiet() {
+  const key = getAccessKey();
+  if (!key) return;
+  try {
+    const r = await rpc('zaim_pull', { p_key: key });
+    if (!r.ok) {
+      // 일시 오류면 무시. silent 모드 — 아무 표시도 안 함
+      return;
+    }
+    authFailCount = 0;
+    const data = await r.json();
+    if (!data || typeof data !== 'object') return;
+
+    const newState = {
+      memos:    Array.isArray(data.memos)    ? data.memos    : [],
+      hospital: Array.isArray(data.hospital) ? data.hospital : []
+    };
+
+    // 로컬과 서버 동일하면 아무것도 안 함 (깜빡임 방지)
+    const localSig = JSON.stringify({
+      memos: S.memos, hospital: S.hospital
+    });
+    const serverSig = JSON.stringify(newState);
+    if (localSig === serverSig) return;
+
+    // 변경 있음 → 적용
+    S.memos    = newState.memos;
+    S.hospital = newState.hospital;
+    migrateHospital();
+    migrateMemos();
+    sortHospital();
+    localStorage.setItem('zaim73_data', JSON.stringify(S));
+    renderAll();
+    setSyncIndicator('ok', '✓ 새 데이터 동기화됨');
+  } catch(e) {
+    // 네트워크 오류는 그냥 무시
+  }
+}
+
+/* 탭 활성화 변화 감지 */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopPolling();
+  } else {
+    // 복귀하면 즉시 1회 + 폴링 재개
+    if (getAccessKey()) {
+      autoPull();
+      startPolling();
+    }
+  }
+});
+
+/* 창 포커스 감지 (visibilitychange와 중복되지만 안전 보강) */
+window.addEventListener('focus', () => {
+  if (!document.hidden && getAccessKey()) autoPull();
+});
+
+/* ============================================================
+   부팅: 로그인 상태에 따라 분기
+============================================================ */
+(async function boot() {
+  if (getAccessKey()) {
+    document.getElementById('login-overlay').classList.remove('active');
+    await pullFromServer({ silent: true });
+    startPolling();
+  } else {
+    document.getElementById('login-overlay').classList.add('active');
+    setTimeout(() => document.getElementById('pin-input').focus(), 50);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#faf6f0">
+<title>읽은 책</title>
+
+<!-- 폰트: 본명조 (책 느낌) + 노토산스 (UI) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   디자인 토큰
+   ============================================ */
+:root {
+  /* 색상 — 따뜻한 독서 톤 */
+  --bg-cream: #faf6f0;
+  --bg-paper: #f3ede3;
+  --bg-card: #ffffff;
+  --bg-overlay: rgba(58, 42, 28, 0.45);
+
+  --ink-strong: #2d1f12;
+  --ink: #4a3826;
+  --ink-soft: #7a6651;
+  --ink-faint: #a89684;
+
+  --accent: #8b6f47;        /* 따뜻한 브라운 */
+  --accent-hover: #6f5733;
+  --accent-soft: #d9c9b1;
+  --accent-faint: #ede1cf;
+
+  --gold: #c9a667;          /* 별점 */
+  --gold-empty: #e0d4be;
+
+  --danger: #b04a3a;
+  --danger-soft: #f0d9d4;
+
+  --line: #e6dcc9;
+  --line-soft: #efe7d7;
+
+  /* 그림자 */
+  --shadow-sm: 0 1px 2px rgba(74, 56, 38, 0.06);
+  --shadow-md: 0 4px 12px rgba(74, 56, 38, 0.08);
+  --shadow-lg: 0 12px 32px rgba(74, 56, 38, 0.15);
+
+  /* 폰트 */
+  --font-serif: 'Gowun Batang', serif;
+  --font-sans: 'Gowun Dodum', sans-serif;
+
+  /* 레이아웃 */
+  --header-h: 56px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================
+   기본 리셋
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;          /* 스크롤은 내부 컨테이너에서 */
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-cream);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+/* ============================================
+   잠금 화면 (PIN)
+   ============================================ */
+#lockScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-cream);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-top: calc(var(--safe-top) + 24px);
+  padding-bottom: calc(var(--safe-bottom) + 24px);
+  z-index: 100;
+}
+
+#lockScreen.hidden { display: none; }
+
+.lock-mark {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ink-strong);
+  margin-bottom: 8px;
+}
+
+.lock-sub {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin-bottom: 56px;
+  letter-spacing: 0.3px;
+}
+
+.pin-dots {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 48px;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-soft);
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.pin-dots.shake {
+  animation: shake 0.4s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  gap: 18px;
+}
+
+.pin-key {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--bg-paper);
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--ink-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+  border: 1px solid transparent;
+}
+
+.pin-key:active {
+  background: var(--accent-faint);
+  transform: scale(0.94);
+}
+
+.pin-key.empty {
+  background: transparent;
+  pointer-events: none;
+}
+
+.pin-key.action {
+  background: transparent;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+}
+
+.pin-key.action:active {
+  background: var(--bg-paper);
+}
+
+.lock-message {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 28px;
+  min-height: 20px;
+  text-align: center;
+  font-family: var(--font-sans);
+}
+
+.lock-message.error {
+  color: var(--danger);
+}
+
+/* ============================================
+   스플래시 (자동 로그인 중)
+   ============================================ */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+#splash.hidden { display: none; }
+
+.splash-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--accent);
+  animation: splashFade 1.4s ease-in-out infinite;
+}
+
+@keyframes splashFade {
+  0%, 100% { opacity: 0.35; transform: scale(0.96); }
+  50%      { opacity: 1;    transform: scale(1.02); }
+}
+
+/* ============================================
+   메인 헤더
+   ============================================ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+#app.hidden { display: none; }
+
+.app-header {
+  flex-shrink: 0;
+  background: var(--bg-cream);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.app-title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  letter-spacing: 0.5px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* 우측 메뉴 버튼 폭만큼 좌측에 보이지 않는 공간을 만들어 정확히 중앙 정렬 */
+  padding-left: 38px;
+}
+
+.app-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.icon-btn:active {
+  background: var(--bg-paper);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   검색바 + 통계
+   ============================================ */
+.search-area {
+  flex-shrink: 0;
+  padding: 12px 18px 14px;
+  background: var(--bg-cream);
+  border-bottom: 1px solid var(--line);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-paper);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.search-bar svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.search-bar input {
+  font-size: 14px;
+  background: transparent;
+  user-select: text;
+}
+
+.search-clear {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  color: var(--bg-cream);
+  font-size: 11px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-clear.show { display: flex; }
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.stat-text {
+  font-family: var(--font-serif);
+  letter-spacing: 0.2px;
+}
+
+.stat-text strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-paper);
+}
+
+.sort-btn:active {
+  background: var(--accent-faint);
+}
+
+.sort-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================
+   책 목록
+   ============================================ */
+.books-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 14px 100px;
+}
+
+.book-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.1s ease;
+  position: relative;
+}
+
+.book-card:active {
+  transform: scale(0.99);
+  background: var(--bg-paper);
+}
+
+.book-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  line-height: 1.4;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+  /* 길면 줄임 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-author {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.book-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-family: var(--font-sans);
+}
+
+.book-rating-mini {
+  display: flex;
+  gap: 1px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.book-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.book-date::before {
+  content: '·';
+  color: var(--ink-faint);
+  margin-right: 8px;
+}
+
+.book-rating-mini + .book-date::before {
+  content: '·';
+}
+
+.book-card:not(:has(.book-rating-mini)) .book-date::before {
+  content: '';
+  margin-right: 0;
+}
+
+.book-card.no-meta .book-meta { display: none; }
+
+/* ============================================
+   페이지네이션
+   ============================================ */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 0 8px;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-sans);
+}
+
+.page-btn:active {
+  background: var(--bg-paper);
+}
+
+.page-btn.active {
+  background: var(--accent);
+  color: var(--bg-cream);
+  font-weight: 700;
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.page-ellipsis {
+  color: var(--ink-faint);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+/* ============================================
+   빈 상태
+   ============================================ */
+.empty-state {
+  text-align: center;
+  padding: 80px 30px;
+  color: var(--ink-soft);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-state-text {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ============================================
+   플로팅 추가 버튼
+   ============================================ */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + var(--safe-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  transition: all 0.15s ease;
+}
+
+.fab:active {
+  transform: scale(0.92);
+  background: var(--accent-hover);
+}
+
+.fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ============================================
+   모달 공통
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  z-index: 200;
+  display: none;
+  /* 위쪽 기준 정렬: 모달이 뷰포트보다 길면 아래가 잘리고 스크롤로 보임 */
+  align-items: flex-start;
+  justify-content: center;
+  /* 평상시는 스크롤 없음. 키보드 등으로 viewport가 모달보다 작아지는 경우에만 자연스럽게 스크롤됨. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* 모달이 짧을 땐 스크롤이 안 잡히게 — 사용자가 의도하지 않은 작은 스크롤 방지 */
+  overscroll-behavior: contain;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.show { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg-cream);
+  width: 100%;
+  max-width: 500px;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  /* 부드럽게 위에서 살짝 내려오는 진입 애니메이션 */
+  animation: slideDown 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  /* 하단 패딩은 약간만 — 모달이 viewport 안에 자연스럽게 들어가도록 */
+  padding-bottom: max(16px, var(--safe-bottom));
+  /* safe-area top만큼 내림 */
+  margin-top: var(--safe-top);
+  /* 모달이 viewport보다 짧을 땐 절대 스크롤이 안 잡히도록 */
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-12px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.modal-header {
+  flex-shrink: 0;
+  padding: 18px 20px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  flex: 1;
+  letter-spacing: 0.3px;
+}
+
+.modal-close, .modal-action {
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+}
+
+.modal-close { color: var(--ink-soft); }
+
+/* 우측 상단 액션(수정/저장)은 단순 글씨가 아니라 명확한 버튼 모양 */
+.modal-action {
+  color: var(--bg-cream);
+  background: var(--accent);
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.3px;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.modal-action:active {
+  background: var(--accent-hover);
+  transform: scale(0.96);
+}
+
+.modal-close:active {
+  background: var(--bg-paper);
+}
+
+.modal-action:disabled {
+  background: var(--ink-faint);
+  color: var(--bg-cream);
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.modal-body {
+  flex: 1;
+  /* 오버레이가 전체 스크롤하므로 모달 본문은 자체 스크롤 불필요 */
+  padding: 16px 20px 20px;
+}
+
+/* ============================================
+   책 상세 모달 (읽기 전용)
+   ============================================ */
+.detail-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  line-height: 1.3;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+  user-select: text;
+}
+
+.detail-author {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+  user-select: text;
+}
+
+.detail-row {
+  display: flex;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+  align-items: center;
+}
+
+.detail-row:last-child { border-bottom: none; }
+
+.detail-label {
+  font-size: 12px;
+  color: var(--ink-faint);
+  min-width: 80px;
+  font-family: var(--font-sans);
+}
+
+.detail-value {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--ink);
+  flex: 1;
+  user-select: text;
+}
+
+.detail-value.empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.detail-memo {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  user-select: text;
+  background: var(--bg-paper);
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-top: 6px;
+}
+
+.detail-stars {
+  display: flex;
+  gap: 2px;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.3px;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg-cream);
+}
+
+.btn-primary:active {
+  background: var(--accent-hover);
+}
+
+.btn-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn-danger:active {
+  background: #e8c4bd;
+}
+
+.btn-ghost {
+  background: var(--bg-paper);
+  color: var(--ink);
+}
+
+.btn-ghost:active {
+  background: var(--accent-faint);
+}
+
+/* ============================================
+   책 추가/수정 모달
+   ============================================ */
+.field {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.2px;
+}
+
+.field-label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.field input[type="text"],
+.field input[type="date"],
+.field textarea {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font-serif);
+  color: var(--ink-strong);
+  user-select: text;
+  transition: border-color 0.15s;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+}
+
+.field textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.field-stars {
+  display: flex;
+  gap: 4px;
+  font-size: 30px;
+  letter-spacing: 2px;
+  user-select: none;
+}
+
+.field-star {
+  cursor: pointer;
+  color: var(--gold-empty);
+  transition: color 0.1s;
+}
+
+.field-star.filled {
+  color: var(--gold);
+}
+
+.field-star-clear {
+  margin-left: 12px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  align-self: center;
+  font-family: var(--font-sans);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg-paper);
+  cursor: pointer;
+}
+
+/* ============================================
+   확인 모달
+   ============================================ */
+.confirm-modal {
+  background: var(--bg-cream);
+  border-radius: 14px;
+  padding: 22px;
+  max-width: 320px;
+  width: calc(100% - 40px);
+}
+
+.confirm-overlay {
+  align-items: center;
+}
+
+.confirm-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.confirm-message {
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-family: var(--font-sans);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ============================================
+   토스트
+   ============================================ */
+.toast {
+  position: fixed;
+  top: calc(var(--safe-top) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--ink-strong);
+  color: var(--bg-cream);
+  padding: 11px 22px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-lg);
+  z-index: 300;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+  white-space: nowrap;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================
+   설정 메뉴 (드롭다운)
+   ============================================ */
+.menu-dropdown {
+  position: absolute;
+  top: calc(var(--header-h) + var(--safe-top) + 6px);
+  right: 14px;
+  background: var(--bg-cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
+  min-width: 160px;
+  overflow: hidden;
+  display: none;
+  animation: dropFade 0.15s ease;
+}
+
+.menu-dropdown.show { display: block; }
+
+@keyframes dropFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.menu-item:last-child { border-bottom: none; }
+
+.menu-item:active {
+  background: var(--bg-paper);
+}
+
+.menu-item.danger { color: var(--danger); }
+
+/* ============================================
+   로딩
+   ============================================ */
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     잠금 화면 (PIN)
+     ============================================ -->
+<div id="lockScreen" class="hidden">
+  <div class="lock-mark">읽은 책</div>
+  <div class="lock-sub">books · a quiet shelf</div>
+
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+  </div>
+
+  <div class="pin-pad" id="pinPad">
+    <button class="pin-key" data-key="1">1</button>
+    <button class="pin-key" data-key="2">2</button>
+    <button class="pin-key" data-key="3">3</button>
+    <button class="pin-key" data-key="4">4</button>
+    <button class="pin-key" data-key="5">5</button>
+    <button class="pin-key" data-key="6">6</button>
+    <button class="pin-key" data-key="7">7</button>
+    <button class="pin-key" data-key="8">8</button>
+    <button class="pin-key" data-key="9">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" data-key="0">0</button>
+    <button class="pin-key action" data-key="back">⌫</button>
+  </div>
+
+  <div class="lock-message" id="lockMessage"></div>
+</div>
+
+<!-- ============================================
+     스플래시 화면 (자동 로그인 중)
+     ============================================ -->
+<div id="splash" class="hidden">
+  <svg class="splash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 3 L18 3 C19 3, 20 4, 20 5 L20 21 L6 21 C5 21, 4 20, 4 19 Z"/>
+    <path d="M4 3 L4 19 C4 20, 5 21, 6 21"/>
+    <path d="M14 3 L14 13 L16.5 11 L19 13 L19 3" stroke-linejoin="miter"/>
+  </svg>
+</div>
+
+<!-- ============================================
+     메인 앱
+     ============================================ -->
+<div id="app" class="hidden">
+
+  <!-- 헤더 -->
+  <div class="app-header">
+    <div class="app-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 3 L18 3 C19 3, 20 4, 20 5 L20 21 L6 21 C5 21, 4 20, 4 19 Z"/>
+        <path d="M4 3 L4 19 C4 20, 5 21, 6 21"/>
+        <path d="M14 3 L14 13 L16.5 11 L19 13 L19 3" stroke-linejoin="miter"/>
+      </svg>
+      <span>읽은 책</span>
+    </div>
+    <button class="icon-btn" id="menuBtn" aria-label="메뉴">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 검색바 + 통계 -->
+  <div class="search-area">
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"/>
+        <line x1="21" y1="21" x2="16.5" y2="16.5"/>
+      </svg>
+      <input id="searchInput" type="text" placeholder="제목·저자 검색" autocomplete="off">
+      <button class="search-clear" id="searchClear" aria-label="지우기">×</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-text">
+        총 <strong id="statTotal">792</strong>권
+        <span style="color: var(--ink-faint); margin-left: 6px;" id="statSub">· 날짜 290 · 별점 0</span>
+      </div>
+      <button class="sort-btn" id="sortBtn">
+        <span id="sortLabel">최근 추가순</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 책 목록 (스크롤) -->
+  <div class="books-scroll" id="booksScroll">
+    <div id="booksList"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- 플로팅 추가 버튼 -->
+  <button class="fab" id="addBookBtn" aria-label="책 추가">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- 메뉴 드롭다운 -->
+  <div class="menu-dropdown" id="menuDropdown">
+    <button class="menu-item danger" id="menuLogout">로그아웃</button>
+  </div>
+</div>
+
+<!-- ============================================
+     책 상세 모달 (읽기 전용)
+     ============================================ -->
+<div class="modal-overlay" id="detailModal" data-modal="detail">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" data-close-modal="detail">닫기</button>
+      <div class="modal-title">책 정보</div>
+      <button class="modal-action" id="detailEditBtn">수정</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-title" id="detailTitle"></div>
+      <div class="detail-author" id="detailAuthor"></div>
+
+      <div class="detail-row">
+        <div class="detail-label">읽은 날짜</div>
+        <div class="detail-value" id="detailDate"></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">별점</div>
+        <div class="detail-value">
+          <div class="detail-stars" id="detailStars"></div>
+        </div>
+      </div>
+      <div class="detail-row" style="display: block; padding-top: 20px;">
+        <div class="detail-label" style="margin-bottom: 8px;">메모</div>
+        <div class="detail-memo" id="detailMemo"></div>
+      </div>
+
+      <div class="detail-actions">
+        <button class="btn btn-danger" id="detailDeleteBtn">삭제</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     책 추가/수정 모달
+     ============================================ -->
+<div class="modal-overlay" id="editModal" data-modal="edit">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" data-close-modal="edit">취소</button>
+      <div class="modal-title" id="editModalTitle">새 책 추가</div>
+      <button class="modal-action" id="editSaveBtn">저장</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">제목<span class="required">*</span></label>
+        <input type="text" id="editTitle" placeholder="책 제목" maxlength="200">
+      </div>
+      <div class="field">
+        <label class="field-label">저자<span class="required">*</span></label>
+        <input type="text" id="editAuthor" placeholder="저자" maxlength="100">
+      </div>
+      <div class="field">
+        <label class="field-label">읽은 날짜</label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="field">
+        <label class="field-label">별점</label>
+        <div style="display: flex; align-items: center;">
+          <div class="field-stars" id="editStars">
+            <span class="field-star" data-value="1">★</span>
+            <span class="field-star" data-value="2">★</span>
+            <span class="field-star" data-value="3">★</span>
+            <span class="field-star" data-value="4">★</span>
+            <span class="field-star" data-value="5">★</span>
+          </div>
+          <button class="field-star-clear" id="editStarsClear">지우기</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">메모</label>
+        <textarea id="editMemo" placeholder="짧은 한 줄, 인상 깊었던 구절…" maxlength="2000"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     정렬 모달
+     ============================================ -->
+<div class="modal-overlay" id="sortModal" data-modal="sort">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" data-close-modal="sort">닫기</button>
+      <div class="modal-title">정렬</div>
+      <div style="width: 40px;"></div>
+    </div>
+    <div class="modal-body">
+      <button class="menu-item sort-option" data-sort="created_desc">최근 추가순</button>
+      <button class="menu-item sort-option" data-sort="date_desc">읽은 날짜 (최신순)</button>
+      <button class="menu-item sort-option" data-sort="date_asc">읽은 날짜 (오래된순)</button>
+      <button class="menu-item sort-option" data-sort="title_asc">제목 (가나다순)</button>
+      <button class="menu-item sort-option" data-sort="author_asc">저자 (가나다순)</button>
+      <button class="menu-item sort-option" data-sort="rating_desc">별점 높은순</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     확인 모달 (삭제 확인 등)
+     ============================================ -->
+<div class="modal-overlay confirm-overlay" id="confirmModal" data-modal="confirm">
+  <div class="confirm-modal">
+    <div class="confirm-title" id="confirmTitle"></div>
+    <div class="confirm-message" id="confirmMessage"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="confirmCancel">취소</button>
+      <button class="btn btn-danger" id="confirmOk">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================
+     Supabase 라이브러리 (CDN)
+     ============================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ============================================
+     통합 스크립트: 인증 + 책 CRUD + 모달 스택
+     ============================================ -->
+<script>
+'use strict';
+
+/* =========================================================
+   설정
+   ========================================================= */
+const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+
+const LS = {
+  PIN:        'zbooks784_pin',
+  FAIL_COUNT: 'zbooks784_fail_count',
+  LOCK_UNTIL: 'zbooks784_lock_until',
+  SORT:       'zbooks784_sort',
+};
+
+const MAX_FAIL = 5;
+const LOCK_MINUTES = 10;
+const PIN_LENGTH = 4;
+const PAGE_SIZE = 50;
+
+const SORT_LABELS = {
+  created_desc: '최근 추가순',
+  date_desc:    '읽은 날짜 (최신순)',
+  date_asc:     '읽은 날짜 (오래된순)',
+  title_asc:    '제목 (가나다순)',
+  author_asc:   '저자 (가나다순)',
+  rating_desc:  '별점 높은순',
+};
+
+/* =========================================================
+   Supabase 클라이언트 — 다른 앱과 완전 격리 + 매 요청에 PIN 헤더 자동 포함
+   ---------------------------------------------------------
+   같은 anon key + URL을 쓰는 다른 앱들이 있어도 충돌 안 나게:
+   - storageKey 우리만의 이름으로 (다른 앱의 인증 토큰을 보지도 만지지도 않음)
+   - persistSession/autoRefreshToken off (우리는 Supabase Auth 안 씀, PIN+RLS만 씀)
+   - detectSessionInUrl off (URL의 access_token 같은 거 절대 안 잡음)
+   - multiTab 스토리지 이벤트 분리
+
+   인증 방식:
+   - 매 요청마다 'x-zbooks-pin' 헤더에 저장된 PIN을 자동 포함
+   - 서버의 zbooks_is_unlocked()가 헤더의 PIN을 직접 검증 → RLS 통과
+   - connection pooling이나 세션 변수에 의존하지 않음 → 100% 안정적
+   - PIN 자체는 PostgREST의 request.headers GUC로 전달됨 (HTTPS이므로 안전)
+   ========================================================= */
+function zbooksFetch(input, init = {}) {
+  const headers = new Headers(init.headers || {});
+  const pin = localStorage.getItem(LS.PIN);
+  if (pin) headers.set('x-zbooks-pin', pin);
+  return fetch(input, { ...init, headers });
+}
+
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storageKey: 'zbooks784_sb_auth_isolated',
+    storage: {
+      // 우리 전용 빈 스토리지 - localStorage 자체를 안 만지게
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    },
+  },
+  global: {
+    headers: { 'X-Client-Info': 'zbooks784' },
+    fetch: zbooksFetch,
+  },
+});
+
+/* =========================================================
+   ZBooks API — 모든 DB 작업 단일 진입점
+   ---------------------------------------------------------
+   인증 모델:
+   - 매 HTTP 요청마다 supabase 클라이언트(zbooksFetch)가 'x-zbooks-pin' 헤더 자동 포함
+   - 서버의 zbooks_is_unlocked()가 헤더의 PIN을 직접 검증 → RLS 통과
+   - 클라이언트 측에서는 unlock RPC를 매번 호출하거나 캐싱할 필요 없음
+   - 단, 사용자가 PIN을 처음 입력했을 때만 'unlock' RPC를 호출해서 PIN이 맞는지 확인
+   ========================================================= */
+const ZBooks = {
+  // 사용자 PIN 입력 시 한 번 호출해서 PIN이 맞는지만 확인 (zbooks_unlock RPC)
+  // 이 RPC는 set_config로 세션 변수를 설정하지만, 우리는 그 효과는 사용 안 하고
+  // 단순히 boolean 반환값만 사용 (PIN 일치 여부)
+  async unlock(pin) {
+    // 일시적으로 헤더에 입력 PIN을 실어서 RPC 호출 — fetch wrapper가 localStorage의 PIN을 쓰므로
+    // 입력 PIN을 임시로 localStorage에 넣지 않고 RPC body로만 보냄. 검증 로직은 RPC가 처리.
+    const { data, error } = await supa.rpc('zbooks_unlock', { input_pin: pin });
+    if (error) {
+      console.error('unlock error:', error);
+      throw error;
+    }
+    return data === true;
+  },
+
+  /* ----- 책 CRUD ----- */
+
+  // 검색 + 정렬 + 페이지네이션해서 가져오기
+  async list({ q = '', sort = 'created_desc', page = 1 } = {}) {
+    // 한글 가나다순 정렬은 PostgreSQL collation 이슈로 클라이언트에서 처리
+    if (sort === 'title_asc' || sort === 'author_asc') {
+      return await this._listClientSorted({ q, sort, page });
+    }
+
+    let query = supa.from('zbooks').select('*', { count: 'exact' });
+
+    // 검색 (제목 OR 저자)
+    if (q && q.trim()) {
+      const safeQ = q.trim().replace(/[%_,]/g, '\\$&');
+      query = query.or(`title.ilike.%${safeQ}%,author.ilike.%${safeQ}%`);
+    }
+
+    // 정렬
+    switch (sort) {
+      case 'created_desc':
+        query = query.order('created_at', { ascending: false }).order('id', { ascending: false });
+        break;
+      case 'date_desc':
+        query = query.order('read_date', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
+        break;
+      case 'date_asc':
+        query = query.order('read_date', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+        break;
+      case 'rating_desc':
+        query = query.order('rating', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
+        break;
+    }
+
+    // 페이지네이션
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+    return { rows: data || [], total: count || 0 };
+  },
+
+  // 한글 가나다순 정렬 (클라이언트 측 처리 - localeCompare 'ko' 사용)
+  async _listClientSorted({ q, sort, page }) {
+    let query = supa.from('zbooks').select('*');
+    if (q && q.trim()) {
+      const safeQ = q.trim().replace(/[%_,]/g, '\\$&');
+      query = query.or(`title.ilike.%${safeQ}%,author.ilike.%${safeQ}%`);
+    }
+    // 전체 데이터 받기 (한도 넉넉히)
+    query = query.range(0, 9999);
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const all = data || [];
+    const field = sort === 'title_asc' ? 'title' : 'author';
+    all.sort((a, b) => {
+      const va = (a[field] || '').toString();
+      const vb = (b[field] || '').toString();
+      return va.localeCompare(vb, 'ko');
+    });
+
+    const total = all.length;
+    const from = (page - 1) * PAGE_SIZE;
+    const rows = all.slice(from, from + PAGE_SIZE);
+    return { rows, total };
+  },
+
+  // 통계 (전체 카운트, 날짜 카운트, 별점 카운트)
+  async stats() {
+    const [t, d, r] = await Promise.all([
+      supa.from('zbooks').select('*', { count: 'exact', head: true }),
+      supa.from('zbooks').select('*', { count: 'exact', head: true }).not('read_date', 'is', null),
+      supa.from('zbooks').select('*', { count: 'exact', head: true }).not('rating', 'is', null),
+    ]);
+    if (t.error) throw t.error;
+    if (d.error) throw d.error;
+    if (r.error) throw r.error;
+    return { total: t.count || 0, withDate: d.count || 0, withRating: r.count || 0 };
+  },
+
+  async insert(book) {
+    const { data, error } = await supa.from('zbooks').insert(book).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id, patch) {
+    const { data, error } = await supa.from('zbooks').update(patch).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async remove(id) {
+    const { error } = await supa.from('zbooks').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+/* =========================================================
+   잠금/실패 카운터
+   ========================================================= */
+const FailLock = {
+  getFailCount() { return parseInt(localStorage.getItem(LS.FAIL_COUNT) || '0', 10); },
+  incFailCount() {
+    const n = this.getFailCount() + 1;
+    localStorage.setItem(LS.FAIL_COUNT, String(n));
+    return n;
+  },
+  resetFailCount() {
+    localStorage.removeItem(LS.FAIL_COUNT);
+    localStorage.removeItem(LS.LOCK_UNTIL);
+  },
+  getLockUntil() { return parseInt(localStorage.getItem(LS.LOCK_UNTIL) || '0', 10); },
+  remainingMs() {
+    const until = this.getLockUntil();
+    if (!until) return 0;
+    const left = until - Date.now();
+    if (left <= 0) {
+      localStorage.removeItem(LS.LOCK_UNTIL);
+      localStorage.removeItem(LS.FAIL_COUNT);
+      return 0;
+    }
+    return left;
+  },
+  startLock() {
+    const until = Date.now() + LOCK_MINUTES * 60 * 1000;
+    localStorage.setItem(LS.LOCK_UNTIL, String(until));
+  },
+};
+
+/* =========================================================
+   세션
+   ========================================================= */
+const Session = {
+  hasSavedPin() { return !!localStorage.getItem(LS.PIN); },
+  savePin(pin) { localStorage.setItem(LS.PIN, pin); },
+  clearAll() {
+    localStorage.removeItem(LS.PIN);
+    localStorage.removeItem(LS.FAIL_COUNT);
+    localStorage.removeItem(LS.LOCK_UNTIL);
+  },
+};
+
+/* =========================================================
+   토스트
+   ========================================================= */
+let toastTimer = null;
+function showToast(msg, ms = 1800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* =========================================================
+   모달 스택 (뒤로가기 처리)
+   ---------------------------------------------------------
+   설계:
+   - 모달 열 때: openModal(name) → 스택에 push + history.pushState
+   - 모달 닫을 때: closeModal(name) → 스택에서 pop + history.back() (단, popstate 트리거가 아닐 때만)
+   - 사용자가 뒤로가기: popstate → 스택 최상단 모달 닫기
+   - 같은 모달 중복 push 방지 (큰 단계만 유지)
+   - 메뉴 드롭다운(점3개)도 'menu'라는 가상 모달로 스택에 등록 → 뒤로가기로 사이트 이탈 방지
+   ========================================================= */
+const ModalStack = {
+  stack: [],   // 열린 모달 이름 순서대로
+  ignorePop: 0,   // 우리가 history.back()을 직접 호출했을 때 popstate를 무시할 횟수
+
+  isOpen(name) { return this.stack.includes(name); },
+
+  open(name) {
+    // 이미 열려있으면 스택만 유지 (top으로 옮김)
+    const idx = this.stack.indexOf(name);
+    if (idx !== -1) {
+      // 이미 top이면 그냥 패스
+      if (idx === this.stack.length - 1) return;
+      // 중간에 있으면 위로 올림 (실제로는 발생하지 않게 설계, 안전망)
+      this.stack.splice(idx, 1);
+    }
+    this.stack.push(name);
+    this._render(name);
+    history.pushState({ modal: name, depth: this.stack.length }, '');
+  },
+
+  // 명시적으로 닫기 (X 버튼 등)
+  close(name) {
+    const idx = this.stack.indexOf(name);
+    if (idx === -1) return;
+
+    // 닫을 모달보다 위에 있는 것들도 모두 닫음 (일반적으로는 top 모달만)
+    const toCloseCount = this.stack.length - idx;
+    const closing = this.stack.slice(idx);
+    this.stack.length = idx;
+    closing.forEach(n => this._hide(n));
+
+    // pushState했던 만큼 history.back()
+    this.ignorePop += toCloseCount;
+    for (let i = 0; i < toCloseCount; i++) {
+      history.back();
+    }
+  },
+
+  closeTop() {
+    if (this.stack.length === 0) return;
+    const name = this.stack[this.stack.length - 1];
+    this.close(name);
+  },
+
+  // 같은 history slot 안에서 모달을 교체 (history 조작 없음)
+  // 예: menu → confirm 전환 시 history.back + pushState 경합 방지
+  replace(oldName, newName) {
+    const idx = this.stack.indexOf(oldName);
+    if (idx !== -1) {
+      this._hide(oldName);
+      this.stack.splice(idx, 1);
+    }
+    this.stack.push(newName);
+    this._show(newName);
+    // history는 그대로 — 사용자가 뒤로가기 누르면 popstate 1번 → newName 닫힘
+  },
+
+  // 사용자가 시스템 뒤로가기 눌러서 popstate 발생
+  _onPopState() {
+    if (this.ignorePop > 0) {
+      this.ignorePop--;
+      return;
+    }
+    // 스택 최상단 1개만 닫기
+    if (this.stack.length > 0) {
+      const name = this.stack.pop();
+      this._hide(name);
+    }
+    // 스택이 비었으면 메인 → 한 번 더 뒤로가면 자연스럽게 사이트 종료
+  },
+
+  _hide(name) {
+    if (name === 'menu') {
+      const d = document.getElementById('menuDropdown');
+      if (d) d.classList.remove('show');
+      return;
+    }
+    const m = document.querySelector(`[data-modal="${name}"]`);
+    if (m) m.classList.remove('show');
+  },
+
+  _show(name) {
+    if (name === 'menu') {
+      const d = document.getElementById('menuDropdown');
+      if (d) d.classList.add('show');
+      return;
+    }
+    const m = document.querySelector(`[data-modal="${name}"]`);
+    if (m) m.classList.add('show');
+  },
+
+  _render(justOpened) {
+    if (justOpened) this._show(justOpened);
+  },
+
+  // 강제로 모든 스택 비우기 (로그아웃용)
+  clearAll() {
+    const n = this.stack.length;
+    const list = this.stack.slice();
+    this.stack = [];
+    list.forEach(name => this._hide(name));
+    this.ignorePop += n;
+    for (let i = 0; i < n; i++) {
+      history.back();
+    }
+  },
+};
+
+window.addEventListener('popstate', () => ModalStack._onPopState());
+
+/* =========================================================
+   유틸
+   ========================================================= */
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderStarsHtml(rating) {
+  if (!rating) return '';
+  const out = [];
+  for (let i = 1; i <= 5; i++) {
+    if (i <= rating) {
+      out.push('<span style="color: var(--gold);">★</span>');
+    } else {
+      out.push('<span style="color: var(--gold-empty);">★</span>');
+    }
+  }
+  return out.join('');
+}
+
+function formatDateDisplay(s) {
+  if (!s) return '';
+  // YYYY-MM-DD → YYYY.MM.DD
+  return s.replace(/-/g, '.');
+}
+
+function debounce(fn, wait) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+
+/* =========================================================
+   잠금 화면 (PIN)
+   ========================================================= */
+const LockScreen = {
+  pin: '',
+  lockTickTimer: null,
+
+  init() {
+    document.getElementById('pinPad').addEventListener('click', (e) => {
+      const btn = e.target.closest('.pin-key');
+      if (!btn || !btn.dataset.key) return;
+      this.handleKey(btn.dataset.key);
+    });
+  },
+
+  show() {
+    this.pin = '';
+    this.renderDots();
+    this.clearMessage();
+    document.getElementById('lockScreen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    const sp = document.getElementById('splash');
+    if (sp) sp.classList.add('hidden');
+    if (FailLock.remainingMs() > 0) this.startLockCountdown();
+  },
+
+  hide() {
+    document.getElementById('lockScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    this.stopLockCountdown();
+  },
+
+  renderDots() {
+    document.querySelectorAll('#pinDots .pin-dot').forEach((d, i) => {
+      d.classList.toggle('filled', i < this.pin.length);
+    });
+  },
+
+  showMessage(text, isError = false) {
+    const el = document.getElementById('lockMessage');
+    el.textContent = text;
+    el.classList.toggle('error', isError);
+  },
+  clearMessage() {
+    const el = document.getElementById('lockMessage');
+    el.textContent = '';
+    el.classList.remove('error');
+  },
+
+  shake() {
+    const dots = document.getElementById('pinDots');
+    dots.classList.remove('shake');
+    void dots.offsetWidth;
+    dots.classList.add('shake');
+  },
+
+  handleKey(key) {
+    if (FailLock.remainingMs() > 0) return;
+
+    if (key === 'back') {
+      if (this.pin.length > 0) {
+        this.pin = this.pin.slice(0, -1);
+        this.renderDots();
+      }
+      this.clearMessage();
+      return;
+    }
+
+    if (this.pin.length >= PIN_LENGTH) return;
+    this.pin += key;
+    this.renderDots();
+    this.clearMessage();
+
+    if (this.pin.length === PIN_LENGTH) this.verify();
+  },
+
+  async verify() {
+    const tryingPin = this.pin;
+    this.showMessage('확인 중…');
+
+    let ok = false;
+    try {
+      ok = await ZBooks.unlock(tryingPin);
+    } catch (e) {
+      console.error(e);
+      this.showMessage('연결 오류. 다시 시도해주세요.', true);
+      this.shake();
+      this.pin = '';
+      this.renderDots();
+      return;
+    }
+
+    if (ok) {
+      Session.savePin(tryingPin);
+      FailLock.resetFailCount();
+      this.clearMessage();
+      Main.enter();
+    } else {
+      const failed = FailLock.incFailCount();
+      this.shake();
+      this.pin = '';
+      this.renderDots();
+
+      const remain = MAX_FAIL - failed;
+      if (remain <= 0) {
+        FailLock.startLock();
+        this.startLockCountdown();
+      } else {
+        this.showMessage(`PIN이 일치하지 않습니다 · ${remain}회 남음`, true);
+      }
+    }
+  },
+
+  startLockCountdown() {
+    this.stopLockCountdown();
+    const update = () => {
+      const left = FailLock.remainingMs();
+      if (left <= 0) {
+        this.stopLockCountdown();
+        this.clearMessage();
+        return;
+      }
+      const min = Math.floor(left / 60000);
+      const sec = Math.floor((left % 60000) / 1000);
+      this.showMessage(`5회 실패. ${min}:${String(sec).padStart(2, '0')} 후 다시 시도하세요.`, true);
+    };
+    update();
+    this.lockTickTimer = setInterval(update, 1000);
+  },
+  stopLockCountdown() {
+    if (this.lockTickTimer) {
+      clearInterval(this.lockTickTimer);
+      this.lockTickTimer = null;
+    }
+  },
+};
+
+/* =========================================================
+   스플래시 (자동 로그인 중 화면)
+   ========================================================= */
+const Splash = {
+  show() {
+    document.getElementById('splash').classList.remove('hidden');
+    document.getElementById('lockScreen').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+  },
+  hide() {
+    document.getElementById('splash').classList.add('hidden');
+  },
+};
+
+/* =========================================================
+   메인 — 책 목록
+   ========================================================= */
+const Main = {
+  state: {
+    q: '',
+    sort: localStorage.getItem(LS.SORT) || 'created_desc',
+    page: 1,
+    rows: [],
+    total: 0,
+  },
+  _refreshSeq: 0,   // 정렬/검색 빠르게 바꿀 때 stale response 무시용
+
+  // 자동 로그인 / PIN 로그인 후 호출. 데이터를 모두 받은 다음에 진입 화면을 보여준다.
+  async enter() {
+    this.applySortLabel();
+    // booksList는 미리 spinner로 채워둠 (메인이 살짝이라도 빈 상태로 보이지 않게)
+    document.getElementById('booksList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    document.getElementById('pagination').innerHTML = '';
+
+    // 데이터 다 받기까지 기다린 다음에 화면 전환
+    try {
+      await this.refresh();
+    } catch (e) {
+      // refresh 내부에서 이미 처리하지만, 안전망
+      console.error('enter refresh error:', e);
+    }
+    // 통계는 화면 진입 후 바로 백그라운드로 받아도 OK
+    this.refreshStats();
+
+    // 이제 진짜로 화면 전환
+    LockScreen.hide();
+    Splash.hide();
+  },
+
+  applySortLabel() {
+    document.getElementById('sortLabel').textContent = SORT_LABELS[this.state.sort] || '최근 추가순';
+  },
+
+  async refresh() {
+    const list = document.getElementById('booksList');
+    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    document.getElementById('pagination').innerHTML = '';
+
+    const seq = ++this._refreshSeq;
+
+    try {
+      const { rows, total } = await ZBooks.list({
+        q: this.state.q,
+        sort: this.state.sort,
+        page: this.state.page,
+      });
+      // stale 응답 무시 — 사용자가 정렬을 빠르게 바꿨거나 검색어가 바뀌었으면
+      // 이전 요청 결과가 늦게 도착해 빈 리스트로 화면 덮어쓰는 일을 막음 (7번 원인)
+      if (seq !== this._refreshSeq) return;
+
+      this.state.rows = rows;
+      this.state.total = total;
+      this.renderList();
+      this.renderPagination();
+    } catch (e) {
+      if (seq !== this._refreshSeq) return;
+      console.error(e);
+      if (e.message === 'UNAUTHORIZED') {
+        showToast('인증이 만료되었습니다');
+        Session.clearAll();
+        ModalStack.clearAll();
+        Splash.hide();
+        LockScreen.show();
+        return;
+      }
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">데이터를 불러오지 못했습니다.</div></div>`;
+      showToast('네트워크 오류');
+      throw e;
+    }
+  },
+
+  async refreshStats() {
+    try {
+      const s = await ZBooks.stats();
+      document.getElementById('statTotal').textContent = s.total.toLocaleString();
+      document.getElementById('statSub').textContent = `· 날짜 ${s.withDate} · 별점 ${s.withRating}`;
+    } catch (e) {
+      console.error('stats error:', e);
+    }
+  },
+
+  renderList() {
+    const list = document.getElementById('booksList');
+    if (this.state.rows.length === 0) {
+      const msg = this.state.q
+        ? '검색 결과가 없습니다'
+        : '아직 책이 없습니다';
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📖</div><div class="empty-state-text">${msg}</div></div>`;
+      return;
+    }
+
+    list.innerHTML = this.state.rows.map(b => {
+      const hasRating = b.rating != null;
+      const hasDate = b.read_date != null;
+      const noMeta = !hasRating && !hasDate;
+      const dateHtml = hasDate ? `<div class="book-date">${escapeHtml(formatDateDisplay(b.read_date))}</div>` : '';
+      const ratingHtml = hasRating ? `<div class="book-rating-mini">${renderStarsHtml(b.rating)}</div>` : '';
+
+      return `
+        <div class="book-card ${noMeta ? 'no-meta' : ''}" data-id="${b.id}">
+          <div class="book-title">${escapeHtml(b.title)}</div>
+          <div class="book-author">${escapeHtml(b.author)}</div>
+          <div class="book-meta">${ratingHtml}${dateHtml}</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderPagination() {
+    const cont = document.getElementById('pagination');
+    const total = this.state.total;
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const cur = this.state.page;
+
+    if (total === 0) {
+      cont.innerHTML = '';
+      return;
+    }
+
+    const parts = [];
+    parts.push(`<button class="page-btn" data-page="prev" ${cur === 1 ? 'disabled' : ''}>‹</button>`);
+
+    // 페이지 번호: 현재 ±2, 처음/끝 항상 표시
+    const showPages = new Set([1, pages, cur - 1, cur, cur + 1]);
+    const sortedPages = [...showPages].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
+
+    let lastShown = 0;
+    for (const p of sortedPages) {
+      if (p - lastShown > 1) parts.push(`<span class="page-ellipsis">…</span>`);
+      parts.push(`<button class="page-btn ${p === cur ? 'active' : ''}" data-page="${p}">${p}</button>`);
+      lastShown = p;
+    }
+
+    parts.push(`<button class="page-btn" data-page="next" ${cur === pages ? 'disabled' : ''}>›</button>`);
+    cont.innerHTML = parts.join('');
+  },
+
+  goPage(target) {
+    const pages = Math.max(1, Math.ceil(this.state.total / PAGE_SIZE));
+    if (target === 'prev') this.state.page = Math.max(1, this.state.page - 1);
+    else if (target === 'next') this.state.page = Math.min(pages, this.state.page + 1);
+    else {
+      const n = parseInt(target, 10);
+      if (Number.isFinite(n)) this.state.page = Math.max(1, Math.min(pages, n));
+    }
+    document.getElementById('booksScroll').scrollTop = 0;
+    this.refresh();
+  },
+
+  setSort(sort) {
+    if (!SORT_LABELS[sort]) return;
+    this.state.sort = sort;
+    this.state.page = 1;
+    localStorage.setItem(LS.SORT, sort);
+    this.applySortLabel();
+    this.refresh();
+  },
+
+  setQuery(q) {
+    if (this.state.q === q) return;
+    this.state.q = q;
+    this.state.page = 1;
+    this.refresh();
+  },
+};
+
+/* =========================================================
+   상세 모달
+   ========================================================= */
+const Detail = {
+  currentId: null,
+
+  open(book) {
+    this.currentId = book.id;
+    document.getElementById('detailTitle').textContent = book.title;
+    document.getElementById('detailAuthor').textContent = book.author;
+
+    const dateEl = document.getElementById('detailDate');
+    if (book.read_date) {
+      dateEl.textContent = formatDateDisplay(book.read_date);
+      dateEl.classList.remove('empty');
+    } else {
+      dateEl.textContent = '기록 없음';
+      dateEl.classList.add('empty');
+    }
+
+    const starsEl = document.getElementById('detailStars');
+    if (book.rating) {
+      starsEl.innerHTML = renderStarsHtml(book.rating);
+    } else {
+      starsEl.innerHTML = '<span style="color: var(--ink-faint); font-size: 13px; font-style: italic; font-family: var(--font-serif);">기록 없음</span>';
+    }
+
+    const memoEl = document.getElementById('detailMemo');
+    if (book.memo && book.memo.trim()) {
+      memoEl.textContent = book.memo;
+      memoEl.style.fontStyle = 'normal';
+      memoEl.style.color = 'var(--ink)';
+    } else {
+      memoEl.textContent = '메모 없음';
+      memoEl.style.fontStyle = 'italic';
+      memoEl.style.color = 'var(--ink-faint)';
+    }
+
+    ModalStack.open('detail');
+    // 오버레이 스크롤 항상 위에서 시작
+    setTimeout(() => {
+      const overlay = document.querySelector('[data-modal="detail"]');
+      if (overlay) overlay.scrollTop = 0;
+    }, 0);
+  },
+
+  async confirmDelete() {
+    if (!this.currentId) return;
+    Confirm.show({
+      title: '이 책을 삭제할까요?',
+      message: '삭제하면 되돌릴 수 없습니다.',
+      okText: '삭제',
+      onOk: async () => {
+        try {
+          await ZBooks.remove(this.currentId);
+          // 상세 모달도 닫기 (confirm 위에 detail이 깔려있음)
+          ModalStack.close('detail');
+          showToast('삭제되었습니다');
+          await Main.refresh();
+          await Main.refreshStats();
+        } catch (e) {
+          console.error(e);
+          showToast('삭제 실패');
+        }
+      },
+    });
+  },
+
+  startEdit() {
+    if (!this.currentId) return;
+    const book = Main.state.rows.find(b => b.id === this.currentId);
+    if (!book) return;
+    Editor.open(book);
+  },
+};
+
+/* =========================================================
+   추가/수정 모달
+   ========================================================= */
+const Editor = {
+  editingId: null,
+  rating: 0,
+
+  open(book = null) {
+    if (book) {
+      this.editingId = book.id;
+      document.getElementById('editModalTitle').textContent = '책 수정';
+      document.getElementById('editTitle').value = book.title || '';
+      document.getElementById('editAuthor').value = book.author || '';
+      document.getElementById('editDate').value = book.read_date || '';
+      document.getElementById('editMemo').value = book.memo || '';
+      this.setRating(book.rating || 0);
+    } else {
+      this.editingId = null;
+      document.getElementById('editModalTitle').textContent = '새 책 추가';
+      document.getElementById('editTitle').value = '';
+      document.getElementById('editAuthor').value = '';
+      document.getElementById('editDate').value = '';
+      document.getElementById('editMemo').value = '';
+      this.setRating(0);
+    }
+    ModalStack.open('edit');
+
+    // 자동 포커스 안 줌 — 키보드가 자동으로 올라오면 모달이 viewport 안에서 위로 밀려
+    // 윗부분이 잘리는 현상이 생김. 사용자가 직접 입력칸을 탭하게 둠.
+    // 또한 모달 스크롤이 항상 위에서 시작하도록 보장
+    setTimeout(() => {
+      const overlay = document.querySelector('[data-modal="edit"]');
+      if (overlay) overlay.scrollTop = 0;
+    }, 0);
+  },
+
+  setRating(r) {
+    this.rating = r;
+    document.querySelectorAll('#editStars .field-star').forEach((s, idx) => {
+      s.classList.toggle('filled', idx < r);
+    });
+  },
+
+  async save() {
+    const title = document.getElementById('editTitle').value.trim();
+    const author = document.getElementById('editAuthor').value.trim();
+    const dateRaw = document.getElementById('editDate').value;
+    const memoRaw = document.getElementById('editMemo').value;
+
+    if (!title) {
+      showToast('제목을 입력해주세요');
+      document.getElementById('editTitle').focus();
+      return;
+    }
+    if (!author) {
+      showToast('저자를 입력해주세요');
+      document.getElementById('editAuthor').focus();
+      return;
+    }
+
+    const payload = {
+      title,
+      author,
+      read_date: dateRaw || null,
+      memo: memoRaw.trim() || null,
+      rating: this.rating || null,
+    };
+
+    const saveBtn = document.getElementById('editSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중…';
+
+    try {
+      if (this.editingId) {
+        // 수정: 기존 책 데이터와 비교해서 변경 없으면 그냥 닫기 (DB 호출 안 함)
+        const original = Main.state.rows.find(b => b.id === this.editingId);
+        const unchanged = original
+          && (original.title || '') === payload.title
+          && (original.author || '') === payload.author
+          && (original.read_date || null) === payload.read_date
+          && (original.memo || null) === payload.memo
+          && (original.rating || null) === payload.rating;
+
+        if (unchanged) {
+          // 변경된 게 없으면 수정 모달 + 상세 모달 모두 닫고 끝
+          if (ModalStack.isOpen('detail')) ModalStack.close('detail');
+          else ModalStack.close('edit');
+          return;
+        }
+
+        await ZBooks.update(this.editingId, payload);
+        showToast('수정되었습니다');
+        // 수정 완료: 수정 모달 + 상세 모달 모두 닫기
+        // detail이 위에 있으면 close('detail')으로 둘 다 닫힘 (스택 위쪽 모두 정리)
+        if (ModalStack.isOpen('detail')) {
+          ModalStack.close('detail');
+        } else {
+          ModalStack.close('edit');
+        }
+        await Main.refresh();
+        await Main.refreshStats();
+      } else {
+        // 새 책 추가
+        await ZBooks.insert(payload);
+        showToast('추가되었습니다');
+        ModalStack.close('edit');
+        await Main.refresh();
+        await Main.refreshStats();
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('저장 실패: ' + (e?.message || '알 수 없는 오류'));
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+  },
+};
+
+/* =========================================================
+   확인 모달
+   ========================================================= */
+const Confirm = {
+  pendingOk: null,
+
+  show({ title, message, okText = '삭제', onOk, replaceFromMenu = false }) {
+    document.getElementById('confirmTitle').textContent = title || '';
+    document.getElementById('confirmMessage').textContent = message || '';
+    document.getElementById('confirmOk').textContent = okText;
+    this.pendingOk = onOk;
+    if (replaceFromMenu && ModalStack.isOpen('menu')) {
+      ModalStack.replace('menu', 'confirm');
+    } else {
+      ModalStack.open('confirm');
+    }
+  },
+
+  async runOk() {
+    const fn = this.pendingOk;
+    this.pendingOk = null;
+    ModalStack.close('confirm');
+    if (fn) await fn();
+  },
+
+  cancel() {
+    this.pendingOk = null;
+    ModalStack.close('confirm');
+  },
+};
+
+/* =========================================================
+   로그아웃
+   ========================================================= */
+async function logout() {
+  Session.clearAll();
+  document.getElementById('booksList').innerHTML = '';
+  document.getElementById('pagination').innerHTML = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').classList.remove('show');
+  ModalStack.clearAll();
+  Main.state = { q: '', sort: localStorage.getItem(LS.SORT) || 'created_desc', page: 1, rows: [], total: 0 };
+  LockScreen.show();
+  showToast('로그아웃 되었습니다');
+}
+
+/* =========================================================
+   부팅
+   ========================================================= */
+async function boot() {
+  // history baseline 설정 - 모달 뒤로가기로 사이트 이탈 방지를 위한 앵커
+  if (!history.state || !history.state.zbooks_base) {
+    history.replaceState({ zbooks_base: true }, '');
+  }
+
+  // 다른 앱(같은 도메인)에서 localStorage 변경 이벤트가 와도 우리는 무시
+  // 우리 키 이름은 zbooks784_ 접두사로 격리되어 있어서 다른 앱이 만질 수 없음
+  // 혹시 다른 앱이 이 키들을 만지면 (충돌은 없지만 디버깅 단서로) 콘솔 경고만
+  window.addEventListener('storage', (e) => {
+    if (e.key && e.key.startsWith('zbooks784_')) {
+      console.warn('[zbooks784] 다른 탭에서 우리 키 변경 감지:', e.key);
+    }
+    // 그 외 키는 완전히 무시 (다른 앱들의 영향 받지 않음)
+  });
+
+  LockScreen.init();
+  bindUI();
+
+  if (FailLock.remainingMs() > 0) {
+    LockScreen.show();
+    return;
+  }
+
+  if (Session.hasSavedPin()) {
+    // 자동 로그인 시도 — PIN 화면이 깜빡 보이지 않게 처음부터 스플래시만 노출
+    Splash.show();
+    try {
+      // 저장된 PIN이 여전히 유효한지 확인 (unlock RPC가 boolean 반환)
+      const savedPin = localStorage.getItem(LS.PIN);
+      const ok = await ZBooks.unlock(savedPin);
+      if (ok) {
+        await Main.enter();
+        return;
+      }
+    } catch (e) {
+      console.error('auto-login error:', e);
+    }
+    // 실패한 경우만 PIN 화면으로
+    Session.clearAll();
+    Splash.hide();
+    LockScreen.show();
+    return;
+  }
+
+  LockScreen.show();
+}
+
+/* =========================================================
+   UI 바인딩
+   ========================================================= */
+function bindUI() {
+  // 검색
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+  const onSearch = debounce(() => Main.setQuery(searchInput.value.trim()), 300);
+  searchInput.addEventListener('input', () => {
+    searchClear.classList.toggle('show', searchInput.value.length > 0);
+    onSearch();
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.classList.remove('show');
+    Main.setQuery('');
+  });
+
+  // 메뉴 드롭다운 — ModalStack에 'menu' 가상 모달로 등록 → 뒤로가기로 메뉴만 닫힘
+  const menuBtn = document.getElementById('menuBtn');
+  const menuDropdown = document.getElementById('menuDropdown');
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (ModalStack.isOpen('menu')) {
+      ModalStack.close('menu');
+    } else {
+      ModalStack.open('menu');
+    }
+  });
+  document.addEventListener('click', (e) => {
+    // 메뉴 바깥 클릭하면 메뉴 닫기 (스택에서도 제거)
+    if (!ModalStack.isOpen('menu')) return;
+    if (!menuDropdown.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
+      ModalStack.close('menu');
+    }
+  });
+
+  // 정렬 모달 열기
+  document.getElementById('sortBtn').addEventListener('click', () => {
+    ModalStack.open('sort');
+  });
+
+  // 정렬 옵션
+  document.querySelectorAll('.sort-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sort = btn.dataset.sort;
+      Main.setSort(sort);
+      ModalStack.close('sort');
+    });
+  });
+
+  // 로그아웃
+  document.getElementById('menuLogout').addEventListener('click', () => {
+    // menu를 confirm으로 atomic 교체 — history.back/pushState 경합 방지
+    Confirm.show({
+      title: '로그아웃 하시겠어요?',
+      message: '저장된 PIN이 삭제되며, 다음에 다시 입력해야 합니다.',
+      okText: '로그아웃',
+      onOk: () => logout(),
+      replaceFromMenu: true,   // menu 슬롯을 confirm으로 교체
+    });
+  });
+
+  // 책 추가 버튼
+  document.getElementById('addBookBtn').addEventListener('click', () => {
+    Editor.open(null);
+  });
+
+  // 모달 닫기 버튼들 (X, 취소)
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.closeModal;
+      ModalStack.close(name);
+    });
+  });
+
+  // 카드 탭 → 상세
+  document.getElementById('booksList').addEventListener('click', (e) => {
+    const card = e.target.closest('.book-card');
+    if (!card) return;
+    const id = parseInt(card.dataset.id, 10);
+    const book = Main.state.rows.find(b => b.id === id);
+    if (book) Detail.open(book);
+  });
+
+  // 페이지네이션 클릭
+  document.getElementById('pagination').addEventListener('click', (e) => {
+    const btn = e.target.closest('.page-btn');
+    if (!btn || btn.disabled) return;
+    Main.goPage(btn.dataset.page);
+  });
+
+  // 상세 모달의 수정/삭제 버튼
+  document.getElementById('detailEditBtn').addEventListener('click', () => Detail.startEdit());
+  document.getElementById('detailDeleteBtn').addEventListener('click', () => Detail.confirmDelete());
+
+  // 추가/수정 모달의 별점
+  const fieldStars = document.getElementById('editStars');
+  fieldStars.addEventListener('click', (e) => {
+    const star = e.target.closest('.field-star');
+    if (!star) return;
+    Editor.setRating(parseInt(star.dataset.value, 10));
+  });
+  document.getElementById('editStarsClear').addEventListener('click', () => Editor.setRating(0));
+
+  // 추가/수정 모달의 저장 버튼
+  document.getElementById('editSaveBtn').addEventListener('click', () => Editor.save());
+
+  // 확인 모달의 OK/취소
+  document.getElementById('confirmOk').addEventListener('click', () => Confirm.runOk());
+  document.getElementById('confirmCancel').addEventListener('click', () => Confirm.cancel());
+
+  // 모달 오버레이 바깥 클릭 시 닫기 (아래로 내려가는 모달들만)
+  ['sort', 'edit', 'detail'].forEach(name => {
+    const m = document.querySelector(`[data-modal="${name}"]`);
+    m.addEventListener('click', (e) => {
+      if (e.target === m) ModalStack.closeTop();
+    });
+  });
+}
+
+/* =========================================================
+   엔트리
+   ========================================================= */
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+
+
+</body>
+</html>

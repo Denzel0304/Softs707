@@ -9,96 +9,132 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   :root{
     --g50:#f0faf0;--g100:#d4f0d4;--g200:#a8e0a8;--g300:#78cc78;--g400:#4db84d;
-    --g500:#339933;--g600:#267326;--g700:#1a4f1a;--g800:#0f330f;
-    --bg:#f7fdf7;--surface:#ffffff;--surface2:#f0faf0;
+    --g500:#339933;--g600:#267326;--g700:#1a4f1a;
+    --bg:#f7fdf7;--surface:#ffffff;
     --text1:#1a4f1a;--text2:#267326;--text3:#4db84d;
-    --border:#c8e8c8;--accent:#339933;
+    --border:#c8e8c8;
   }
-  body{font-family:'Apple SD Gothic Neo',system-ui,sans-serif;background:var(--bg);color:var(--text1);min-height:100vh;overflow-x:hidden;}
-  #app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;background:var(--bg);}
+  html,body{
+    width:100%;height:100%;
+    overflow:hidden;
+    touch-action:none;
+    overscroll-behavior:none;
+  }
+  body{font-family:'Apple SD Gothic Neo',system-ui,sans-serif;background:var(--bg);color:var(--text1);}
+  #app{
+    display:flex;flex-direction:column;
+    width:100%;height:100%;
+    max-width:430px;margin:0 auto;
+    background:var(--bg);
+    overflow:hidden;
+  }
+
+  /* HEADER */
   #header{
     background:var(--surface);border-bottom:1px solid var(--border);
-    padding:0 20px;height:56px;display:flex;align-items:center;justify-content:center;
+    padding:0 16px;height:48px;display:flex;align-items:center;justify-content:center;
     position:relative;flex-shrink:0;
   }
-  #header h1{font-size:20px;font-weight:600;color:var(--g600);display:flex;align-items:center;gap:8px;}
-  #header h1 i{font-size:22px;color:var(--g400);}
-  #settings-btn{position:absolute;right:16px;background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;padding:8px;border-radius:8px;}
-  #settings-btn:hover{background:var(--g50);}
-  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;gap:28px;}
+  #header h1{font-size:18px;font-weight:600;color:var(--g600);display:flex;align-items:center;gap:6px;}
+  #header h1 i{font-size:20px;color:var(--g400);}
+  #settings-btn{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text2);font-size:20px;padding:6px;border-radius:8px;}
+
+  /* MAIN */
+  #main{
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+    padding:6px 16px;
+    overflow:hidden;
+  }
+
+  /* PHASE */
   #phase-wrap{text-align:center;}
-  #phase-label{font-size:26px;font-weight:600;color:var(--g600);letter-spacing:1px;min-height:36px;}
-  #phase-sub{font-size:14px;color:var(--text3);margin-top:4px;}
+  #phase-label{font-size:22px;font-weight:600;color:var(--g600);letter-spacing:1px;}
+  #phase-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+
+  /* VIZ TABS */
+  #viz-tabs{display:flex;gap:4px;background:var(--g50);border:1px solid var(--border);border-radius:10px;padding:3px;width:100%;max-width:280px;}
+  .viz-tab{flex:1;border:none;background:none;cursor:pointer;padding:5px 6px;border-radius:7px;font-size:11px;color:var(--text2);transition:all 0.15s;}
+  .viz-tab.active{background:var(--g400);color:#fff;font-weight:600;}
+
+  /* VIZ */
   #viz-wrap{display:flex;align-items:center;justify-content:center;width:100%;}
-  #circle-viz{position:relative;width:220px;height:220px;}
+  #circle-viz{position:relative;width:160px;height:160px;}
   #circle-viz svg{width:100%;height:100%;}
-  .track{fill:none;stroke:var(--g100);stroke-width:14;}
-  .prog{fill:none;stroke:var(--g400);stroke-width:14;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg);}
+  .track{fill:none;stroke:var(--g100);stroke-width:12;}
+  .prog{fill:none;stroke:var(--g400);stroke-width:12;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg);}
   #circle-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
-  #circle-time{font-size:38px;font-weight:300;color:var(--g600);}
-  #circle-unit{font-size:13px;color:var(--text3);}
-  #bar-viz{width:100%;max-width:300px;display:none;}
-  #bar-track{background:var(--g100);border-radius:12px;height:28px;overflow:hidden;}
-  #bar-fill{background:var(--g400);height:100%;width:0%;border-radius:12px;}
-  #bar-time-label{text-align:center;margin-top:12px;font-size:36px;font-weight:300;color:var(--g600);}
-  #wave-viz{width:100%;max-width:320px;display:none;}
-  #wave-canvas{width:100%;height:120px;border-radius:16px;background:var(--g50);}
-  #wave-time-label{text-align:center;margin-top:12px;font-size:36px;font-weight:300;color:var(--g600);}
-  #stats{display:flex;gap:12px;width:100%;max-width:320px;}
-  .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
-  .stat-val{font-size:18px;font-weight:600;color:var(--g600);}
-  .stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
-  #session-row{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:14px;}
-  #session-bar{width:160px;height:6px;background:var(--g100);border-radius:3px;overflow:hidden;}
+  #circle-time{font-size:30px;font-weight:300;color:var(--g600);}
+  #circle-unit{font-size:11px;color:var(--text3);}
+  #bar-viz{width:100%;max-width:280px;display:none;}
+  #bar-track{background:var(--g100);border-radius:10px;height:20px;overflow:hidden;}
+  #bar-fill{background:var(--g400);height:100%;width:0%;border-radius:10px;}
+  #bar-time-label{text-align:center;margin-top:8px;font-size:30px;font-weight:300;color:var(--g600);}
+  #wave-viz{width:100%;max-width:300px;display:none;}
+  #wave-canvas{width:100%;height:80px;border-radius:12px;background:var(--g50);}
+  #wave-time-label{text-align:center;margin-top:8px;font-size:30px;font-weight:300;color:var(--g600);}
+
+  /* STATS */
+  #stats{display:flex;gap:8px;width:100%;max-width:300px;}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 4px;text-align:center;}
+  .stat-val{font-size:14px;font-weight:600;color:var(--g600);}
+  .stat-lbl{font-size:10px;color:var(--text3);margin-top:1px;}
+
+  /* SESSION */
+  #session-row{display:flex;align-items:center;gap:6px;color:var(--text2);font-size:12px;}
+  #session-bar{width:120px;height:5px;background:var(--g100);border-radius:3px;overflow:hidden;}
   #session-fill{height:100%;background:var(--g300);border-radius:3px;width:0%;}
-  #controls{display:flex;gap:12px;}
+
+  /* CONTROLS */
+  #controls{display:flex;gap:10px;align-items:center;}
   .ctrl-btn{
-    width:52px;height:52px;border-radius:50%;border:2px solid var(--g300);
-    background:var(--surface);cursor:pointer;font-size:22px;color:var(--g600);
+    width:44px;height:44px;border-radius:50%;border:2px solid var(--g300);
+    background:var(--surface);cursor:pointer;font-size:19px;color:var(--g600);
     display:flex;align-items:center;justify-content:center;transition:all 0.15s;
   }
   .ctrl-btn:active{transform:scale(0.93);}
-  #play-btn{width:64px;height:64px;background:var(--g400);border-color:var(--g400);color:#fff;font-size:26px;}
+  #play-btn{width:56px;height:56px;background:var(--g400);border-color:var(--g400);color:#fff;font-size:22px;}
   #play-btn:active{background:var(--g500);}
-  #viz-tabs{display:flex;gap:6px;background:var(--g50);border:1px solid var(--border);border-radius:12px;padding:4px;}
-  .viz-tab{flex:1;border:none;background:none;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12px;color:var(--text2);transition:all 0.15s;}
-  .viz-tab.active{background:var(--g400);color:#fff;font-weight:600;}
-  #tabbar{background:var(--surface);border-top:1px solid var(--border);display:flex;height:60px;flex-shrink:0;}
-  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:10px;transition:color 0.15s;}
-  .tab i{font-size:22px;}
+
+  /* TABBAR */
+  #tabbar{background:var(--surface);border-top:1px solid var(--border);display:flex;height:50px;flex-shrink:0;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:10px;transition:color 0.15s;}
+  .tab i{font-size:19px;}
   .tab.active{color:var(--g500);font-weight:600;}
+
+  /* MODAL */
   #modal-overlay{
     position:fixed;inset:0;background:rgba(15,51,15,0.45);
     display:none;align-items:flex-end;justify-content:center;z-index:100;
   }
   #modal-overlay.show{display:flex;}
   #modal-sheet{
-    background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:430px;
-    max-height:88vh;overflow-y:auto;padding:0 0 32px;
+    background:var(--surface);border-radius:20px 20px 0 0;
+    width:100%;max-width:430px;
+    max-height:88vh;overflow-y:auto;
+    padding:0 0 28px;
     transform:translateY(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);
+    touch-action:pan-y;
   }
   #modal-overlay.show #modal-sheet{transform:translateY(0);}
-  #modal-handle{width:40px;height:4px;background:var(--g200);border-radius:2px;margin:12px auto 0;}
-  #modal-title{font-size:18px;font-weight:600;color:var(--g700);padding:16px 20px 8px;border-bottom:1px solid var(--border);}
-  .setting-group{padding:16px 20px 0;}
-  .setting-label{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
-  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .setting-name{font-size:15px;color:var(--text1);}
-  .setting-val{font-size:15px;font-weight:600;color:var(--g600);min-width:60px;text-align:right;}
-  input[type=range]{flex:1;margin:0 12px;accent-color:var(--g400);}
+  #modal-handle{width:36px;height:4px;background:var(--g200);border-radius:2px;margin:12px auto 0;}
+  #modal-title{font-size:17px;font-weight:600;color:var(--g700);padding:14px 20px 8px;border-bottom:1px solid var(--border);}
+  .setting-group{padding:14px 20px 0;}
+  .setting-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .setting-name{font-size:14px;color:var(--text1);}
+  .setting-val{font-size:14px;font-weight:600;color:var(--g600);min-width:52px;text-align:right;}
+  input[type=range]{flex:1;margin:0 10px;accent-color:var(--g400);}
   .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px;}
-  .preset-btn{
-    border:1.5px solid var(--border);background:var(--g50);border-radius:12px;
-    padding:12px;cursor:pointer;text-align:left;transition:all 0.15s;
-  }
+  .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:10px;cursor:pointer;text-align:left;transition:all 0.15s;}
   .preset-btn:active,.preset-btn.selected{border-color:var(--g400);background:var(--g100);}
-  .preset-name{font-size:13px;font-weight:600;color:var(--g700);}
-  .preset-desc{font-size:11px;color:var(--text3);margin-top:3px;}
-  .ratio-visual{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:0 20px 12px;}
-  #ratio-in{background:var(--g300);transition:flex 0.2s;}
-  #ratio-out{background:var(--g600);transition:flex 0.2s;}
-  .ratio-labels{display:flex;justify-content:space-between;padding:0 20px;font-size:12px;color:var(--text3);margin-bottom:16px;}
-  .save-btn{display:block;margin:20px 20px 0;width:calc(100% - 40px);padding:14px;background:var(--g500);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;}
+  .preset-name{font-size:12px;font-weight:600;color:var(--g700);}
+  .preset-desc{font-size:10px;color:var(--text3);margin-top:2px;}
+  .ratio-visual{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:0 20px 10px;}
+  #ratio-in{background:var(--g300);}
+  #ratio-out{background:var(--g600);}
+  .ratio-labels{display:flex;justify-content:space-between;padding:0 20px;font-size:11px;color:var(--text3);margin-bottom:12px;}
+  .save-btn{display:block;margin:16px 20px 0;width:calc(100% - 40px);padding:13px;background:var(--g500);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}
   .save-btn:active{background:var(--g600);}
 </style>
 </head>
@@ -137,7 +173,7 @@
         <div id="bar-time-label">0.0</div>
       </div>
       <div id="wave-viz">
-        <canvas id="wave-canvas" width="640" height="240"></canvas>
+        <canvas id="wave-canvas" width="600" height="160"></canvas>
         <div id="wave-time-label">0.0</div>
       </div>
     </div>
@@ -149,7 +185,7 @@
     </div>
 
     <div id="session-row">
-      <i class="ti ti-clock" aria-hidden="true" style="font-size:16px;"></i>
+      <i class="ti ti-clock" aria-hidden="true" style="font-size:13px;"></i>
       <span id="session-text">0:00 / 5:00</span>
       <div id="session-bar"><div id="session-fill"></div></div>
     </div>
@@ -162,8 +198,8 @@
   </div>
 
   <div id="tabbar">
-    <button class="tab active" id="tab-home"><i class="ti ti-wind"></i><span>호흡</span></button>
-    <button class="tab" id="tab-history"><i class="ti ti-chart-line"></i><span>기록</span></button>
+    <button class="tab active"><i class="ti ti-wind"></i><span>호흡</span></button>
+    <button class="tab"><i class="ti ti-chart-line"></i><span>기록</span></button>
   </div>
 </div>
 
@@ -172,9 +208,7 @@
     <div id="modal-handle"></div>
     <div id="modal-title">설정</div>
 
-    <div class="setting-group">
-      <div class="setting-label">프리셋</div>
-    </div>
+    <div class="setting-group"><div class="setting-label">프리셋</div></div>
     <div class="preset-grid" id="preset-grid"></div>
 
     <div class="setting-group">
@@ -183,9 +217,7 @@
         <span class="setting-name">1분 당 횟수</span>
         <span class="setting-val" id="val-cycles">5.5</span>
       </div>
-      <div class="setting-row">
-        <input type="range" id="sl-cycles" min="2" max="20" step="0.5" value="5.5">
-      </div>
+      <div class="setting-row"><input type="range" id="sl-cycles" min="2" max="20" step="0.5" value="5.5"></div>
     </div>
 
     <div class="setting-group">
@@ -194,9 +226,7 @@
         <span class="setting-name">들숨 비율</span>
         <span class="setting-val" id="val-in-ratio">45%</span>
       </div>
-      <div class="setting-row">
-        <input type="range" id="sl-ratio" min="10" max="90" step="5" value="45">
-      </div>
+      <div class="setting-row"><input type="range" id="sl-ratio" min="10" max="90" step="5" value="45"></div>
       <div class="ratio-visual"><div id="ratio-in" style="flex:45"></div><div id="ratio-out" style="flex:55"></div></div>
       <div class="ratio-labels"><span id="lbl-in">들숨 4.9초</span><span id="lbl-out">날숨 6.1초</span></div>
     </div>
@@ -207,9 +237,7 @@
         <span class="setting-name">운동 시간</span>
         <span class="setting-val" id="val-session">5분</span>
       </div>
-      <div class="setting-row">
-        <input type="range" id="sl-session" min="1" max="30" step="1" value="5">
-      </div>
+      <div class="setting-row"><input type="range" id="sl-session" min="1" max="30" step="1" value="5"></div>
     </div>
 
     <button class="save-btn" id="save-btn">적용하기</button>
@@ -217,304 +245,214 @@
 </div>
 
 <script>
-const PRESETS = [
+const PRESETS=[
   {name:'공명 호흡',desc:'5.5회 · 45:55',cycles:5.5,ratio:45,session:5},
   {name:'4-6 호흡',desc:'6회 · 40:60',cycles:6,ratio:40,session:5},
   {name:'박스 호흡',desc:'4회 · 50:50',cycles:4,ratio:50,session:5},
   {name:'이완 호흡',desc:'4회 · 33:67',cycles:4,ratio:33,session:10},
 ];
 
-let cfg = {cycles:5.5, ratio:45, session:5};
-let tmpCfg = {...cfg};
-let running = false;
-let phase = 'idle';
-let phaseStart = null;
-let phaseTotal = 0;
-let sessionStart = null;
-let rafId = null;
-let vizMode = 'circle';
-let pausedPhaseElapsed = 0;
-let pausedSessionElapsed = 0;
+let cfg={cycles:5.5,ratio:45,session:5};
+let tmpCfg={...cfg};
+let running=false,phase='idle',phaseStart=null,phaseTotal=0,sessionStart=null,rafId=null;
+let vizMode='circle',pausedPhaseElapsed=0,pausedSessionElapsed=0,wavePhase=0;
+const CIRC=2*Math.PI*90;
 
-const CIRCUMFERENCE = 2 * Math.PI * 90;
+const phaseLabel=document.getElementById('phase-label');
+const phaseSub=document.getElementById('phase-sub');
+const circleTime=document.getElementById('circle-time');
+const progCircle=document.getElementById('prog-circle');
+const barFill=document.getElementById('bar-fill');
+const barTL=document.getElementById('bar-time-label');
+const waveTL=document.getElementById('wave-time-label');
+const sessionText=document.getElementById('session-text');
+const sessionFill=document.getElementById('session-fill');
+const playBtn=document.getElementById('play-btn');
+const waveCanvas=document.getElementById('wave-canvas');
+const wCtx=waveCanvas.getContext('2d');
 
-const phaseLabel = document.getElementById('phase-label');
-const phaseSub = document.getElementById('phase-sub');
-const circleTime = document.getElementById('circle-time');
-const progCircle = document.getElementById('prog-circle');
-const barFill = document.getElementById('bar-fill');
-const barTimeLabel = document.getElementById('bar-time-label');
-const waveTimeLabel = document.getElementById('wave-time-label');
-const sessionText = document.getElementById('session-text');
-const sessionFill = document.getElementById('session-fill');
-const playBtn = document.getElementById('play-btn');
-const statCycle = document.getElementById('stat-cycle');
-const statIn = document.getElementById('stat-in');
-const statOut = document.getElementById('stat-out');
-const modalOverlay = document.getElementById('modal-overlay');
-const waveCanvas = document.getElementById('wave-canvas');
-const waveCtx = waveCanvas.getContext('2d');
+function calcT(c){const cy=60/c.cycles;return{inSec:cy*(c.ratio/100),outSec:cy*(1-c.ratio/100)};}
 
-let wavePhase = 0;
-
-function calcTimes(c) {
-  const cycleSec = 60 / c.cycles;
-  const inSec = cycleSec * (c.ratio / 100);
-  const outSec = cycleSec * (1 - c.ratio / 100);
-  return {cycleSec, inSec, outSec};
+function updateStats(){
+  const t=calcT(cfg);
+  document.getElementById('stat-cycle').textContent=cfg.cycles;
+  document.getElementById('stat-in').textContent=t.inSec.toFixed(1)+'s';
+  document.getElementById('stat-out').textContent=t.outSec.toFixed(1)+'s';
 }
 
-function updateStats() {
-  const t = calcTimes(cfg);
-  statCycle.textContent = cfg.cycles;
-  statIn.textContent = t.inSec.toFixed(1) + 's';
-  statOut.textContent = t.outSec.toFixed(1) + 's';
+function setProg(ratio,isIn){
+  progCircle.style.strokeDasharray=`${CIRC*ratio} ${CIRC}`;
+  progCircle.style.stroke=isIn?'#78cc78':'#267326';
+  barFill.style.width=(ratio*100)+'%';
+  barFill.style.background=isIn?'#78cc78':'#267326';
 }
 
-function setProgress(ratio, isIn) {
-  const dash = CIRCUMFERENCE * ratio;
-  progCircle.style.strokeDasharray = `${dash} ${CIRCUMFERENCE}`;
-  progCircle.style.stroke = isIn ? '#78cc78' : '#267326';
-  barFill.style.width = (ratio * 100) + '%';
-  barFill.style.background = isIn ? '#78cc78' : '#267326';
-}
+function fmt(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');}
 
-function fmtTime(sec) {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return m + ':' + String(s).padStart(2,'0');
-}
-
-function drawWave(progress, isIn) {
-  const W = waveCanvas.width, H = waveCanvas.height;
-  waveCtx.clearRect(0,0,W,H);
-  const amp = 30 + progress * 50;
-  waveCtx.beginPath();
+function drawWave(r,isIn){
+  const W=waveCanvas.width,H=waveCanvas.height;
+  wCtx.clearRect(0,0,W,H);
+  const amp=15+r*35;
+  wCtx.beginPath();
   for(let x=0;x<=W;x++){
-    const y = H/2 + amp * Math.sin((x/W * 1.5 * 2 * Math.PI) + wavePhase);
-    x===0 ? waveCtx.moveTo(x,y) : waveCtx.lineTo(x,y);
+    const y=H/2+amp*Math.sin(x/W*1.5*2*Math.PI+wavePhase);
+    x===0?wCtx.moveTo(x,y):wCtx.lineTo(x,y);
   }
-  waveCtx.strokeStyle = isIn ? '#78cc78' : '#267326';
-  waveCtx.lineWidth = 4;
-  waveCtx.stroke();
-  wavePhase += isIn ? 0.04 : -0.04;
+  wCtx.strokeStyle=isIn?'#78cc78':'#267326';
+  wCtx.lineWidth=3;wCtx.stroke();
+  wavePhase+=isIn?0.04:-0.04;
 }
 
-function tick(now) {
-  if (!running) return;
-  const t = calcTimes(cfg);
-  const sessionMs = cfg.session * 60 * 1000;
-  const sessElapsed = pausedSessionElapsed + (now - sessionStart);
-
-  const sessPct = Math.min(sessElapsed / sessionMs, 1);
-  sessionFill.style.width = (sessPct * 100) + '%';
-  sessionText.textContent = fmtTime(sessElapsed/1000) + ' / ' + fmtTime(cfg.session*60);
-
-  if (sessElapsed >= sessionMs) {
-    stop(true);
-    return;
+function tick(now){
+  if(!running)return;
+  const t=calcT(cfg),sessMs=cfg.session*60000;
+  const sessEl=pausedSessionElapsed+(now-sessionStart);
+  sessionFill.style.width=(Math.min(sessEl/sessMs,1)*100)+'%';
+  sessionText.textContent=fmt(sessEl/1000)+' / '+fmt(cfg.session*60);
+  if(sessEl>=sessMs){stop(true);return;}
+  const phEl=pausedPhaseElapsed+(now-phaseStart)/1000;
+  const ratio=Math.min(phEl/phaseTotal,1),rem=Math.max(phaseTotal-phEl,0);
+  const isIn=phase==='in';
+  setProg(ratio,isIn);
+  const ts=rem.toFixed(1);
+  circleTime.textContent=ts;barTL.textContent=ts;waveTL.textContent=ts;
+  if(vizMode==='wave')drawWave(ratio,isIn);
+  if(ratio>=1){
+    pausedPhaseElapsed=0;
+    if(phase==='in'){phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요';}
+    else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 마시세요';}
+    phaseStart=now;
   }
-
-  const phaseElapsed = pausedPhaseElapsed + (now - phaseStart) / 1000;
-  const ratio = Math.min(phaseElapsed / phaseTotal, 1);
-  const remaining = Math.max(phaseTotal - phaseElapsed, 0);
-  const isIn = phase === 'in';
-
-  setProgress(ratio, isIn);
-
-  const timeStr = remaining.toFixed(1);
-  circleTime.textContent = timeStr;
-  barTimeLabel.textContent = timeStr;
-  waveTimeLabel.textContent = timeStr;
-
-  if (vizMode === 'wave') drawWave(ratio, isIn);
-
-  if (ratio >= 1) {
-    pausedPhaseElapsed = 0;
-    if (phase === 'in') {
-      phase = 'out';
-      phaseTotal = t.outSec;
-      phaseLabel.textContent = '날숨';
-      phaseSub.textContent = `${t.outSec.toFixed(1)}초간 천천히 내쉬세요`;
-    } else {
-      phase = 'in';
-      phaseTotal = t.inSec;
-      phaseLabel.textContent = '들숨';
-      phaseSub.textContent = `${t.inSec.toFixed(1)}초간 천천히 마시세요`;
-    }
-    phaseStart = now;
-  }
-
-  rafId = requestAnimationFrame(tick);
+  rafId=requestAnimationFrame(tick);
 }
 
-function start() {
-  if (running) return;
-  const t = calcTimes(cfg);
-  running = true;
-  phase = 'in';
-  phaseTotal = t.inSec;
-  pausedPhaseElapsed = 0;
-  pausedSessionElapsed = 0;
-  phaseStart = performance.now();
-  sessionStart = performance.now();
-  phaseLabel.textContent = '들숨';
-  phaseSub.textContent = `${t.inSec.toFixed(1)}초간 천천히 마시세요`;
-  playBtn.innerHTML = '<i class="ti ti-player-pause"></i>';
-  rafId = requestAnimationFrame(tick);
+function start(){
+  if(running)return;
+  const t=calcT(cfg);running=true;phase='in';phaseTotal=t.inSec;
+  pausedPhaseElapsed=0;pausedSessionElapsed=0;
+  phaseStart=sessionStart=performance.now();
+  phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 마시세요';
+  playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
+  rafId=requestAnimationFrame(tick);
 }
 
-function pause() {
-  if (!running) return;
-  running = false;
-  if (rafId) cancelAnimationFrame(rafId);
-  const now = performance.now();
-  pausedPhaseElapsed += (now - phaseStart) / 1000;
-  pausedSessionElapsed += (now - sessionStart);
-  playBtn.innerHTML = '<i class="ti ti-player-play"></i>';
-  phaseLabel.textContent = '일시정지';
-  phaseSub.textContent = '다시 시작하려면 재생을 누르세요';
+function pause(){
+  if(!running)return;running=false;cancelAnimationFrame(rafId);
+  const now=performance.now();
+  pausedPhaseElapsed+=(now-phaseStart)/1000;
+  pausedSessionElapsed+=(now-sessionStart);
+  playBtn.innerHTML='<i class="ti ti-player-play"></i>';
+  phaseLabel.textContent='일시정지';phaseSub.textContent='다시 시작하려면 재생을 누르세요';
 }
 
-function resume() {
-  if (running) return;
-  running = true;
-  phaseStart = performance.now();
-  sessionStart = performance.now();
-  const t = calcTimes(cfg);
-  phaseLabel.textContent = phase === 'in' ? '들숨' : '날숨';
-  phaseSub.textContent = phase === 'in'
-    ? `${t.inSec.toFixed(1)}초간 천천히 마시세요`
-    : `${t.outSec.toFixed(1)}초간 천천히 내쉬세요`;
-  playBtn.innerHTML = '<i class="ti ti-player-pause"></i>';
-  rafId = requestAnimationFrame(tick);
+function resume(){
+  if(running)return;running=true;
+  phaseStart=sessionStart=performance.now();
+  const t=calcT(cfg);
+  phaseLabel.textContent=phase==='in'?'들숨':'날숨';
+  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 마시세요':t.outSec.toFixed(1)+'초간 천천히 내쉬세요';
+  playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
+  rafId=requestAnimationFrame(tick);
 }
 
-function stop(done) {
-  running = false;
-  if (rafId) cancelAnimationFrame(rafId);
-  phase = 'idle';
-  pausedPhaseElapsed = 0;
-  pausedSessionElapsed = 0;
-  setProgress(0, true);
-  circleTime.textContent = '0.0';
-  barTimeLabel.textContent = '0.0';
-  waveTimeLabel.textContent = '0.0';
-  sessionFill.style.width = done ? '100%' : '0%';
-  sessionText.textContent = '0:00 / ' + fmtTime(cfg.session*60);
-  playBtn.innerHTML = '<i class="ti ti-player-play"></i>';
-  phaseLabel.textContent = done ? '완료!' : '준비';
-  phaseSub.textContent = done ? '훌륭해요! 세션을 마쳤습니다 🌿' : '시작 버튼을 눌러주세요';
-  if (vizMode === 'wave') waveCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+function stop(done){
+  running=false;cancelAnimationFrame(rafId);phase='idle';
+  pausedPhaseElapsed=0;pausedSessionElapsed=0;
+  setProg(0,true);
+  circleTime.textContent='0.0';barTL.textContent='0.0';waveTL.textContent='0.0';
+  sessionFill.style.width=done?'100%':'0%';
+  sessionText.textContent='0:00 / '+fmt(cfg.session*60);
+  playBtn.innerHTML='<i class="ti ti-player-play"></i>';
+  phaseLabel.textContent=done?'완료!':'준비';
+  phaseSub.textContent=done?'훌륭해요! 세션을 마쳤습니다 🌿':'시작 버튼을 눌러주세요';
+  if(vizMode==='wave')wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
 }
 
-playBtn.addEventListener('click', () => {
-  if (!running && phase === 'idle') start();
-  else if (running) pause();
+playBtn.addEventListener('click',()=>{
+  if(!running&&phase==='idle')start();
+  else if(running)pause();
   else resume();
 });
+document.getElementById('reset-btn').addEventListener('click',()=>{pause();stop(false);});
 
-document.getElementById('reset-btn').addEventListener('click', () => {
-  pause();
-  stop(false);
-});
-
-document.querySelectorAll('.viz-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
+document.querySelectorAll('.viz-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
     document.querySelectorAll('.viz-tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    vizMode = btn.dataset.mode;
-    document.getElementById('circle-viz').style.display = vizMode==='circle'?'block':'none';
-    document.getElementById('bar-viz').style.display = vizMode==='bar'?'block':'none';
-    document.getElementById('wave-viz').style.display = vizMode==='wave'?'block':'none';
+    btn.classList.add('active');vizMode=btn.dataset.mode;
+    document.getElementById('circle-viz').style.display=vizMode==='circle'?'block':'none';
+    document.getElementById('bar-viz').style.display=vizMode==='bar'?'block':'none';
+    document.getElementById('wave-viz').style.display=vizMode==='wave'?'block':'none';
   });
 });
-
 document.getElementById('circle-viz').style.display='block';
 document.getElementById('bar-viz').style.display='none';
 document.getElementById('wave-viz').style.display='none';
-progCircle.style.strokeDasharray=`0 ${CIRCUMFERENCE}`;
+progCircle.style.strokeDasharray=`0 ${CIRC}`;
 
-// MODAL & HISTORY STACK
-let modalOpen = false;
+let modalOpen=false;
+const modalOverlay=document.getElementById('modal-overlay');
 
-function openModal() {
-  if (modalOpen) return;
-  tmpCfg = {...cfg};
-  document.getElementById('sl-cycles').value = cfg.cycles;
-  document.getElementById('sl-ratio').value = cfg.ratio;
-  document.getElementById('sl-session').value = cfg.session;
+function openModal(){
+  if(modalOpen)return;
+  tmpCfg={...cfg};
+  document.getElementById('sl-cycles').value=cfg.cycles;
+  document.getElementById('sl-ratio').value=cfg.ratio;
+  document.getElementById('sl-session').value=cfg.session;
   updateModalVals();
   modalOverlay.classList.add('show');
-  modalOpen = true;
-  history.pushState({modal:true}, '');
+  modalOpen=true;
+  history.pushState({modal:true},'');
 }
-
-function closeModal() {
-  if (!modalOpen) return;
+function closeModal(){
+  if(!modalOpen)return;
   modalOverlay.classList.remove('show');
-  modalOpen = false;
+  modalOpen=false;
 }
 
-document.getElementById('settings-btn').addEventListener('click', openModal);
+document.getElementById('settings-btn').addEventListener('click',openModal);
+modalOverlay.addEventListener('click',e=>{if(e.target===modalOverlay&&modalOpen)history.back();});
+window.addEventListener('popstate',()=>{if(modalOpen)closeModal();});
 
-modalOverlay.addEventListener('click', e => {
-  if (e.target === modalOverlay && modalOpen) {
-    history.back();
-  }
-});
-
-window.addEventListener('popstate', () => {
-  if (modalOpen) closeModal();
-});
-
-function updateModalVals() {
-  const c = parseFloat(document.getElementById('sl-cycles').value);
-  const r = parseInt(document.getElementById('sl-ratio').value);
-  const s = parseInt(document.getElementById('sl-session').value);
-  tmpCfg = {cycles:c, ratio:r, session:s};
-  document.getElementById('val-cycles').textContent = c;
-  document.getElementById('val-in-ratio').textContent = r + '%';
-  document.getElementById('val-session').textContent = s + '분';
-  const cycleSec = 60 / c;
-  const inSec = (cycleSec * r / 100).toFixed(1);
-  const outSec = (cycleSec * (100-r) / 100).toFixed(1);
-  document.getElementById('ratio-in').style.flex = r;
-  document.getElementById('ratio-out').style.flex = 100-r;
-  document.getElementById('lbl-in').textContent = `들숨 ${inSec}초`;
-  document.getElementById('lbl-out').textContent = `날숨 ${outSec}초`;
+function updateModalVals(){
+  const c=parseFloat(document.getElementById('sl-cycles').value);
+  const r=parseInt(document.getElementById('sl-ratio').value);
+  const s=parseInt(document.getElementById('sl-session').value);
+  tmpCfg={cycles:c,ratio:r,session:s};
+  document.getElementById('val-cycles').textContent=c;
+  document.getElementById('val-in-ratio').textContent=r+'%';
+  document.getElementById('val-session').textContent=s+'분';
+  const cy=60/c,inS=(cy*r/100).toFixed(1),outS=(cy*(100-r)/100).toFixed(1);
+  document.getElementById('ratio-in').style.flex=r;
+  document.getElementById('ratio-out').style.flex=100-r;
+  document.getElementById('lbl-in').textContent='들숨 '+inS+'초';
+  document.getElementById('lbl-out').textContent='날숨 '+outS+'초';
 }
-
-['sl-cycles','sl-ratio','sl-session'].forEach(id => {
-  document.getElementById(id).addEventListener('input', updateModalVals);
+['sl-cycles','sl-ratio','sl-session'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',updateModalVals);
+});
+document.getElementById('save-btn').addEventListener('click',()=>{
+  cfg={...tmpCfg};updateStats();stop(false);
+  if(modalOpen)history.back();
 });
 
-document.getElementById('save-btn').addEventListener('click', () => {
-  cfg = {...tmpCfg};
-  updateStats();
-  stop(false);
-  if (modalOpen) history.back();
-});
-
-const presetGrid = document.getElementById('preset-grid');
-PRESETS.forEach(p => {
-  const btn = document.createElement('button');
-  btn.className = 'preset-btn';
-  btn.innerHTML = `<div class="preset-name">${p.name}</div><div class="preset-desc">${p.desc}</div>`;
-  btn.addEventListener('click', () => {
+const pg=document.getElementById('preset-grid');
+PRESETS.forEach(p=>{
+  const btn=document.createElement('button');
+  btn.className='preset-btn';
+  btn.innerHTML='<div class="preset-name">'+p.name+'</div><div class="preset-desc">'+p.desc+'</div>';
+  btn.addEventListener('click',()=>{
     document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
-    document.getElementById('sl-cycles').value = p.cycles;
-    document.getElementById('sl-ratio').value = p.ratio;
-    document.getElementById('sl-session').value = p.session;
+    document.getElementById('sl-cycles').value=p.cycles;
+    document.getElementById('sl-ratio').value=p.ratio;
+    document.getElementById('sl-session').value=p.session;
     updateModalVals();
   });
-  presetGrid.appendChild(btn);
+  pg.appendChild(btn);
 });
 
-updateStats();
-updateModalVals();
-sessionText.textContent = '0:00 / ' + fmtTime(cfg.session*60);
+updateStats();updateModalVals();
+sessionText.textContent='0:00 / '+fmt(cfg.session*60);
 </script>
 </body>
 </html>

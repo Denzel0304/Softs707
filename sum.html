@@ -14,38 +14,19 @@
     --text1:#1a4f1a;--text2:#267326;--text3:#4db84d;
     --border:#c8e8c8;
   }
-  html,body{
-    width:100%;height:100%;
-    overflow:hidden;
-    touch-action:none;
-    overscroll-behavior:none;
-  }
+  html,body{width:100%;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;}
   body{font-family:'Apple SD Gothic Neo',system-ui,sans-serif;background:var(--bg);color:var(--text1);}
-  #app{
-    display:flex;flex-direction:column;
-    width:100%;height:100%;
-    max-width:430px;margin:0 auto;
-    background:var(--bg);
-    overflow:hidden;
-  }
+  #app{display:flex;flex-direction:column;width:100%;height:100%;max-width:430px;margin:0 auto;background:var(--bg);overflow:hidden;}
 
   /* HEADER */
-  #header{
-    background:var(--surface);border-bottom:1px solid var(--border);
-    padding:0 16px;height:48px;display:flex;align-items:center;justify-content:center;
-    position:relative;flex-shrink:0;
-  }
+  #header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:48px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
   #header h1{font-size:18px;font-weight:600;color:var(--g600);display:flex;align-items:center;gap:6px;}
   #header h1 i{font-size:20px;color:var(--g400);}
   #settings-btn{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--text2);font-size:20px;padding:6px;border-radius:8px;}
 
-  /* MAIN */
-  #main{
-    flex:1;min-height:0;
-    display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
-    padding:6px 16px;
-    overflow:hidden;
-  }
+  /* PAGES */
+  #page-breath{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:6px 16px;overflow:hidden;}
+  #page-history{flex:1;min-height:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;overflow:hidden;}
 
   /* PHASE */
   #phase-wrap{text-align:center;}
@@ -87,11 +68,7 @@
 
   /* CONTROLS */
   #controls{display:flex;gap:10px;align-items:center;}
-  .ctrl-btn{
-    width:44px;height:44px;border-radius:50%;border:2px solid var(--g300);
-    background:var(--surface);cursor:pointer;font-size:19px;color:var(--g600);
-    display:flex;align-items:center;justify-content:center;transition:all 0.15s;
-  }
+  .ctrl-btn{width:44px;height:44px;border-radius:50%;border:2px solid var(--g300);background:var(--surface);cursor:pointer;font-size:19px;color:var(--g600);display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
   .ctrl-btn:active{transform:scale(0.93);}
   #play-btn{width:56px;height:56px;background:var(--g400);border-color:var(--g400);color:#fff;font-size:22px;}
   #play-btn:active{background:var(--g500);}
@@ -102,50 +79,52 @@
   .tab i{font-size:19px;}
   .tab.active{color:var(--g500);font-weight:600;}
 
+  /* HISTORY PAGE */
+  #history-empty{text-align:center;color:var(--text3);}
+  #history-empty i{font-size:48px;margin-bottom:12px;display:block;}
+  #history-empty p{font-size:15px;font-weight:500;color:var(--text2);}
+  #history-empty span{font-size:13px;color:var(--text3);margin-top:6px;display:block;}
+  #history-list{width:100%;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
+  .history-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}
+  .history-item-left .hi-title{font-size:14px;font-weight:600;color:var(--text1);}
+  .history-item-left .hi-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+  .history-item-right{font-size:13px;font-weight:600;color:var(--g500);}
+
   /* MODAL */
-  #modal-overlay{
-    position:fixed;inset:0;background:rgba(15,51,15,0.45);
-    display:none;align-items:flex-end;justify-content:center;z-index:100;
-  }
+  #modal-overlay{position:fixed;inset:0;background:rgba(15,51,15,0.45);display:none;align-items:flex-end;justify-content:center;z-index:100;}
   #modal-overlay.show{display:flex;}
-  #modal-sheet{
-    background:var(--surface);border-radius:20px 20px 0 0;
-    width:100%;max-width:430px;
-    max-height:88vh;overflow-y:auto;
-    padding:0 0 28px;
-    transform:translateY(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);
-    touch-action:pan-y;
-  }
+  #modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:430px;overflow:hidden;padding:0 0 20px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);touch-action:pan-y;}
   #modal-overlay.show #modal-sheet{transform:translateY(0);}
   #modal-handle{width:36px;height:4px;background:var(--g200);border-radius:2px;margin:12px auto 0;}
-  #modal-title{font-size:17px;font-weight:600;color:var(--g700);padding:14px 20px 8px;border-bottom:1px solid var(--border);}
-  .setting-group{padding:14px 20px 0;}
-  .setting-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
-  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  #modal-title{font-size:17px;font-weight:600;color:var(--g700);padding:12px 20px 8px;border-bottom:1px solid var(--border);}
+  .setting-group{padding:10px 20px 0;}
+  .setting-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
   .setting-name{font-size:14px;color:var(--text1);}
   .setting-val{font-size:14px;font-weight:600;color:var(--g600);min-width:52px;text-align:right;}
   input[type=range]{flex:1;margin:0 10px;accent-color:var(--g400);}
-  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px;}
-  .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:10px;cursor:pointer;text-align:left;transition:all 0.15s;}
+  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 20px;}
+  .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:8px 10px;cursor:pointer;text-align:left;transition:all 0.15s;}
   .preset-btn:active,.preset-btn.selected{border-color:var(--g400);background:var(--g100);}
   .preset-name{font-size:12px;font-weight:600;color:var(--g700);}
-  .preset-desc{font-size:10px;color:var(--text3);margin-top:2px;}
-  .ratio-visual{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:0 20px 10px;}
+  .preset-desc{font-size:10px;color:var(--text3);margin-top:1px;}
+  .ratio-visual{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:0 20px 6px;}
   #ratio-in{background:var(--g300);}
   #ratio-out{background:var(--g600);}
-  .ratio-labels{display:flex;justify-content:space-between;padding:0 20px;font-size:11px;color:var(--text3);margin-bottom:12px;}
-  .save-btn{display:block;margin:16px 20px 0;width:calc(100% - 40px);padding:13px;background:var(--g500);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}
+  .ratio-labels{display:flex;justify-content:space-between;padding:0 20px;font-size:11px;color:var(--text3);margin-bottom:4px;}
+  .save-btn{display:block;margin:14px 20px 0;width:calc(100% - 40px);padding:12px;background:var(--g500);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}
   .save-btn:active{background:var(--g600);}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="header">
-    <h1><i class="ti ti-wind" aria-hidden="true"></i> 숨</h1>
+    <h1><i class="ti ti-wind"></i> 숨</h1>
     <button id="settings-btn" aria-label="설정"><i class="ti ti-settings"></i></button>
   </div>
 
-  <div id="main">
+  <!-- 호흡 페이지 -->
+  <div id="page-breath">
     <div id="phase-wrap">
       <div id="phase-label">준비</div>
       <div id="phase-sub">시작 버튼을 눌러주세요</div>
@@ -185,25 +164,36 @@
     </div>
 
     <div id="session-row">
-      <i class="ti ti-clock" aria-hidden="true" style="font-size:13px;"></i>
+      <i class="ti ti-clock" style="font-size:13px;"></i>
       <span id="session-text">0:00 / 5:00</span>
       <div id="session-bar"><div id="session-fill"></div></div>
     </div>
 
     <div id="controls">
       <button class="ctrl-btn" id="reset-btn" aria-label="초기화"><i class="ti ti-player-skip-back"></i></button>
-      <button class="ctrl-btn" id="play-btn" aria-label="시작"><i class="ti ti-player-play"></i></button>
-      <button class="ctrl-btn" id="info-btn" aria-label="정보"><i class="ti ti-info-circle"></i></button>
+      <button class="ctrl-btn" id="play-btn" aria-label="시작/정지"><i class="ti ti-player-play"></i></button>
+      <button class="ctrl-btn" id="stop-btn" aria-label="종료"><i class="ti ti-player-stop"></i></button>
     </div>
   </div>
 
+  <!-- 기록 페이지 -->
+  <div id="page-history">
+    <div id="history-empty">
+      <i class="ti ti-leaf"></i>
+      <p>기록이 없어요</p>
+      <span>세션을 완료하면 여기에 기록됩니다</span>
+    </div>
+    <div id="history-list" style="display:none;width:100%;"></div>
+  </div>
+
   <div id="tabbar">
-    <button class="tab active"><i class="ti ti-wind"></i><span>호흡</span></button>
-    <button class="tab"><i class="ti ti-chart-line"></i><span>기록</span></button>
+    <button class="tab active" id="tab-breath"><i class="ti ti-wind"></i><span>호흡</span></button>
+    <button class="tab" id="tab-history"><i class="ti ti-chart-line"></i><span>기록</span></button>
   </div>
 </div>
 
-<div id="modal-overlay" role="dialog" aria-modal="true" aria-label="설정">
+<!-- 설정 모달 -->
+<div id="modal-overlay" role="dialog" aria-modal="true">
   <div id="modal-sheet">
     <div id="modal-handle"></div>
     <div id="modal-title">설정</div>
@@ -217,7 +207,7 @@
         <span class="setting-name">1분 당 횟수</span>
         <span class="setting-val" id="val-cycles">5.5</span>
       </div>
-      <div class="setting-row"><input type="range" id="sl-cycles" min="2" max="20" step="0.5" value="5.5"></div>
+      <div class="setting-row"><input type="range" id="sl-cycles" min="5" max="10" step="0.5" value="5.5"></div>
     </div>
 
     <div class="setting-group">
@@ -248,16 +238,22 @@
 const PRESETS=[
   {name:'공명 호흡',desc:'5.5회 · 45:55',cycles:5.5,ratio:45,session:5},
   {name:'4-6 호흡',desc:'6회 · 40:60',cycles:6,ratio:40,session:5},
-  {name:'박스 호흡',desc:'4회 · 50:50',cycles:4,ratio:50,session:5},
-  {name:'이완 호흡',desc:'4회 · 33:67',cycles:4,ratio:33,session:10},
+  {name:'박스 호흡',desc:'6회 · 50:50',cycles:6,ratio:50,session:5},
+  {name:'이완 호흡',desc:'5회 · 33:67',cycles:5,ratio:33,session:10},
 ];
 
+// cfg는 적용하기 눌러야만 바뀜 — localStorage 없이 메모리에서 영속
 let cfg={cycles:5.5,ratio:45,session:5};
 let tmpCfg={...cfg};
+
 let running=false,phase='idle',phaseStart=null,phaseTotal=0,sessionStart=null,rafId=null;
 let vizMode='circle',pausedPhaseElapsed=0,pausedSessionElapsed=0,wavePhase=0;
 const CIRC=2*Math.PI*90;
 
+// 기록
+let historyLog=[];
+
+// DOM
 const phaseLabel=document.getElementById('phase-label');
 const phaseSub=document.getElementById('phase-sub');
 const circleTime=document.getElementById('circle-time');
@@ -270,6 +266,9 @@ const sessionFill=document.getElementById('session-fill');
 const playBtn=document.getElementById('play-btn');
 const waveCanvas=document.getElementById('wave-canvas');
 const wCtx=waveCanvas.getContext('2d');
+const modalOverlay=document.getElementById('modal-overlay');
+const pageBreath=document.getElementById('page-breath');
+const pageHistory=document.getElementById('page-history');
 
 function calcT(c){const cy=60/c.cycles;return{inSec:cy*(c.ratio/100),outSec:cy*(1-c.ratio/100)};}
 
@@ -278,6 +277,7 @@ function updateStats(){
   document.getElementById('stat-cycle').textContent=cfg.cycles;
   document.getElementById('stat-in').textContent=t.inSec.toFixed(1)+'s';
   document.getElementById('stat-out').textContent=t.outSec.toFixed(1)+'s';
+  sessionText.textContent='0:00 / '+fmt(cfg.session*60);
 }
 
 function setProg(ratio,isIn){
@@ -309,7 +309,7 @@ function tick(now){
   const sessEl=pausedSessionElapsed+(now-sessionStart);
   sessionFill.style.width=(Math.min(sessEl/sessMs,1)*100)+'%';
   sessionText.textContent=fmt(sessEl/1000)+' / '+fmt(cfg.session*60);
-  if(sessEl>=sessMs){stop(true);return;}
+  if(sessEl>=sessMs){completeSession();return;}
   const phEl=pausedPhaseElapsed+(now-phaseStart)/1000;
   const ratio=Math.min(phEl/phaseTotal,1),rem=Math.max(phaseTotal-phEl,0);
   const isIn=phase==='in';
@@ -324,6 +324,21 @@ function tick(now){
     phaseStart=now;
   }
   rafId=requestAnimationFrame(tick);
+}
+
+function completeSession(){
+  running=false;cancelAnimationFrame(rafId);
+  // 기록 저장
+  const now=new Date();
+  historyLog.unshift({
+    date:now.toLocaleDateString('ko-KR',{month:'short',day:'numeric'}),
+    time:now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}),
+    session:cfg.session,
+    cycles:cfg.cycles,
+    ratio:cfg.ratio
+  });
+  renderHistory();
+  stop(true);
 }
 
 function start(){
@@ -374,7 +389,9 @@ playBtn.addEventListener('click',()=>{
   else resume();
 });
 document.getElementById('reset-btn').addEventListener('click',()=>{pause();stop(false);});
+document.getElementById('stop-btn').addEventListener('click',()=>{pause();stop(false);});
 
+// VIZ TABS
 document.querySelectorAll('.viz-tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.viz-tab').forEach(b=>b.classList.remove('active'));
@@ -389,16 +406,46 @@ document.getElementById('bar-viz').style.display='none';
 document.getElementById('wave-viz').style.display='none';
 progCircle.style.strokeDasharray=`0 ${CIRC}`;
 
+// 탭 전환
+document.getElementById('tab-breath').addEventListener('click',()=>{
+  pageBreath.style.display='flex';pageHistory.style.display='none';
+  document.getElementById('tab-breath').classList.add('active');
+  document.getElementById('tab-history').classList.remove('active');
+  document.getElementById('settings-btn').style.display='flex';
+});
+document.getElementById('tab-history').addEventListener('click',()=>{
+  pageBreath.style.display='none';pageHistory.style.display='flex';
+  document.getElementById('tab-history').classList.add('active');
+  document.getElementById('tab-breath').classList.remove('active');
+  document.getElementById('settings-btn').style.display='none';
+});
+
+// 기록 렌더
+function renderHistory(){
+  const empty=document.getElementById('history-empty');
+  const list=document.getElementById('history-list');
+  if(historyLog.length===0){empty.style.display='block';list.style.display='none';return;}
+  empty.style.display='none';list.style.display='flex';
+  list.innerHTML='';
+  historyLog.forEach(h=>{
+    const el=document.createElement('div');
+    el.className='history-item';
+    el.innerHTML=`<div class="history-item-left"><div class="hi-title">${h.date} ${h.time}</div><div class="hi-sub">${h.cycles}회/분 · 들숨 ${h.ratio}% · 날숨 ${100-h.ratio}%</div></div><div class="history-item-right">${h.session}분</div>`;
+    list.appendChild(el);
+  });
+}
+
+// MODAL
 let modalOpen=false;
-const modalOverlay=document.getElementById('modal-overlay');
 
 function openModal(){
   if(modalOpen)return;
+  // tmpCfg를 현재 cfg로 초기화 (적용된 값 기준)
   tmpCfg={...cfg};
   document.getElementById('sl-cycles').value=cfg.cycles;
   document.getElementById('sl-ratio').value=cfg.ratio;
   document.getElementById('sl-session').value=cfg.session;
-  updateModalVals();
+  syncModalDisplay();
   modalOverlay.classList.add('show');
   modalOpen=true;
   history.pushState({modal:true},'');
@@ -413,7 +460,8 @@ document.getElementById('settings-btn').addEventListener('click',openModal);
 modalOverlay.addEventListener('click',e=>{if(e.target===modalOverlay&&modalOpen)history.back();});
 window.addEventListener('popstate',()=>{if(modalOpen)closeModal();});
 
-function updateModalVals(){
+// 모달 슬라이더 → 화면에만 반영, cfg는 건드리지 않음
+function syncModalDisplay(){
   const c=parseFloat(document.getElementById('sl-cycles').value);
   const r=parseInt(document.getElementById('sl-ratio').value);
   const s=parseInt(document.getElementById('sl-session').value);
@@ -428,13 +476,18 @@ function updateModalVals(){
   document.getElementById('lbl-out').textContent='날숨 '+outS+'초';
 }
 ['sl-cycles','sl-ratio','sl-session'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',updateModalVals);
+  document.getElementById(id).addEventListener('input',syncModalDisplay);
 });
+
+// 적용하기 — 이 순간에만 cfg가 바뀜
 document.getElementById('save-btn').addEventListener('click',()=>{
-  cfg={...tmpCfg};updateStats();stop(false);
+  cfg={...tmpCfg};
+  updateStats();
+  stop(false);
   if(modalOpen)history.back();
 });
 
+// 프리셋
 const pg=document.getElementById('preset-grid');
 PRESETS.forEach(p=>{
   const btn=document.createElement('button');
@@ -446,13 +499,15 @@ PRESETS.forEach(p=>{
     document.getElementById('sl-cycles').value=p.cycles;
     document.getElementById('sl-ratio').value=p.ratio;
     document.getElementById('sl-session').value=p.session;
-    updateModalVals();
+    syncModalDisplay();
   });
   pg.appendChild(btn);
 });
 
-updateStats();updateModalVals();
-sessionText.textContent='0:00 / '+fmt(cfg.session*60);
+// 초기화
+updateStats();
+syncModalDisplay();
+renderHistory();
 </script>
 </body>
 </html>

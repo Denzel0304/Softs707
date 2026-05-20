@@ -172,7 +172,6 @@
     <div id="controls">
       <button class="ctrl-btn" id="reset-btn" aria-label="처음부터"><i class="ti ti-player-skip-back"></i></button>
       <button class="ctrl-btn" id="play-btn" aria-label="시작"><i class="ti ti-player-play"></i></button>
-      <button class="ctrl-btn" id="pause-btn" aria-label="일시정지"><i class="ti ti-player-pause"></i></button>
     </div>
   </div>
 
@@ -242,8 +241,11 @@ const PRESETS=[
   {name:'이완 호흡',desc:'5회 · 33:67',cycles:5,ratio:33,session:10},
 ];
 
-// cfg는 적용하기 눌러야만 바뀜 — localStorage 없이 메모리에서 영속
-let cfg={cycles:5.5,ratio:45,session:5};
+// cfg: localStorage에서 불러오고, 적용하기 누를 때만 저장
+const DEFAULT_CFG={cycles:5.5,ratio:45,session:5};
+let cfg;
+try{ cfg=JSON.parse(localStorage.getItem('sum_cfg'))||{...DEFAULT_CFG}; }
+catch(e){ cfg={...DEFAULT_CFG}; }
 let tmpCfg={...cfg};
 
 let running=false,phase='idle',phaseStart=null,phaseTotal=0,sessionStart=null,rafId=null;
@@ -384,14 +386,11 @@ function stop(done){
 }
 
 playBtn.addEventListener('click',()=>{
-  if(phase==='idle')start();
+  if(phase==='idle') start();
+  else if(running) pause();
+  else resume();
 });
 document.getElementById('reset-btn').addEventListener('click',()=>{pause();stop(false);});
-// 우측 버튼: 실행 중이면 일시정지, 일시정지 중이면 재개
-document.getElementById('pause-btn').addEventListener('click',()=>{
-  if(running)pause();
-  else if(phase!=='idle')resume();
-});
 
 // VIZ TABS
 document.querySelectorAll('.viz-tab').forEach(btn=>{
@@ -481,9 +480,10 @@ function syncModalDisplay(){
   document.getElementById(id).addEventListener('input',syncModalDisplay);
 });
 
-// 적용하기 — 이 순간에만 cfg가 바뀜
+// 적용하기 — cfg 갱신 + localStorage 저장
 document.getElementById('save-btn').addEventListener('click',()=>{
   cfg={...tmpCfg};
+  localStorage.setItem('sum_cfg',JSON.stringify(cfg));
   updateStats();
   stop(false);
   if(modalOpen)history.back();

@@ -132,7 +132,7 @@
   <div id="page-breath">
     <div id="phase-wrap">
       <div id="phase-label">준비</div>
-      <div id="phase-sub">시작 버튼을 눌러주세요</div>
+      <div id="phase-sub">시작 버튼을 눌러주세요.</div>
     </div>
 
     <div id="viz-tabs">
@@ -156,6 +156,7 @@
       <!-- 맥박 -->
       <div id="pulse-viz">
         <svg viewBox="0 0 220 220">
+          <circle cx="110" cy="110" r="90" fill="none" stroke="var(--g100)" stroke-width="2"/>
           <circle id="pulse-circle" cx="110" cy="110" r="0"/>
         </svg>
         <div id="pulse-center">
@@ -342,7 +343,7 @@ function tick(now){
   if(vizMode==='wave')drawWave(ratio,isIn);
   if(ratio>=1){
     pausedPhaseElapsed=0;
-    if(phase==='in'){phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요';}
+    if(phase==='in'){phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';}
     else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';}
     phaseStart=now;
   }
@@ -388,7 +389,7 @@ function resume(){
   phaseStart=sessionStart=performance.now();
   const t=calcT(cfg);
   phaseLabel.textContent=phase==='in'?'들숨':'날숨';
-  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.':t.outSec.toFixed(1)+'초간 천천히 내쉬세요';
+  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.':t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';
   playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
   rafId=requestAnimationFrame(tick);
 }
@@ -402,7 +403,7 @@ function stop(done){
   sessionText.textContent='0:00 / '+fmt(cfg.session*60);
   playBtn.innerHTML='<i class="ti ti-player-play"></i>';
   phaseLabel.textContent=done?'완료!':'준비';
-  phaseSub.textContent=done?'훌륭해요! 세션을 마쳤습니다 🌿':'시작 버튼을 눌러주세요';
+  phaseSub.textContent=done?'훌륭해요! 세션을 마쳤습니다 🌿':'시작 버튼을 눌러주세요.';
   if(vizMode==='wave')wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
   document.getElementById('pulse-circle').setAttribute('r',0);
   document.getElementById('pulse-time').textContent='0.0';

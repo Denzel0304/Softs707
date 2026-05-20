@@ -462,12 +462,11 @@ function renderHistory(){
   });
 }
 
-// MODAL
+// MODAL — history API 없이 순수하게 처리
 let modalOpen=false;
 
 function openModal(){
   if(modalOpen)return;
-  // tmpCfg를 현재 cfg로 초기화 (적용된 값 기준)
   tmpCfg={...cfg};
   document.getElementById('sl-cycles').value=cfg.cycles;
   document.getElementById('sl-ratio').value=cfg.ratio;
@@ -475,7 +474,6 @@ function openModal(){
   syncModalDisplay();
   modalOverlay.classList.add('show');
   modalOpen=true;
-  history.pushState({modal:true},'');
 }
 function closeModal(){
   if(!modalOpen)return;
@@ -484,8 +482,18 @@ function closeModal(){
 }
 
 document.getElementById('settings-btn').addEventListener('click',openModal);
-modalOverlay.addEventListener('click',e=>{if(e.target===modalOverlay&&modalOpen)history.back();});
-window.addEventListener('popstate',()=>{if(modalOpen)closeModal();});
+
+// 배경 클릭 시 닫기
+modalOverlay.addEventListener('click',e=>{
+  if(e.target===modalOverlay) closeModal();
+});
+
+// 뒤로가기: 모달 열려있으면 닫기만, 아니면 기본 동작
+window.addEventListener('popstate',()=>{
+  if(modalOpen){ closeModal(); history.pushState(null,''); }
+});
+// 초기 상태 스택 하나 심어두기 (뒤로가기 감지용)
+history.pushState(null,'');
 
 // 모달 슬라이더 → 화면에만 반영, cfg는 건드리지 않음
 function syncModalDisplay(){
@@ -513,7 +521,6 @@ document.getElementById('save-btn').addEventListener('click',()=>{
   updateStats();
   stop(false);
   closeModal();
-  history.back();
 });
 
 // 프리셋

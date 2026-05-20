@@ -38,22 +38,27 @@
   .viz-tab{flex:1;border:none;background:none;cursor:pointer;padding:5px 6px;border-radius:7px;font-size:11px;color:var(--text2);transition:all 0.15s;}
   .viz-tab.active{background:var(--g400);color:#fff;font-weight:600;}
 
-  /* VIZ */
-  #viz-wrap{display:flex;align-items:center;justify-content:center;width:100%;}
-  #circle-viz{position:relative;width:160px;height:160px;}
+  /* VIZ — 항상 160px 고정 높이, 모드 바꿔도 레이아웃 안 움직임 */
+  #viz-wrap{display:flex;align-items:center;justify-content:center;width:100%;height:160px;flex-shrink:0;}
+  /* 원형 */
+  #circle-viz{position:relative;width:160px;height:160px;flex-shrink:0;}
   #circle-viz svg{width:100%;height:100%;}
   .track{fill:none;stroke:var(--g100);stroke-width:12;}
   .prog{fill:none;stroke:var(--g400);stroke-width:12;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg);}
   #circle-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
   #circle-time{font-size:30px;font-weight:300;color:var(--g600);}
   #circle-unit{font-size:11px;color:var(--text3);}
-  #bar-viz{width:100%;max-width:280px;display:none;}
-  #bar-track{background:var(--g100);border-radius:10px;height:20px;overflow:hidden;}
-  #bar-fill{background:var(--g400);height:100%;width:0%;border-radius:10px;}
-  #bar-time-label{text-align:center;margin-top:8px;font-size:30px;font-weight:300;color:var(--g600);}
-  #wave-viz{width:100%;max-width:300px;display:none;}
-  #wave-canvas{width:100%;height:80px;border-radius:12px;background:var(--g50);}
-  #wave-time-label{text-align:center;margin-top:8px;font-size:30px;font-weight:300;color:var(--g600);}
+  /* 맥박 — 원형과 동일 160×160 */
+  #pulse-viz{position:relative;width:160px;height:160px;flex-shrink:0;display:none;}
+  #pulse-viz svg{width:100%;height:100%;}
+  #pulse-circle{fill:var(--g400);}
+  #pulse-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  #pulse-time{font-size:30px;font-weight:300;color:#fff;}
+  #pulse-unit{font-size:11px;color:rgba(255,255,255,0.8);}
+  /* 파동 — 160px 고정 박스 안에 canvas */
+  #wave-viz{width:160px;height:160px;flex-shrink:0;display:none;position:relative;border-radius:16px;overflow:hidden;background:var(--g50);}
+  #wave-canvas{position:absolute;inset:0;width:100%;height:100%;}
+  #wave-time-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:300;color:var(--g600);pointer-events:none;}
 
   /* STATS */
   #stats{display:flex;gap:8px;width:100%;max-width:300px;}
@@ -132,11 +137,12 @@
 
     <div id="viz-tabs">
       <button class="viz-tab active" data-mode="circle">원형</button>
-      <button class="viz-tab" data-mode="bar">바</button>
+      <button class="viz-tab" data-mode="pulse">맥박</button>
       <button class="viz-tab" data-mode="wave">파동</button>
     </div>
 
     <div id="viz-wrap">
+      <!-- 원형 -->
       <div id="circle-viz">
         <svg viewBox="0 0 220 220">
           <circle class="track" cx="110" cy="110" r="90"/>
@@ -147,12 +153,19 @@
           <div id="circle-unit">초</div>
         </div>
       </div>
-      <div id="bar-viz">
-        <div id="bar-track"><div id="bar-fill"></div></div>
-        <div id="bar-time-label">0.0</div>
+      <!-- 맥박 -->
+      <div id="pulse-viz">
+        <svg viewBox="0 0 220 220">
+          <circle id="pulse-circle" cx="110" cy="110" r="0"/>
+        </svg>
+        <div id="pulse-center">
+          <div id="pulse-time">0.0</div>
+          <div id="pulse-unit">초</div>
+        </div>
       </div>
+      <!-- 파동 -->
       <div id="wave-viz">
-        <canvas id="wave-canvas" width="600" height="160"></canvas>
+        <canvas id="wave-canvas" width="320" height="320"></canvas>
         <div id="wave-time-label">0.0</div>
       </div>
     </div>
@@ -283,10 +296,16 @@ function updateStats(){
 }
 
 function setProg(ratio,isIn){
+  // 원형
   progCircle.style.strokeDasharray=`${CIRC*ratio} ${CIRC}`;
   progCircle.style.stroke=isIn?'#78cc78':'#267326';
-  barFill.style.width=(ratio*100)+'%';
-  barFill.style.background=isIn?'#78cc78':'#267326';
+  // 맥박: 들숨=점→원(커짐), 날숨=원→점(작아짐)
+  const r = isIn ? ratio*90 : (1-ratio)*90;
+  document.getElementById('pulse-circle').setAttribute('r', r);
+  document.getElementById('pulse-circle').setAttribute('fill', isIn?'#78cc78':'#267326');
+  // 시간 레이블 색 (배경이 진해지면 흰색 유지)
+  document.getElementById('pulse-time').style.color = r>20?'#fff':'#267326';
+  document.getElementById('pulse-unit').style.color = r>20?'rgba(255,255,255,0.8)':'#4db84d';
 }
 
 function fmt(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');}
@@ -317,12 +336,14 @@ function tick(now){
   const isIn=phase==='in';
   setProg(ratio,isIn);
   const ts=rem.toFixed(1);
-  circleTime.textContent=ts;barTL.textContent=ts;waveTL.textContent=ts;
+  circleTime.textContent=ts;
+  document.getElementById('pulse-time').textContent=ts;
+  waveTL.textContent=ts;
   if(vizMode==='wave')drawWave(ratio,isIn);
   if(ratio>=1){
     pausedPhaseElapsed=0;
     if(phase==='in'){phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요';}
-    else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 마시세요';}
+    else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';}
     phaseStart=now;
   }
   rafId=requestAnimationFrame(tick);
@@ -348,7 +369,7 @@ function start(){
   const t=calcT(cfg);running=true;phase='in';phaseTotal=t.inSec;
   pausedPhaseElapsed=0;pausedSessionElapsed=0;
   phaseStart=sessionStart=performance.now();
-  phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 마시세요';
+  phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';
   playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
   rafId=requestAnimationFrame(tick);
 }
@@ -367,7 +388,7 @@ function resume(){
   phaseStart=sessionStart=performance.now();
   const t=calcT(cfg);
   phaseLabel.textContent=phase==='in'?'들숨':'날숨';
-  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 마시세요':t.outSec.toFixed(1)+'초간 천천히 내쉬세요';
+  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.':t.outSec.toFixed(1)+'초간 천천히 내쉬세요';
   playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
   rafId=requestAnimationFrame(tick);
 }
@@ -383,6 +404,10 @@ function stop(done){
   phaseLabel.textContent=done?'완료!':'준비';
   phaseSub.textContent=done?'훌륭해요! 세션을 마쳤습니다 🌿':'시작 버튼을 눌러주세요';
   if(vizMode==='wave')wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+  document.getElementById('pulse-circle').setAttribute('r',0);
+  document.getElementById('pulse-time').textContent='0.0';
+  document.getElementById('pulse-time').style.color='#267326';
+  document.getElementById('pulse-unit').style.color='#4db84d';
 }
 
 playBtn.addEventListener('click',()=>{
@@ -398,12 +423,12 @@ document.querySelectorAll('.viz-tab').forEach(btn=>{
     document.querySelectorAll('.viz-tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');vizMode=btn.dataset.mode;
     document.getElementById('circle-viz').style.display=vizMode==='circle'?'block':'none';
-    document.getElementById('bar-viz').style.display=vizMode==='bar'?'block':'none';
+    document.getElementById('pulse-viz').style.display=vizMode==='pulse'?'block':'none';
     document.getElementById('wave-viz').style.display=vizMode==='wave'?'block':'none';
   });
 });
 document.getElementById('circle-viz').style.display='block';
-document.getElementById('bar-viz').style.display='none';
+document.getElementById('pulse-viz').style.display='none';
 document.getElementById('wave-viz').style.display='none';
 progCircle.style.strokeDasharray=`0 ${CIRC}`;
 

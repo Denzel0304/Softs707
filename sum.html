@@ -553,17 +553,25 @@ function renderHistory(){
 }
 
 // 월간 목표 변경 모달
-document.getElementById('monthly-change-btn').addEventListener('click',()=>{
+function openGoalModal(){
   document.getElementById('goal-input').value=monthlyGoal;
   document.getElementById('goal-modal-overlay').classList.add('show');
-});
-document.getElementById('gm-cancel').addEventListener('click',()=>{
+  history.pushState({modal:'goal'},'');
+}
+function closeGoalModal(){
   document.getElementById('goal-modal-overlay').classList.remove('show');
-});
+}
+document.getElementById('monthly-change-btn').addEventListener('click', openGoalModal);
+document.getElementById('gm-cancel').addEventListener('click',()=>{ history.back(); });
 document.getElementById('gm-save').addEventListener('click',()=>{
   const v=parseInt(document.getElementById('goal-input').value);
   if(v>=1&&v<=500){ monthlyGoal=v; localStorage.setItem('sum_monthly_goal',v); renderHistory(); }
-  document.getElementById('goal-modal-overlay').classList.remove('show');
+  history.back();
+});
+window.addEventListener('popstate',(e)=>{
+  if(document.getElementById('goal-modal-overlay').classList.contains('show')){
+    closeGoalModal();
+  }
 });
 
 // 설정 슬라이더

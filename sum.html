@@ -140,7 +140,7 @@
   #page-settings.active{justify-content:space-between;padding:14px 16px 14px;}
   .setting-section-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
   .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
-  .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:7px 8px;cursor:pointer;text-align:left;transition:all 0.15s;}
+  .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:7px 8px;cursor:pointer;text-align:center;transition:all 0.15s;}
   .preset-btn:active,.preset-btn.selected{border-color:var(--g400);background:var(--g100);}
   .preset-name{font-size:11px;font-weight:600;color:var(--g700);}
   .preset-desc{font-size:9px;color:var(--text3);margin-top:1px;}
@@ -384,10 +384,10 @@
 
 <script>
 const PRESETS=[
-  {name:'공명 호흡',   desc:'5.5회 · 들4.9 날6.1',  inSec:4.9, holdIn:0,  outSec:6.1, holdOut:0,  session:5},
-  {name:'4-7-8 호흡', desc:'들4 멈7 날8',            inSec:4,   holdIn:7,  outSec:8,   holdOut:0,  session:5},
-  {name:'박스 호흡',   desc:'들4 멈4 날4 멈4',        inSec:4,   holdIn:4,  outSec:4,   holdOut:4,  session:5},
-  {name:'이완 호흡',   desc:'들4 날8',                inSec:4,   holdIn:0,  outSec:8,   holdOut:0,  session:10},
+  {name:'공명 호흡 (매일 관리)',   desc:'들숨4.9, 날숨6.1',                    inSec:4.9, holdIn:0,  outSec:6.1, holdOut:0,  session:5},
+  {name:'4-7-8 호흡 (즉각 진정)', desc:'들숨4, 멈춤7, 날숨8',                  inSec:4,   holdIn:7,  outSec:8,   holdOut:0,  session:5},
+  {name:'박스 호흡 (집중 유지)',   desc:'들숨4, 멈춤4, 날숨4, 멈춤4',           inSec:4,   holdIn:4,  outSec:4,   holdOut:4,  session:5},
+  {name:'이완 호흡 (취침 전)',     desc:'들숨4, 날숨8',                         inSec:4,   holdIn:0,  outSec:8,   holdOut:0,  session:10},
 ];
 
 const DEFAULT={inSec:4.9,holdIn:0,outSec:6.1,holdOut:0,session:5};

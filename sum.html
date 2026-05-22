@@ -136,26 +136,47 @@
   #del-modal-btns{display:flex;gap:8px;}
   .dm-delete{flex:1;padding:10px;border-radius:10px;border:none;background:#c03030;color:#fff;font-size:14px;font-weight:700;cursor:pointer;}
 
-  /* ── 설정 페이지 ── */
-  .setting-group{padding:12px 16px 0;}
-  .setting-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
-  .setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
-  .setting-name{font-size:13px;color:var(--text1);}
-  .setting-val{font-size:13px;font-weight:600;color:var(--g600);min-width:48px;text-align:right;}
-  input[type=range]{flex:1;margin:0 8px;accent-color:var(--g400);}
-  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px;}
+  #page-settings{padding:0;overflow:hidden;}
+  #page-settings.active{justify-content:space-between;padding:14px 16px 14px;}
+  .setting-section-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
   .preset-btn{border:1.5px solid var(--border);background:var(--g50);border-radius:10px;padding:7px 8px;cursor:pointer;text-align:left;transition:all 0.15s;}
   .preset-btn:active,.preset-btn.selected{border-color:var(--g400);background:var(--g100);}
   .preset-name{font-size:11px;font-weight:600;color:var(--g700);}
   .preset-desc{font-size:9px;color:var(--text3);margin-top:1px;}
-  .phase-visual{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:0 16px 5px;}
-  .pv-in{background:var(--g300);min-width:4px;transition:flex 0.2s;}
-  .pv-hold-in{background:var(--g200);min-width:0;transition:flex 0.2s;}
-  .pv-out{background:var(--g600);min-width:4px;transition:flex 0.2s;}
-  .pv-hold-out{background:var(--g400);min-width:0;transition:flex 0.2s;}
-  .phase-labels{display:flex;justify-content:space-between;padding:0 16px;font-size:10px;color:var(--text3);margin-bottom:4px;}
-  .sl-zero{opacity:0.5;}
-  #save-btn{display:block;margin:20px 16px 14px;width:calc(100% - 32px);padding:10px;background:var(--g500);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
+
+  /* 스테퍼 카드 그리드 */
+  .stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .stepper-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:10px 10px 9px;display:flex;flex-direction:column;gap:6px;}
+  .stepper-card.hold-card{border-style:dashed;}
+  .stepper-card.hold-card.active-hold{border-style:solid;border-color:var(--g300);}
+  .stepper-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+  .stepper-ctrl{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .stepper-btn{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);background:var(--g50);cursor:pointer;font-size:18px;font-weight:300;color:var(--g600);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.12s;user-select:none;-webkit-user-select:none;}
+  .stepper-btn:active{background:var(--g100);transform:scale(0.92);}
+  .stepper-val{font-size:18px;font-weight:300;color:var(--g600);min-width:44px;text-align:center;line-height:1;}
+  .stepper-val small{font-size:11px;color:var(--text3);font-weight:400;}
+  .stepper-val.dim{color:var(--text3);font-size:14px;}
+
+  /* 사이클 바 */
+  .phase-visual{display:flex;height:7px;border-radius:4px;overflow:hidden;gap:2px;margin-bottom:2px;}
+  .pv-in{background:var(--g300);min-width:4px;border-radius:4px;transition:flex 0.25s;}
+  .pv-hold-in{background:var(--g200);border-radius:4px;transition:flex 0.25s;}
+  .pv-out{background:var(--g600);min-width:4px;border-radius:4px;transition:flex 0.25s;}
+  .pv-hold-out{background:var(--g400);border-radius:4px;transition:flex 0.25s;}
+  .phase-legend{display:flex;gap:10px;margin-bottom:10px;}
+  .pl-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);}
+  .pl-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+  /* 세션 스테퍼 (가로형) */
+  .session-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:10px 14px;margin-bottom:14px;}
+  .session-label{font-size:13px;color:var(--text1);}
+  .session-ctrl{display:flex;align-items:center;gap:8px;}
+  .stepper-btn-sm{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--g50);cursor:pointer;font-size:17px;font-weight:300;color:var(--g600);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.12s;user-select:none;-webkit-user-select:none;}
+  .stepper-btn-sm:active{background:var(--g100);transform:scale(0.92);}
+  .session-val{font-size:15px;font-weight:600;color:var(--g600);min-width:32px;text-align:center;}
+
+  #save-btn{width:100%;padding:12px;background:var(--g500);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;}
   #save-btn:active{background:var(--g600);}
 </style>
 </head>
@@ -285,50 +306,70 @@
 
   <!-- 설정 -->
   <div class="page" id="page-settings">
-    <div class="setting-group"><div class="setting-label">프리셋</div></div>
+
+    <!-- 프리셋 -->
+    <div class="setting-section-label">프리셋</div>
     <div class="preset-grid" id="preset-grid"></div>
 
-    <div class="setting-group">
-      <div class="setting-label">호흡 패턴</div>
-      <div class="setting-row">
-        <span class="setting-name">들숨</span>
-        <span class="setting-val" id="val-in">4.0초</span>
+    <!-- 호흡 패턴 스테퍼 2×2 -->
+    <div class="setting-section-label">호흡 패턴</div>
+    <div class="stepper-grid">
+      <div class="stepper-card" id="card-in">
+        <div class="stepper-label">들숨</div>
+        <div class="stepper-ctrl">
+          <button class="stepper-btn" data-key="inSec" data-dir="-1">−</button>
+          <div class="stepper-val" id="val-in">4.9<small>초</small></div>
+          <button class="stepper-btn" data-key="inSec" data-dir="1">+</button>
+        </div>
       </div>
-      <div class="setting-row"><input type="range" id="sl-in" min="1" max="12" step="0.5" value="4"></div>
-      <div class="setting-row">
-        <span class="setting-name">들숨 후 멈춤</span>
-        <span class="setting-val" id="val-hold-in">없음</span>
+      <div class="stepper-card hold-card" id="card-hold-in">
+        <div class="stepper-label">들숨 후 멈춤</div>
+        <div class="stepper-ctrl">
+          <button class="stepper-btn" data-key="holdIn" data-dir="-1">−</button>
+          <div class="stepper-val dim" id="val-hold-in">없음</div>
+          <button class="stepper-btn" data-key="holdIn" data-dir="1">+</button>
+        </div>
       </div>
-      <div class="setting-row"><input type="range" id="sl-hold-in" min="0" max="10" step="0.5" value="0"></div>
-      <div class="setting-row">
-        <span class="setting-name">날숨</span>
-        <span class="setting-val" id="val-out">6.0초</span>
+      <div class="stepper-card" id="card-out">
+        <div class="stepper-label">날숨</div>
+        <div class="stepper-ctrl">
+          <button class="stepper-btn" data-key="outSec" data-dir="-1">−</button>
+          <div class="stepper-val" id="val-out">6.1<small>초</small></div>
+          <button class="stepper-btn" data-key="outSec" data-dir="1">+</button>
+        </div>
       </div>
-      <div class="setting-row"><input type="range" id="sl-out" min="1" max="12" step="0.5" value="6"></div>
-      <div class="setting-row">
-        <span class="setting-name">날숨 후 멈춤</span>
-        <span class="setting-val" id="val-hold-out">없음</span>
-      </div>
-      <div class="setting-row"><input type="range" id="sl-hold-out" min="0" max="10" step="0.5" value="0"></div>
-      <div class="phase-visual">
-        <div class="pv-in" id="pv-in"></div>
-        <div class="pv-hold-in" id="pv-hold-in"></div>
-        <div class="pv-out" id="pv-out"></div>
-        <div class="pv-hold-out" id="pv-hold-out"></div>
-      </div>
-      <div class="phase-labels">
-        <span id="lbl-phase-in">들숨 4.0s</span>
-        <span id="lbl-phase-out">날숨 6.0s</span>
+      <div class="stepper-card hold-card" id="card-hold-out">
+        <div class="stepper-label">날숨 후 멈춤</div>
+        <div class="stepper-ctrl">
+          <button class="stepper-btn" data-key="holdOut" data-dir="-1">−</button>
+          <div class="stepper-val dim" id="val-hold-out">없음</div>
+          <button class="stepper-btn" data-key="holdOut" data-dir="1">+</button>
+        </div>
       </div>
     </div>
 
-    <div class="setting-group">
-      <div class="setting-label">세션 시간</div>
-      <div class="setting-row">
-        <span class="setting-name">호흡 시간</span>
-        <span class="setting-val" id="val-session">5분</span>
+    <!-- 사이클 비율 바 -->
+    <div class="phase-visual">
+      <div class="pv-in" id="pv-in" style="flex:4.9"></div>
+      <div class="pv-hold-in" id="pv-hold-in" style="flex:0"></div>
+      <div class="pv-out" id="pv-out" style="flex:6.1"></div>
+      <div class="pv-hold-out" id="pv-hold-out" style="flex:0"></div>
+    </div>
+    <div class="phase-legend">
+      <div class="pl-item"><div class="pl-dot" style="background:var(--g300)"></div>들숨</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--g200)"></div>멈춤</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--g600)"></div>날숨</div>
+      <div class="pl-item"><div class="pl-dot" style="background:var(--g400)"></div>멈춤</div>
+    </div>
+
+    <!-- 세션 시간 -->
+    <div class="session-row">
+      <span class="session-label">세션 시간</span>
+      <div class="session-ctrl">
+        <button class="stepper-btn-sm" data-key="session" data-dir="-1">−</button>
+        <div class="session-val" id="val-session">5분</div>
+        <button class="stepper-btn-sm" data-key="session" data-dir="1">+</button>
       </div>
-      <div class="setting-row"><input type="range" id="sl-session" min="1" max="30" step="1" value="5"></div>
     </div>
 
     <button id="save-btn">적용하기</button>
@@ -670,58 +711,79 @@ window.addEventListener('popstate',(e)=>{
   }
 });
 
-// 설정 슬라이더
+// 설정 스테퍼
+const STEP={inSec:0.5,holdIn:0.5,outSec:0.5,holdOut:0.5,session:1};
+const MIN={inSec:1,holdIn:0,outSec:1,holdOut:0,session:1};
+const MAX={inSec:12,holdIn:10,outSec:12,holdOut:10,session:30};
+
+// 임시 설정값 (적용 전)
+let draft={};
+function resetDraft(){ draft={inSec:cfg.inSec,holdIn:cfg.holdIn,outSec:cfg.outSec,holdOut:cfg.holdOut,session:cfg.session}; }
+resetDraft();
+
 function syncSettings(){
-  const inS=parseFloat(document.getElementById('sl-in').value);
-  const hIn=parseFloat(document.getElementById('sl-hold-in').value);
-  const outS=parseFloat(document.getElementById('sl-out').value);
-  const hOut=parseFloat(document.getElementById('sl-hold-out').value);
-  const s=parseInt(document.getElementById('sl-session').value);
+  const d=draft;
+  // 값 표시
+  const fmtSec=v=>v%1===0?v+'<small>초</small>':(v.toFixed(1)+'<small>초</small>');
+  document.getElementById('val-in').innerHTML=fmtSec(d.inSec);
+  document.getElementById('val-out').innerHTML=fmtSec(d.outSec);
+  const hiEl=document.getElementById('val-hold-in');
+  const hoEl=document.getElementById('val-hold-out');
+  if(d.holdIn>0){hiEl.innerHTML=fmtSec(d.holdIn);hiEl.classList.remove('dim');}
+  else{hiEl.textContent='없음';hiEl.classList.add('dim');}
+  if(d.holdOut>0){hoEl.innerHTML=fmtSec(d.holdOut);hoEl.classList.remove('dim');}
+  else{hoEl.textContent='없음';hoEl.classList.add('dim');}
+  document.getElementById('val-session').textContent=d.session+'분';
 
-  document.getElementById('val-in').textContent=inS+'초';
-  document.getElementById('val-hold-in').textContent=hIn>0?hIn+'초':'없음';
-  document.getElementById('val-out').textContent=outS+'초';
-  document.getElementById('val-hold-out').textContent=hOut>0?hOut+'초':'없음';
-  document.getElementById('val-session').textContent=s+'분';
+  // 멈춤 카드 테두리 활성화
+  document.getElementById('card-hold-in').classList.toggle('active-hold',d.holdIn>0);
+  document.getElementById('card-hold-out').classList.toggle('active-hold',d.holdOut>0);
 
-  // 멈춤 슬라이더 dimming
-  document.getElementById('sl-hold-in').classList.toggle('sl-zero',hIn===0);
-  document.getElementById('sl-hold-out').classList.toggle('sl-zero',hOut===0);
-
-  // 4단계 바 비율
-  const total=inS+hIn+outS+hOut;
-  document.getElementById('pv-in').style.flex=inS;
-  document.getElementById('pv-hold-in').style.flex=hIn;
-  document.getElementById('pv-out').style.flex=outS;
-  document.getElementById('pv-hold-out').style.flex=hOut;
-
-  // 라벨
-  let lblIn='들숨 '+inS+'s';
-  if(hIn>0) lblIn+=' / 멈춤 '+hIn+'s';
-  let lblOut='날숨 '+outS+'s';
-  if(hOut>0) lblOut+=' / 멈춤 '+hOut+'s';
-  document.getElementById('lbl-phase-in').textContent=lblIn;
-  document.getElementById('lbl-phase-out').textContent=lblOut;
+  // 사이클 바
+  document.getElementById('pv-in').style.flex=d.inSec;
+  document.getElementById('pv-hold-in').style.flex=d.holdIn;
+  document.getElementById('pv-out').style.flex=d.outSec;
+  document.getElementById('pv-hold-out').style.flex=d.holdOut;
 }
-['sl-in','sl-hold-in','sl-out','sl-hold-out','sl-session'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',syncSettings);
-});
+
+// 스테퍼 버튼 이벤트 (long-press 지원)
+let pressTimer=null,pressInterval=null;
+function stepperChange(key,dir){
+  const v=parseFloat((draft[key]+STEP[key]*dir).toFixed(1));
+  draft[key]=Math.min(MAX[key],Math.max(MIN[key],v));
+  syncSettings();
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
+}
+function attachStepper(btn){
+  const key=btn.dataset.key,dir=parseFloat(btn.dataset.dir);
+  btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    stepperChange(key,dir);
+    pressTimer=setTimeout(()=>{
+      pressInterval=setInterval(()=>stepperChange(key,dir),80);
+    },400);
+  });
+  const stop=()=>{clearTimeout(pressTimer);clearInterval(pressInterval);};
+  btn.addEventListener('pointerup',stop);
+  btn.addEventListener('pointerleave',stop);
+  btn.addEventListener('pointercancel',stop);
+}
+document.querySelectorAll('[data-key]').forEach(attachStepper);
 
 // 적용하기
 document.getElementById('save-btn').addEventListener('click',()=>{
-  cfg={
-    inSec:parseFloat(document.getElementById('sl-in').value),
-    holdIn:parseFloat(document.getElementById('sl-hold-in').value),
-    outSec:parseFloat(document.getElementById('sl-out').value),
-    holdOut:parseFloat(document.getElementById('sl-hold-out').value),
-    session:parseInt(document.getElementById('sl-session').value)
-  };
+  cfg={...draft};
   localStorage.setItem('sum_cfg',JSON.stringify(cfg));
   updateStats();
   stop(false);
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('[data-page="page-breath"]').classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-breath'));
+});
+
+// 설정 탭 열릴 때 draft 동기화
+document.querySelector('[data-page="page-settings"]').addEventListener('click',()=>{
+  resetDraft();syncSettings();
 });
 
 // 프리셋
@@ -733,22 +795,14 @@ PRESETS.forEach(p=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
-    document.getElementById('sl-in').value=p.inSec;
-    document.getElementById('sl-hold-in').value=p.holdIn;
-    document.getElementById('sl-out').value=p.outSec;
-    document.getElementById('sl-hold-out').value=p.holdOut;
-    document.getElementById('sl-session').value=p.session;
+    draft.inSec=p.inSec;draft.holdIn=p.holdIn;draft.outSec=p.outSec;draft.holdOut=p.holdOut;draft.session=p.session;
     syncSettings();
   });
   pg.appendChild(btn);
 });
 
-// 초기화 — 저장된 cfg로 슬라이더 세팅
-document.getElementById('sl-in').value=cfg.inSec||4.9;
-document.getElementById('sl-hold-in').value=cfg.holdIn||0;
-document.getElementById('sl-out').value=cfg.outSec||6.1;
-document.getElementById('sl-hold-out').value=cfg.holdOut||0;
-document.getElementById('sl-session').value=cfg.session||5;
+// 초기화
+resetDraft();
 syncSettings();
 updateStats();
 renderHistory();

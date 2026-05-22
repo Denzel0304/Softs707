@@ -148,10 +148,13 @@
   .preset-btn:active,.preset-btn.selected{border-color:var(--g400);background:var(--g100);}
   .preset-name{font-size:11px;font-weight:600;color:var(--g700);}
   .preset-desc{font-size:9px;color:var(--text3);margin-top:1px;}
-  .ratio-visual{display:flex;height:6px;border-radius:3px;overflow:hidden;margin:0 16px 4px;}
-  #ratio-in{background:var(--g300);}
-  #ratio-out{background:var(--g600);}
-  .ratio-labels{display:flex;justify-content:space-between;padding:0 16px;font-size:10px;color:var(--text3);margin-bottom:2px;}
+  .phase-visual{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:0 16px 5px;}
+  .pv-in{background:var(--g300);min-width:4px;transition:flex 0.2s;}
+  .pv-hold-in{background:var(--g200);min-width:0;transition:flex 0.2s;}
+  .pv-out{background:var(--g600);min-width:4px;transition:flex 0.2s;}
+  .pv-hold-out{background:var(--g400);min-width:0;transition:flex 0.2s;}
+  .phase-labels{display:flex;justify-content:space-between;padding:0 16px;font-size:10px;color:var(--text3);margin-bottom:4px;}
+  .sl-zero{opacity:0.5;}
   #save-btn{display:block;margin:20px 16px 14px;width:calc(100% - 32px);padding:10px;background:var(--g500);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
   #save-btn:active{background:var(--g600);}
 </style>
@@ -200,9 +203,10 @@
       </div>
     </div>
     <div id="stats">
-      <div class="stat"><div class="stat-val" id="stat-cycle">5.5</div><div class="stat-lbl">회/분</div></div>
-      <div class="stat"><div class="stat-val" id="stat-in">4.9s</div><div class="stat-lbl">들숨</div></div>
-      <div class="stat"><div class="stat-val" id="stat-out">6.1s</div><div class="stat-lbl">날숨</div></div>
+      <div class="stat"><div class="stat-val" id="stat-in">4.0s</div><div class="stat-lbl">들숨</div></div>
+      <div class="stat"><div class="stat-val" id="stat-hold-in" style="font-size:12px;">—</div><div class="stat-lbl">멈춤</div></div>
+      <div class="stat"><div class="stat-val" id="stat-out">6.0s</div><div class="stat-lbl">날숨</div></div>
+      <div class="stat"><div class="stat-val" id="stat-hold-out" style="font-size:12px;">—</div><div class="stat-lbl">멈춤</div></div>
     </div>
     <div id="session-row">
       <i class="ti ti-clock" style="font-size:13px;"></i>
@@ -285,23 +289,37 @@
     <div class="preset-grid" id="preset-grid"></div>
 
     <div class="setting-group">
-      <div class="setting-label">호흡 속도</div>
+      <div class="setting-label">호흡 패턴</div>
       <div class="setting-row">
-        <span class="setting-name">1분 당 횟수</span>
-        <span class="setting-val" id="val-cycles">5.5</span>
+        <span class="setting-name">들숨</span>
+        <span class="setting-val" id="val-in">4.0초</span>
       </div>
-      <div class="setting-row"><input type="range" id="sl-cycles" min="4" max="7" step="0.5" value="5.5"></div>
-    </div>
-
-    <div class="setting-group">
-      <div class="setting-label">들숨 : 날숨 비율</div>
+      <div class="setting-row"><input type="range" id="sl-in" min="1" max="12" step="0.5" value="4"></div>
       <div class="setting-row">
-        <span class="setting-name">들숨 비율</span>
-        <span class="setting-val" id="val-in-ratio">45%</span>
+        <span class="setting-name">들숨 후 멈춤</span>
+        <span class="setting-val" id="val-hold-in">없음</span>
       </div>
-      <div class="setting-row"><input type="range" id="sl-ratio" min="10" max="90" step="5" value="45"></div>
-      <div class="ratio-visual"><div id="ratio-in" style="flex:45"></div><div id="ratio-out" style="flex:55"></div></div>
-      <div class="ratio-labels"><span id="lbl-in">들숨 4.9초</span><span id="lbl-out">날숨 6.1초</span></div>
+      <div class="setting-row"><input type="range" id="sl-hold-in" min="0" max="10" step="0.5" value="0"></div>
+      <div class="setting-row">
+        <span class="setting-name">날숨</span>
+        <span class="setting-val" id="val-out">6.0초</span>
+      </div>
+      <div class="setting-row"><input type="range" id="sl-out" min="1" max="12" step="0.5" value="6"></div>
+      <div class="setting-row">
+        <span class="setting-name">날숨 후 멈춤</span>
+        <span class="setting-val" id="val-hold-out">없음</span>
+      </div>
+      <div class="setting-row"><input type="range" id="sl-hold-out" min="0" max="10" step="0.5" value="0"></div>
+      <div class="phase-visual">
+        <div class="pv-in" id="pv-in"></div>
+        <div class="pv-hold-in" id="pv-hold-in"></div>
+        <div class="pv-out" id="pv-out"></div>
+        <div class="pv-hold-out" id="pv-hold-out"></div>
+      </div>
+      <div class="phase-labels">
+        <span id="lbl-phase-in">들숨 4.0s</span>
+        <span id="lbl-phase-out">날숨 6.0s</span>
+      </div>
     </div>
 
     <div class="setting-group">
@@ -325,18 +343,24 @@
 
 <script>
 const PRESETS=[
-  {name:'공명 호흡',desc:'5.5회 · 45:55',cycles:5.5,ratio:45,session:5},
-  {name:'4-6 호흡',desc:'6회 · 40:60',cycles:6,ratio:40,session:5},
-  {name:'박스 호흡',desc:'6회 · 50:50',cycles:6,ratio:50,session:5},
-  {name:'이완 호흡',desc:'5회 · 33:67',cycles:5,ratio:33,session:10},
+  {name:'공명 호흡',   desc:'5.5회 · 들4.9 날6.1',  inSec:4.9, holdIn:0,  outSec:6.1, holdOut:0,  session:5},
+  {name:'4-7-8 호흡', desc:'들4 멈7 날8',            inSec:4,   holdIn:7,  outSec:8,   holdOut:0,  session:5},
+  {name:'박스 호흡',   desc:'들4 멈4 날4 멈4',        inSec:4,   holdIn:4,  outSec:4,   holdOut:4,  session:5},
+  {name:'이완 호흡',   desc:'들4 날8',                inSec:4,   holdIn:0,  outSec:8,   holdOut:0,  session:10},
 ];
 
-const DEFAULT={cycles:5.5,ratio:45,session:5};
+const DEFAULT={inSec:4.9,holdIn:0,outSec:6.1,holdOut:0,session:5};
 let cfg;
-try{ cfg=JSON.parse(localStorage.getItem('sum_cfg'))||{...DEFAULT}; }
-catch(e){ cfg={...DEFAULT}; }
-// 슬라이더 범위(4~7) 벗어난 저장값 보정
-if(cfg.cycles<4||cfg.cycles>7) cfg.cycles=5.5;
+try{
+  const saved=JSON.parse(localStorage.getItem('sum_cfg'));
+  // 구버전(ratio 기반) 저장값 마이그레이션
+  if(saved && saved.ratio!==undefined && saved.cycles!==undefined){
+    const cy=60/saved.cycles;
+    cfg={inSec:parseFloat((cy*saved.ratio/100).toFixed(1)),holdIn:0,outSec:parseFloat((cy*(100-saved.ratio)/100).toFixed(1)),holdOut:0,session:saved.session||5};
+  } else {
+    cfg=saved||{...DEFAULT};
+  }
+}catch(e){ cfg={...DEFAULT}; }
 
 let running=false,phase='idle',phaseStart=null,phaseTotal=0,sessionStart=null,rafId=null;
 let vizMode='circle',pausedPhaseElapsed=0,pausedSessionElapsed=0,wavePhase=0;
@@ -357,13 +381,13 @@ const playBtn=document.getElementById('play-btn');
 const waveCanvas=document.getElementById('wave-canvas');
 const wCtx=waveCanvas.getContext('2d');
 
-function calcT(c){const cy=60/c.cycles;return{inSec:cy*(c.ratio/100),outSec:cy*(1-c.ratio/100)};}
+function calcT(c){return{inSec:c.inSec,holdIn:c.holdIn,outSec:c.outSec,holdOut:c.holdOut,cycleTotal:c.inSec+c.holdIn+c.outSec+c.holdOut};}
 
 function updateStats(){
-  const t=calcT(cfg);
-  document.getElementById('stat-cycle').textContent=cfg.cycles;
-  document.getElementById('stat-in').textContent=t.inSec.toFixed(1)+'s';
-  document.getElementById('stat-out').textContent=t.outSec.toFixed(1)+'s';
+  document.getElementById('stat-in').textContent=cfg.inSec+'s';
+  document.getElementById('stat-out').textContent=cfg.outSec+'s';
+  document.getElementById('stat-hold-in').textContent=cfg.holdIn>0?cfg.holdIn+'s':'—';
+  document.getElementById('stat-hold-out').textContent=cfg.holdOut>0?cfg.holdOut+'s':'—';
   sessionText.textContent='0:00 / '+fmt(cfg.session*60);
 }
 
@@ -405,17 +429,34 @@ function tick(now){
   const phEl=pausedPhaseElapsed+(now-phaseStart)/1000;
   const ratio=Math.min(phEl/phaseTotal,1),rem=Math.max(phaseTotal-phEl,0);
   const isIn=phase==='in';
-  setProg(ratio,isIn);
+  const isHold=phase==='hold-in'||phase==='hold-out';
+  // 시각화: 멈춤 단계는 고정(들숨 후=꽉참, 날숨 후=비움)
+  if(isHold){
+    const holdFull=phase==='hold-in';
+    setProg(holdFull?1:0,holdFull);
+  } else {
+    setProg(ratio,isIn);
+    if(vizMode==='wave')drawWave(ratio,isIn);
+  }
   const ts=rem.toFixed(1);
   circleTime.textContent=ts;
   document.getElementById('pulse-time').textContent=ts;
   waveTL.textContent=ts;
-  if(vizMode==='wave')drawWave(ratio,isIn);
   if(ratio>=1){
     pausedPhaseElapsed=0;
-    if(phase==='in'){phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';}
-    else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';}
     phaseStart=now;
+    // 다음 phase 결정
+    if(phase==='in'){
+      if(t.holdIn>0){phase='hold-in';phaseTotal=t.holdIn;phaseLabel.textContent='멈춤';phaseSub.textContent=t.holdIn.toFixed(1)+'초간 숨을 멈추세요.';}
+      else{phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';}
+    } else if(phase==='hold-in'){
+      phase='out';phaseTotal=t.outSec;phaseLabel.textContent='날숨';phaseSub.textContent=t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';
+    } else if(phase==='out'){
+      if(t.holdOut>0){phase='hold-out';phaseTotal=t.holdOut;phaseLabel.textContent='멈춤';phaseSub.textContent=t.holdOut.toFixed(1)+'초간 숨을 멈추세요.';}
+      else{phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';}
+    } else if(phase==='hold-out'){
+      phase='in';phaseTotal=t.inSec;phaseLabel.textContent='들숨';phaseSub.textContent=t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.';
+    }
   }
   rafId=requestAnimationFrame(tick);
 }
@@ -427,7 +468,7 @@ function completeSession(){
     date:now.toLocaleDateString('ko-KR',{month:'short',day:'numeric'}),
     time:now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}),
     ym:now.getFullYear()+'-'+(now.getMonth()+1),
-    session:cfg.session,cycles:cfg.cycles,ratio:cfg.ratio
+    session:cfg.session,inSec:cfg.inSec,holdIn:cfg.holdIn,outSec:cfg.outSec,holdOut:cfg.holdOut
   });
   localStorage.setItem('sum_history',JSON.stringify(historyLog));
   renderHistory();
@@ -457,8 +498,15 @@ function resume(){
   if(running)return;running=true;
   phaseStart=sessionStart=performance.now();
   const t=calcT(cfg);
-  phaseLabel.textContent=phase==='in'?'들숨':'날숨';
-  phaseSub.textContent=phase==='in'?t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.':t.outSec.toFixed(1)+'초간 천천히 내쉬세요.';
+  const labels={in:'들숨',out:'날숨','hold-in':'멈춤','hold-out':'멈춤'};
+  const subs={
+    in:t.inSec.toFixed(1)+'초간 천천히 들이 쉬세요.',
+    out:t.outSec.toFixed(1)+'초간 천천히 내쉬세요.',
+    'hold-in':t.holdIn.toFixed(1)+'초간 숨을 멈추세요.',
+    'hold-out':t.holdOut.toFixed(1)+'초간 숨을 멈추세요.'
+  };
+  phaseLabel.textContent=labels[phase]||'들숨';
+  phaseSub.textContent=subs[phase]||'';
   playBtn.innerHTML='<i class="ti ti-player-pause"></i>';
   rafId=requestAnimationFrame(tick);
 }
@@ -564,7 +612,7 @@ function renderHistory(){
   historyLog.forEach((h,i)=>{
     const el=document.createElement('div');
     el.className='history-item';
-    el.innerHTML=`<div class="hi-left"><div class="hi-title">${h.date} ${h.time}</div><div class="hi-sub">${h.cycles}회/분 · 들숨 ${h.ratio}% · 날숨 ${100-h.ratio}%</div></div><div class="hi-right">${h.session}분</div><button class="hi-del" data-idx="${i}" title="삭제"><i class="ti ti-x"></i></button>`;
+    el.innerHTML=`<div class="hi-left"><div class="hi-title">${h.date} ${h.time}</div><div class="hi-sub">${h.inSec??'-'}s · ${h.holdIn>0?'멈춤'+h.holdIn+'s · ':''}${h.outSec??'-'}s${h.holdOut>0?' · 멈춤'+h.holdOut+'s':''}</div></div><div class="hi-right">${h.session}분</div><button class="hi-del" data-idx="${i}" title="삭제"><i class="ti ti-x"></i></button>`;
     list.appendChild(el);
   });
   list.querySelectorAll('.hi-del').forEach(btn=>{
@@ -624,33 +672,53 @@ window.addEventListener('popstate',(e)=>{
 
 // 설정 슬라이더
 function syncSettings(){
-  const c=parseFloat(document.getElementById('sl-cycles').value);
-  const r=parseInt(document.getElementById('sl-ratio').value);
+  const inS=parseFloat(document.getElementById('sl-in').value);
+  const hIn=parseFloat(document.getElementById('sl-hold-in').value);
+  const outS=parseFloat(document.getElementById('sl-out').value);
+  const hOut=parseFloat(document.getElementById('sl-hold-out').value);
   const s=parseInt(document.getElementById('sl-session').value);
-  document.getElementById('val-cycles').textContent=c;
-  document.getElementById('val-in-ratio').textContent=r+'%';
+
+  document.getElementById('val-in').textContent=inS+'초';
+  document.getElementById('val-hold-in').textContent=hIn>0?hIn+'초':'없음';
+  document.getElementById('val-out').textContent=outS+'초';
+  document.getElementById('val-hold-out').textContent=hOut>0?hOut+'초':'없음';
   document.getElementById('val-session').textContent=s+'분';
-  const cy=60/c,inS=(cy*r/100).toFixed(1),outS=(cy*(100-r)/100).toFixed(1);
-  document.getElementById('ratio-in').style.flex=r;
-  document.getElementById('ratio-out').style.flex=100-r;
-  document.getElementById('lbl-in').textContent='들숨 '+inS+'초';
-  document.getElementById('lbl-out').textContent='날숨 '+outS+'초';
+
+  // 멈춤 슬라이더 dimming
+  document.getElementById('sl-hold-in').classList.toggle('sl-zero',hIn===0);
+  document.getElementById('sl-hold-out').classList.toggle('sl-zero',hOut===0);
+
+  // 4단계 바 비율
+  const total=inS+hIn+outS+hOut;
+  document.getElementById('pv-in').style.flex=inS;
+  document.getElementById('pv-hold-in').style.flex=hIn;
+  document.getElementById('pv-out').style.flex=outS;
+  document.getElementById('pv-hold-out').style.flex=hOut;
+
+  // 라벨
+  let lblIn='들숨 '+inS+'s';
+  if(hIn>0) lblIn+=' / 멈춤 '+hIn+'s';
+  let lblOut='날숨 '+outS+'s';
+  if(hOut>0) lblOut+=' / 멈춤 '+hOut+'s';
+  document.getElementById('lbl-phase-in').textContent=lblIn;
+  document.getElementById('lbl-phase-out').textContent=lblOut;
 }
-['sl-cycles','sl-ratio','sl-session'].forEach(id=>{
+['sl-in','sl-hold-in','sl-out','sl-hold-out','sl-session'].forEach(id=>{
   document.getElementById(id).addEventListener('input',syncSettings);
 });
 
 // 적용하기
 document.getElementById('save-btn').addEventListener('click',()=>{
   cfg={
-    cycles:parseFloat(document.getElementById('sl-cycles').value),
-    ratio:parseInt(document.getElementById('sl-ratio').value),
+    inSec:parseFloat(document.getElementById('sl-in').value),
+    holdIn:parseFloat(document.getElementById('sl-hold-in').value),
+    outSec:parseFloat(document.getElementById('sl-out').value),
+    holdOut:parseFloat(document.getElementById('sl-hold-out').value),
     session:parseInt(document.getElementById('sl-session').value)
   };
   localStorage.setItem('sum_cfg',JSON.stringify(cfg));
   updateStats();
   stop(false);
-  // 호흡 탭으로 이동
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('[data-page="page-breath"]').classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-breath'));
@@ -665,8 +733,10 @@ PRESETS.forEach(p=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
     btn.classList.add('selected');
-    document.getElementById('sl-cycles').value=p.cycles;
-    document.getElementById('sl-ratio').value=p.ratio;
+    document.getElementById('sl-in').value=p.inSec;
+    document.getElementById('sl-hold-in').value=p.holdIn;
+    document.getElementById('sl-out').value=p.outSec;
+    document.getElementById('sl-hold-out').value=p.holdOut;
     document.getElementById('sl-session').value=p.session;
     syncSettings();
   });
@@ -674,9 +744,11 @@ PRESETS.forEach(p=>{
 });
 
 // 초기화 — 저장된 cfg로 슬라이더 세팅
-document.getElementById('sl-cycles').value=cfg.cycles;
-document.getElementById('sl-ratio').value=cfg.ratio;
-document.getElementById('sl-session').value=cfg.session;
+document.getElementById('sl-in').value=cfg.inSec||4.9;
+document.getElementById('sl-hold-in').value=cfg.holdIn||0;
+document.getElementById('sl-out').value=cfg.outSec||6.1;
+document.getElementById('sl-hold-out').value=cfg.holdOut||0;
+document.getElementById('sl-session').value=cfg.session||5;
 syncSettings();
 updateStats();
 renderHistory();

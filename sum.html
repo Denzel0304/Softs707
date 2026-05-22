@@ -126,6 +126,16 @@
   .hi-right{font-size:13px;font-weight:600;color:var(--g500);margin-left:10px;}
   .hi-del{width:26px;height:26px;border-radius:8px;background:rgba(200,50,50,0.07);border:none;cursor:pointer;color:#c03030;font-size:13px;display:flex;align-items:center;justify-content:center;margin-left:6px;flex-shrink:0;}
 
+  /* 삭제 확인 모달 */
+  #del-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  #del-modal-overlay.show{opacity:1;pointer-events:all;}
+  #del-modal{background:#fff;border-radius:20px;padding:24px 20px;width:280px;transform:scale(0.92);transition:transform 0.2s;}
+  #del-modal-overlay.show #del-modal{transform:scale(1);}
+  #del-modal h3{font-size:15px;font-weight:700;color:var(--text1);margin-bottom:8px;}
+  #del-modal-desc{font-size:13px;color:var(--text3);margin-bottom:14px;}
+  #del-modal-btns{display:flex;gap:8px;}
+  .dm-delete{flex:1;padding:10px;border-radius:10px;border:none;background:#c03030;color:#fff;font-size:14px;font-weight:700;cursor:pointer;}
+
   /* ── 설정 페이지 ── */
   .setting-group{padding:12px 16px 0;}
   .setting-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
@@ -257,6 +267,18 @@
     </div>
   </div>
 
+  <!-- 삭제 확인 모달 -->
+  <div id="del-modal-overlay">
+    <div id="del-modal">
+      <h3>🗑️ 기록 삭제</h3>
+      <p id="del-modal-desc">이 기록을 삭제할까요?</p>
+      <div id="del-modal-btns">
+        <button class="gm-cancel" id="del-cancel">취소</button>
+        <button class="dm-delete" id="del-confirm">삭제</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 설정 -->
   <div class="page" id="page-settings">
     <div class="setting-group"><div class="setting-label">프리셋</div></div>
@@ -268,7 +290,7 @@
         <span class="setting-name">1분 당 횟수</span>
         <span class="setting-val" id="val-cycles">5.5</span>
       </div>
-      <div class="setting-row"><input type="range" id="sl-cycles" min="5" max="10" step="0.5" value="5.5"></div>
+      <div class="setting-row"><input type="range" id="sl-cycles" min="4" max="7" step="0.5" value="5.5"></div>
     </div>
 
     <div class="setting-group">
@@ -313,6 +335,8 @@ const DEFAULT={cycles:5.5,ratio:45,session:5};
 let cfg;
 try{ cfg=JSON.parse(localStorage.getItem('sum_cfg'))||{...DEFAULT}; }
 catch(e){ cfg={...DEFAULT}; }
+// 슬라이더 범위(4~7) 벗어난 저장값 보정
+if(cfg.cycles<4||cfg.cycles>7) cfg.cycles=5.5;
 
 let running=false,phase='idle',phaseStart=null,phaseTotal=0,sessionStart=null,rafId=null;
 let vizMode='circle',pausedPhaseElapsed=0,pausedSessionElapsed=0,wavePhase=0;
@@ -545,9 +569,7 @@ function renderHistory(){
   });
   list.querySelectorAll('.hi-del').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      historyLog.splice(parseInt(btn.dataset.idx),1);
-      localStorage.setItem('sum_history',JSON.stringify(historyLog));
-      renderHistory();
+      openDelModal(parseInt(btn.dataset.idx));
     });
   });
 }
@@ -568,8 +590,34 @@ document.getElementById('gm-save').addEventListener('click',()=>{
   if(v>=1&&v<=500){ monthlyGoal=v; localStorage.setItem('sum_monthly_goal',v); renderHistory(); }
   history.back();
 });
+
+// 삭제 확인 모달
+let pendingDelIdx=null;
+function openDelModal(idx){
+  pendingDelIdx=idx;
+  const h=historyLog[idx];
+  document.getElementById('del-modal-desc').textContent=`${h.date} ${h.time} · ${h.session}분 세션을 삭제할까요?`;
+  document.getElementById('del-modal-overlay').classList.add('show');
+  history.pushState({modal:'del'},'');
+}
+function closeDelModal(){
+  document.getElementById('del-modal-overlay').classList.remove('show');
+  pendingDelIdx=null;
+}
+document.getElementById('del-cancel').addEventListener('click',()=>{ history.back(); });
+document.getElementById('del-confirm').addEventListener('click',()=>{
+  if(pendingDelIdx!==null){
+    historyLog.splice(pendingDelIdx,1);
+    localStorage.setItem('sum_history',JSON.stringify(historyLog));
+    renderHistory();
+  }
+  history.back();
+});
+
 window.addEventListener('popstate',(e)=>{
-  if(document.getElementById('goal-modal-overlay').classList.contains('show')){
+  if(document.getElementById('del-modal-overlay').classList.contains('show')){
+    closeDelModal();
+  } else if(document.getElementById('goal-modal-overlay').classList.contains('show')){
     closeGoalModal();
   }
 });

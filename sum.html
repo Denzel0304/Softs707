@@ -383,6 +383,26 @@
 </div>
 
 <script>
+// ── 오디오 ──────────────────────────────────────────────
+const bgAudio = new Audio('sum.mp3');
+bgAudio.loop = true;
+bgAudio.preload = 'auto';
+
+function audioPlay(){
+  if(bgAudio.paused){
+    const p = bgAudio.play();
+    if(p && p.catch) p.catch(()=>{}); // 정책 오류 무시
+  }
+}
+function audioPause(){
+  if(!bgAudio.paused) bgAudio.pause();
+}
+function audioStop(){
+  bgAudio.pause();
+  bgAudio.currentTime = 0;
+}
+// ────────────────────────────────────────────────────────
+
 const PRESETS=[
   {name:'공명 호흡 (매일 관리)',   desc:'들숨4.9, 날숨6.1',                    inSec:4.9, holdIn:0,  outSec:6.1, holdOut:0,  session:5},
   {name:'4-7-8 호흡 (즉각 진정)', desc:'들숨4, 멈춤7, 날숨8',                  inSec:4,   holdIn:7,  outSec:8,   holdOut:0,  session:5},
@@ -533,6 +553,7 @@ function pause(){
   pausedSessionElapsed+=(now-sessionStart);
   playBtn.innerHTML='<i class="ti ti-player-play"></i>';
   phaseLabel.textContent='일시정지';phaseSub.textContent='다시 시작하려면 재생을 누르세요.';
+  audioPause();
 }
 
 function resume(){
@@ -566,12 +587,13 @@ function stop(done){
   phaseSub.textContent=done?'훌륭해요! 세션을 마쳤습니다 🌿':'시작 버튼을 눌러주세요.';
   if(vizMode==='wave')wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
   document.getElementById('pulse-circle').setAttribute('r',0);
+  audioStop();
 }
 
 playBtn.addEventListener('click',()=>{
-  if(phase==='idle')start();
-  else if(running)pause();
-  else resume();
+  if(phase==='idle'){ audioPlay(); start(); }
+  else if(running){ pause(); }
+  else { audioPlay(); resume(); }
 });
 document.getElementById('reset-btn').addEventListener('click',()=>{pause();stop(false);});
 

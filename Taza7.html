@@ -55,24 +55,30 @@
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px 24px;position:relative;
     box-shadow:0 10px 30px -18px rgba(47,107,46,.4)}
   .progress{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent);border-radius:16px 0 0 0;transition:width .15s}
-  .viewport{overflow:hidden;position:relative}
-  .stream{position:relative;transition:transform .18s ease}
-  .target{line-height:1.9;letter-spacing:.3px}
-  .target.kor .stream{font-family:'Gowun Dodum',sans-serif;font-size:24px}
-  .target.eng .stream{font-family:'Space Mono',monospace;font-size:20px}
-  .ch{position:relative;white-space:pre-wrap}
+  /* ── 미러 레이아웃 ── */
+  .mirror-wrap{overflow:hidden;position:relative;border-radius:10px;border:1px solid var(--line);background:#f6fbf2;}
+  .mirror-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16)}
+  .mirror-row{display:flex;align-items:center;white-space:nowrap;overflow:hidden;
+    font-family:'Space Mono',monospace;font-size:36px;line-height:1;
+    padding:0 18px;height:72px;pointer-events:none;user-select:none;position:relative;}
+  .mirror-row.kor{font-family:'Gowun Dodum',sans-serif;font-size:38px;}
+  .mirror-divider{height:1px;background:var(--line);margin:0;}
+  .ch{display:inline;white-space:pre}
   .ch.pending{color:var(--muted)}
   .ch.done{color:var(--good)}
   .ch.wrong{color:var(--bad);background:var(--bad-bg);border-radius:3px}
-  .ch.cur{color:var(--ink);background:var(--cur-bg);border-radius:3px}
-  .ch.cur::after{content:"";position:absolute;left:-1px;top:8%;height:84%;width:2px;background:var(--accent);animation:blink 1s steps(1) infinite}
+  /* 입력 미러 행 글자 */
+  .tch{display:inline;white-space:pre}
+  .tch.t-ok{color:var(--good)}
+  .tch.t-bad{color:var(--bad);background:var(--bad-bg);border-radius:3px}
+  .tch.t-cur{color:var(--ink);background:var(--cur-bg);border-radius:3px;position:relative;}
+  .tch.t-cur::after{content:"";position:absolute;left:0;top:10%;height:80%;width:2px;background:var(--accent);animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
   .input-row{margin-top:20px;display:flex;gap:10px;align-items:stretch}
-  #field{flex:1;background:#f6fbf2;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+  #field{flex:1;background:transparent;border:none;color:var(--ink);
     font-family:'Space Mono',monospace;font-size:36px;line-height:1;
     padding:0 18px;outline:none;transition:.18s;
-    height:72px;overflow:hidden;}
-  #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16)}
+    height:72px;overflow:hidden;caret-color:transparent;}
   #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:38px;}
   .btn{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:1px;background:var(--accent);
     color:#fff;border:none;border-radius:10px;padding:14px 22px;font-weight:700;cursor:pointer;transition:.15s;
@@ -156,9 +162,16 @@
   </div>
   <div class="panel">
     <div class="progress" id="progress"></div>
-    <div class="target eng viewport" id="target"><div class="stream" id="stream"></div></div>
     <div class="input-row">
-      <input type="text" id="field" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="mirror-wrap" id="mirror-wrap" style="flex:1">
+        <div class="mirror-row" id="answer-row"></div>
+        <div class="mirror-divider"></div>
+        <div class="mirror-row" id="typed-row" style="position:relative;">
+          <input type="text" id="field" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+            style="position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0 18px;font-family:inherit;font-size:inherit;border:none;background:transparent;outline:none;">
+          <span id="typed-mirror"></span><span class="tch t-cur" id="typed-cursor"> </span><span id="typed-tail" style="color:transparent"> </span>
+        </div>
+      </div>
       <button class="btn soft" id="restart">다시 ↻</button>
     </div>
     <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작</div>
@@ -245,7 +258,10 @@ let mode='eng', style='time', dur=60, target='';
 let started=false, finished=false, startTime=0, deadline=0, timerId=null;
 let typedTotal=0, typedWrong=0, stableLen=0, lineH=40;
 const $=s=>document.querySelector(s);
-const field=$('#field'), targetEl=$('#target'), streamEl=$('#stream'), progressEl=$('#progress');
+const field=$('#field');
+const answerRow=$('#answer-row'), typedMirror=$('#typed-mirror'), typedCursor=$('#typed-cursor'), typedTail=$('#typed-tail');
+const progressEl=$('#progress');
+const mirrorWrap=$('#mirror-wrap');
 const CHO=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const JUNG=["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
 const JONG=["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -284,31 +300,59 @@ function fmtDur(sec){ // 순위표용 짧은 표기 (예: 1:23, 47s)
   return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
 }
 function buildTarget(){
-  const chars=[...target]; let html='';
-  chars.forEach((c,i)=>{
-    if(c===' ') html+=`<span class="ch pending"> </span>`;
-    else html+=`<span class="ch pending">${c.replace('<','&lt;')}</span>`;
-  });
-  streamEl.innerHTML=html;
-  const cs=getComputedStyle(streamEl);
-  lineH=parseFloat(cs.lineHeight)|| (parseFloat(cs.fontSize)*1.9);
-  targetEl.style.height=(lineH*3)+'px';
+  // 정답 줄: 글자마다 span.ch.pending
+  answerRow.innerHTML=[...target].map((c,i)=>`<span class="ch pending" data-i="${i}">${c==='<'?'&lt;':c}</span>`).join('');
+  // 폰트 모드 적용
+  answerRow.className='mirror-row'+(mode==='kor'?' kor':'');
+  $('#typed-row').className='mirror-row'+(mode==='kor'?' kor':'');
+  typedMirror.className='';
+  typedCursor.className='tch t-cur';
 }
+
+function scrollMirror(typedLen){
+  // 현재 커서 위치 span을 기준으로 answer-row를 translateX로 동기 이동
+  const spans=answerRow.children;
+  if(!spans.length) return;
+  const idx=Math.min(typedLen, spans.length-1);
+  const curSpan=spans[idx];
+  const rowRect=answerRow.parentElement.getBoundingClientRect();
+  const spanRect=curSpan.getBoundingClientRect();
+  // 커서를 항상 왼쪽에서 80px 위치에 고정
+  const targetX=80;
+  const currentX=spanRect.left - rowRect.left;
+  const shift=currentX - targetX;
+  const cur=parseFloat(answerRow.style.transform.replace('translateX(',''))||0;
+  const newShift=Math.max(0, shift);
+  answerRow.style.transform=`translateX(${-newShift}px)`;
+  // typed-row도 동일하게 이동
+  $('#typed-row').style.transform=`translateX(${-newShift}px)`;
+}
+
 function paint(typed){
-  const spans=streamEl.children;
+  const spans=answerRow.children;
+  // 정답 줄 색칠
   for(let i=0;i<spans.length;i++){
-    const s=spans[i]; let cls='ch';
-    if(i<typed.length) cls += (typed[i]===target[i]?' done':' wrong');
+    let cls='ch';
+    if(i<typed.length) cls+=(typed[i]===target[i]?' done':' wrong');
     else if(i===typed.length) cls+=' cur';
     else cls+=' pending';
-    s.className=cls;
+    spans[i].className=cls;
   }
-  const cur=streamEl.querySelector('.cur')||spans[spans.length-1];
-  if(cur){
-    const lineIndex=Math.round(cur.offsetTop/lineH);
-    const shift=Math.max(0,(lineIndex-1))*lineH;
-    streamEl.style.transform=`translateY(${-shift}px)`;
+  // 입력 미러 줄 색칠
+  let mirrorHtml='';
+  for(let i=0;i<typed.length;i++){
+    const c=typed[i]==='<'?'&lt;':typed[i];
+    const ok=typed[i]===target[i];
+    mirrorHtml+=`<span class="tch ${ok?'t-ok':'t-bad'}">${c}</span>`;
   }
+  typedMirror.innerHTML=mirrorHtml;
+  // 커서
+  const nextChar=target[typed.length]||' ';
+  typedCursor.className='tch t-cur';
+  typedCursor.textContent=nextChar;
+  // 뒤에 여백용 투명 텍스트 (스크롤 공간 확보)
+  typedTail.textContent=typed.length<target.length ? target[typed.length+1]||'' : '';
+  scrollMirror(typed.length);
 }
 function accuracy(){ if(typedTotal===0) return 100; return Math.max(0,Math.round((1-typedWrong/typedTotal)*100)); }
 function computeSpeed(){
@@ -368,8 +412,9 @@ function reset(){
   clearInterval(timerId); started=false; finished=false; startTime=0;
   typedTotal=0; typedWrong=0; stableLen=0; target=makeTarget();
   field.value=''; field.disabled=false; field.classList.toggle('kor',mode==='kor');
-  targetEl.className='target viewport '+mode;
-  buildTarget(); streamEl.style.transform='translateY(0)'; paint('');
+  answerRow.style.transform='translateX(0)';
+  $('#typed-row').style.transform='translateX(0)';
+  buildTarget(); paint('');
   progressEl.style.width='0%';
   if(mode==='kor'){ $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='타/분'; $('#rl-cpm')&&($('#rl-cpm').textContent='타/분'); }
   else { $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='WPM'; $('#rl-cpm')&&($('#rl-cpm').textContent='WPM'); }
@@ -442,7 +487,8 @@ $('#dur-pill').addEventListener('click',e=>{
   btn.classList.add('on'); dur=+btn.dataset.dur; reset();
 });
 renderLB(); reset();
-window.addEventListener('resize',()=>{ buildTarget(); paint(field.value); });
+document.getElementById('mirror-wrap').addEventListener('click',()=>field.focus());
+window.addEventListener('resize',()=>{ paint(field.value); });
 </script>
 </body>
 </html>

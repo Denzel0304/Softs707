@@ -55,38 +55,75 @@
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px 24px;position:relative;
     box-shadow:0 10px 30px -18px rgba(47,107,46,.4)}
   .progress{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent);border-radius:16px 0 0 0;transition:width .15s}
-  /* ── 미러 레이아웃 ── */
-  .mirror-wrap{overflow:hidden;position:relative;border-radius:10px;border:1px solid var(--line);background:#f6fbf2;}
-  .mirror-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16)}
-  .mirror-row{display:flex;align-items:center;white-space:nowrap;overflow:hidden;
-    font-family:'Space Mono',monospace;font-size:36px;line-height:1;
-    padding:0 18px;height:72px;pointer-events:none;user-select:none;position:relative;}
-  .mirror-row.kor{font-family:'Gowun Dodum',sans-serif;font-size:38px;}
-  .mirror-divider{height:1px;background:var(--line);margin:0;}
-  .ch{display:inline;white-space:pre}
-  .ch.pending{color:var(--muted)}
-  .ch.done{color:var(--good)}
-  .ch.wrong{color:var(--bad);background:var(--bad-bg);border-radius:3px}
-  /* 입력 미러 행 글자 */
-  .tch{display:inline;white-space:pre}
-  .tch.t-ok{color:var(--good)}
-  .tch.t-bad{color:var(--bad);background:var(--bad-bg);border-radius:3px}
-  .tch.t-cur{color:var(--ink);background:var(--cur-bg);border-radius:3px;position:relative;}
-  .tch.t-cur::after{content:"";position:absolute;left:0;top:10%;height:80%;width:2px;background:var(--accent);animation:blink 1s steps(1) infinite}
+
+  /* ── 단어 스트림 뷰 ── */
+  .word-stage{
+    position:relative;overflow:hidden;
+    height:64px;
+    display:flex;align-items:center;
+    border-bottom:1px solid var(--line);
+    margin-bottom:0;
+  }
+  /* 흐르는 단어들 컨테이너 */
+  .word-belt{
+    position:absolute;
+    display:flex;align-items:center;gap:0;
+    white-space:nowrap;
+    transition:transform .22s cubic-bezier(.4,0,.2,1);
+    will-change:transform;
+  }
+  /* 개별 단어 칩 */
+  .w{
+    display:inline-flex;align-items:center;
+    font-family:'Space Mono',monospace;
+    font-size:17px;color:var(--muted);
+    padding:0 10px;
+    transition:font-size .18s, color .18s, font-weight .18s, opacity .18s;
+    cursor:default;user-select:none;
+    line-height:1;
+  }
+  .w.kor{font-family:'Gowun Dodum',sans-serif;}
+  .w.done-ok{color:var(--good);}
+  .w.done-bad{color:var(--bad);}
+  .w.active{
+    font-size:34px;font-weight:700;color:var(--ink);
+  }
+  .w.active.kor{font-size:36px;}
+  .w.pending{opacity:.55;}
+  /* 활성 단어 안의 글자 색 */
+  .w.active .lch.ok{color:var(--good);}
+  .w.active .lch.bad{color:var(--bad);background:var(--bad-bg);border-radius:2px;}
+  .w.active .lch.rest{color:var(--muted);}
+  .w.active .lch.next{color:var(--ink);}
+
+  /* 중앙 커서 선 */
+  .stage-cursor{
+    position:absolute;left:50%;top:12%;height:76%;width:2px;
+    background:var(--accent);opacity:.35;border-radius:2px;
+    pointer-events:none;
+    animation:blink 1s steps(1) infinite;
+  }
   @keyframes blink{50%{opacity:0}}
-  .input-row{margin-top:20px;display:flex;gap:10px;align-items:stretch}
-  #field{flex:1;background:transparent;border:none;color:var(--ink);
-    font-family:'Space Mono',monospace;font-size:36px;line-height:1;
-    padding:0 18px;outline:none;transition:.18s;
-    height:72px;overflow:hidden;caret-color:transparent;}
-  #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:38px;}
+
+  /* ── 입력창 ── */
+  .input-row{margin-top:0;display:flex;gap:0;align-items:stretch;}
+  #field{
+    flex:1;background:#f6fbf2;border:1px solid var(--line);
+    border-top:none;border-radius:0 0 0 10px;
+    color:var(--ink);
+    font-family:'Space Mono',monospace;font-size:32px;line-height:1;
+    padding:0 20px;outline:none;transition:border-color .18s, box-shadow .18s;
+    height:80px;overflow:hidden;
+  }
+  #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16);z-index:1;position:relative;}
+  #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:34px;}
   .btn{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:1px;background:var(--accent);
-    color:#fff;border:none;border-radius:10px;padding:14px 22px;font-weight:700;cursor:pointer;transition:.15s;
-    align-self:stretch;}
+    color:#fff;border:none;border-radius:10px;padding:14px 22px;font-weight:700;cursor:pointer;transition:.15s}
   .btn:hover{filter:brightness(1.06)}
   .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
   .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
-  .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent)}
+  .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent);
+    border-top:none;border-radius:0 0 10px 0;height:80px;padding:0 22px;}
   .btn.soft:hover{filter:brightness(.97);border-color:var(--accent)}
   .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px}
   .overlay{position:fixed;inset:0;background:rgba(31,42,28,.42);backdrop-filter:blur(4px);
@@ -162,16 +199,15 @@
   </div>
   <div class="panel">
     <div class="progress" id="progress"></div>
+    <!-- 단어 스트림 -->
+    <div class="word-stage" id="word-stage">
+      <div class="word-belt" id="word-belt"></div>
+      <div class="stage-cursor" id="stage-cursor"></div>
+    </div>
+    <!-- 입력 + 버튼 (하단 일체형) -->
     <div class="input-row">
-      <div class="mirror-wrap" id="mirror-wrap" style="flex:1">
-        <div class="mirror-row" id="answer-row"></div>
-        <div class="mirror-divider"></div>
-        <div class="mirror-row" id="typed-row" style="position:relative;">
-          <input type="text" id="field" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-            style="position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0 18px;font-family:inherit;font-size:inherit;border:none;background:transparent;outline:none;">
-          <span id="typed-mirror"></span><span class="tch t-cur" id="typed-cursor"> </span><span id="typed-tail" style="color:transparent"> </span>
-        </div>
-      </div>
+      <input type="text" id="field" placeholder="여기에 입력하세요…"
+        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <button class="btn soft" id="restart">다시 ↻</button>
     </div>
     <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작</div>
@@ -254,14 +290,17 @@ const KOR_SENT=[
 const KOR_WORDS=("오늘 우리 사람 시간 하루 마음 생각 사랑 행복 친구 가족 학교 공부 연습 자세 손가락 키보드 화면 단어 문장 속도 정확 노력 습관 꾸준 천천히 빠르게 가볍게 바르게 함께 조금씩 매일 결국 변화 시작 도전 성장 자신 미래 희망 즐거움 여유 평화 봄날 햇살 바람 나무 강물 하늘 구름 별빛 새벽 저녁 노을 향기 미소 위로 응원 용기 바다 산책 음악 책상 연필 공책 가방 시계 거울 의자 창문 햇볕 빗방울 무지개 들판 골목 정원 호수 언덕 구슬 편지 약속 기억 추억 계절 새벽녘").split(" ");
 
 // ===== 상태 =====
-let mode='eng', style='time', dur=60, target='';
+let mode='eng', style='time', dur=60;
+let words=[], wordIdx=0;           // 단어 배열 & 현재 인덱스
+let wordResults=[];                // {word, typed, ok} 결과 기록
 let started=false, finished=false, startTime=0, deadline=0, timerId=null;
-let typedTotal=0, typedWrong=0, stableLen=0, lineH=40;
+let typedTotal=0, typedWrong=0;
+
 const $=s=>document.querySelector(s);
 const field=$('#field');
-const answerRow=$('#answer-row'), typedMirror=$('#typed-mirror'), typedCursor=$('#typed-cursor'), typedTail=$('#typed-tail');
+const belt=$('#word-belt');
 const progressEl=$('#progress');
-const mirrorWrap=$('#mirror-wrap');
+
 const CHO=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 const JUNG=["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
 const JONG=["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -278,93 +317,143 @@ function keystrokes(str){
   return k;
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-function makeTarget(){
+
+function makeWords(){
+  // 항상 단어 배열로 반환
   if(style==='time'){
-    // 시간제: 시간이 다 될 만큼 길게. 단어를 섞어 무작위로 길게 이어붙임
-    const pool = mode==='eng'?ENG_WORDS:KOR_WORDS;
-    let arr=[]; while(arr.length<260) arr=arr.concat(shuffle(pool));
-    return arr.slice(0,260).join(' ');
+    const pool=mode==='eng'?ENG_WORDS:KOR_WORDS;
+    let arr=[]; while(arr.length<300) arr=arr.concat(shuffle(pool));
+    return arr.slice(0,300);
   } else {
-    // 분량제: 실제 문장을 무작위로 이어붙여 분량 구성 (다양성 ↑)
-    const sents = mode==='eng'?ENG_SENT:KOR_SENT;
-    const target_chars=({60:170,180:520,300:880})[dur]||300;
+    const sents=mode==='eng'?ENG_SENT:KOR_SENT;
+    const target_chars=({60:200,180:600,300:1000})[dur]||300;
     const order=shuffle(sents); let out=[]; let len=0, i=0;
-    while(len<target_chars){ const s=order[i%order.length]; out.push(s); len+=s.length+1; i++; }
-    return out.join(' ');
+    while(len<target_chars){ const s=order[i%order.length]; out.push(...s.split(' ')); len+=s.length+1; i++; }
+    return out;
   }
 }
+
 function fmtClock(sec){ sec=Math.max(0,Math.round(sec)); const m=Math.floor(sec/60),s=sec%60; return m+':'+String(s).padStart(2,'0'); }
-function fmtDur(sec){ // 순위표용 짧은 표기 (예: 1:23, 47s)
-  sec=Math.round(sec);
-  if(sec<60) return sec+'s';
-  return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
-}
-function buildTarget(){
-  // 정답 줄: 글자마다 span.ch.pending
-  answerRow.innerHTML=[...target].map((c,i)=>`<span class="ch pending" data-i="${i}">${c==='<'?'&lt;':c}</span>`).join('');
-  // 폰트 모드 적용
-  answerRow.className='mirror-row'+(mode==='kor'?' kor':'');
-  $('#typed-row').className='mirror-row'+(mode==='kor'?' kor':'');
-  typedMirror.className='';
-  typedCursor.className='tch t-cur';
+function fmtDur(sec){ sec=Math.round(sec); if(sec<60) return sec+'s'; return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); }
+
+// ── 벨트 렌더링 ──
+function buildBelt(){
+  belt.innerHTML='';
+  const isKor=mode==='kor';
+  words.forEach((w,i)=>{
+    const span=document.createElement('span');
+    span.className='w'+(isKor?' kor':'')+(i<wordIdx?' done-ok':i===wordIdx?' active':' pending');
+    span.dataset.idx=i;
+    // 활성 단어는 글자별 span
+    if(i===wordIdx) span.innerHTML=renderActiveWord(w,'');
+    else span.textContent=w;
+    belt.appendChild(span);
+  });
+  alignBelt();
 }
 
-function scrollMirror(typedLen){
-  // 현재 커서 위치 span을 기준으로 answer-row를 translateX로 동기 이동
-  const spans=answerRow.children;
-  if(!spans.length) return;
-  const idx=Math.min(typedLen, spans.length-1);
-  const curSpan=spans[idx];
-  const rowRect=answerRow.parentElement.getBoundingClientRect();
-  const spanRect=curSpan.getBoundingClientRect();
-  // 커서를 항상 왼쪽에서 80px 위치에 고정
-  const targetX=80;
-  const currentX=spanRect.left - rowRect.left;
-  const shift=currentX - targetX;
-  const cur=parseFloat(answerRow.style.transform.replace('translateX(',''))||0;
-  const newShift=Math.max(0, shift);
-  answerRow.style.transform=`translateX(${-newShift}px)`;
-  // typed-row도 동일하게 이동
-  $('#typed-row').style.transform=`translateX(${-newShift}px)`;
+function renderActiveWord(word, typed){
+  let html='';
+  for(let i=0;i<word.length;i++){
+    const ch=word[i]==='<'?'&lt;':word[i];
+    if(i<typed.length){
+      const ok=typed[i]===word[i];
+      html+=`<span class="lch ${ok?'ok':'bad'}">${ch}</span>`;
+    } else if(i===typed.length){
+      html+=`<span class="lch next">${ch}</span>`;
+    } else {
+      html+=`<span class="lch rest">${ch}</span>`;
+    }
+  }
+  return html;
 }
 
-function paint(typed){
-  const spans=answerRow.children;
-  // 정답 줄 색칠
-  for(let i=0;i<spans.length;i++){
-    let cls='ch';
-    if(i<typed.length) cls+=(typed[i]===target[i]?' done':' wrong');
-    else if(i===typed.length) cls+=' cur';
-    else cls+=' pending';
-    spans[i].className=cls;
+function alignBelt(){
+  // 활성 단어의 첫 글자를 stage 중앙(50%)에 고정
+  const stage=$('#word-stage');
+  const stageW=stage.offsetWidth;
+  const center=stageW/2;
+
+  // 활성 칩의 offsetLeft 계산
+  const chips=belt.children;
+  if(!chips.length) return;
+  let offset=0;
+  for(let i=0;i<chips.length;i++){
+    if(i===wordIdx){ offset=chips[i].offsetLeft; break; }
   }
-  // 입력 미러 줄 색칠
-  let mirrorHtml='';
-  for(let i=0;i<typed.length;i++){
-    const c=typed[i]==='<'?'&lt;':typed[i];
-    const ok=typed[i]===target[i];
-    mirrorHtml+=`<span class="tch ${ok?'t-ok':'t-bad'}">${c}</span>`;
-  }
-  typedMirror.innerHTML=mirrorHtml;
-  // 커서
-  const nextChar=target[typed.length]||' ';
-  typedCursor.className='tch t-cur';
-  typedCursor.textContent=nextChar;
-  // 뒤에 여백용 투명 텍스트 (스크롤 공간 확보)
-  typedTail.textContent=typed.length<target.length ? target[typed.length+1]||'' : '';
-  scrollMirror(typed.length);
+  // 활성 단어 앞쪽 절반 너비만큼 더 당겨서 단어 시작이 중앙에 오게
+  belt.style.transform=`translateX(${center - offset}px)`;
 }
+
+function paintActive(){
+  const chips=belt.children;
+  if(!chips[wordIdx]) return;
+  const w=words[wordIdx];
+  const typed=field.value;
+  chips[wordIdx].innerHTML=renderActiveWord(w,typed);
+}
+
+// ── 단어 확정 (스페이스) ──
+function commitWord(){
+  const typed=field.value.trimEnd();
+  const w=words[wordIdx];
+  const ok=(typed===w);
+
+  // 정확도 계산
+  typedTotal+=Math.max(typed.length,w.length);
+  for(let i=0;i<Math.max(typed.length,w.length);i++){
+    if((typed[i]||'')!==(w[i]||'')) typedWrong++;
+  }
+  wordResults.push({word:w, typed, ok});
+
+  // 칩 상태 업데이트
+  const chips=belt.children;
+  chips[wordIdx].className='w'+(mode==='kor'?' kor':'')+' '+(ok?'done-ok':'done-bad');
+  chips[wordIdx].textContent=w;
+
+  wordIdx++;
+  field.value='';
+
+  // 분량제 완료 체크
+  if(style==='length' && wordIdx>=words.length){ finish(); return; }
+  // 시간제는 단어 부족 시 더 추가
+  if(style==='time' && wordIdx>=words.length-10){
+    const pool=mode==='eng'?ENG_WORDS:KOR_WORDS;
+    const more=shuffle(pool).slice(0,50);
+    more.forEach(w2=>{
+      const span=document.createElement('span');
+      span.className='w'+(mode==='kor'?' kor':'')+' pending';
+      span.textContent=w2; belt.appendChild(span);
+    });
+    words.push(...more);
+  }
+
+  // 다음 단어 활성화
+  const nc=belt.children[wordIdx];
+  if(nc){ nc.className='w'+(mode==='kor'?' kor':'')+' active'; nc.innerHTML=renderActiveWord(words[wordIdx],''); }
+
+  // 진행률
+  const total=style==='length'?words.length:Math.max(words.length,wordIdx+1);
+  progressEl.style.width=Math.min(100,(wordIdx/total)*100)+'%';
+
+  alignBelt();
+}
+
 function accuracy(){ if(typedTotal===0) return 100; return Math.max(0,Math.round((1-typedWrong/typedTotal)*100)); }
+
 function computeSpeed(){
   const sec=(Date.now()-startTime)/1000;
-  const typed=field.value.slice(0,target.length);
-  const okStr=[...typed].filter((c,i)=>c===target[i]).join('');
-  if(mode==='kor'){ const ks=keystrokes(okStr); const cpm=sec>0?Math.round(ks/sec*60):0; return {speed:cpm,cpm,sec}; }
-  // 영타: CPM = 분당 타건수 (한글 타수 개념과 동일)
-  const cpm=sec>0?Math.round(okStr.length/sec*60):0;
-  const wpm=sec>0?Math.round((okStr.length/5)/sec*60):0;
+  // 완료된 단어들의 정답 글자 수로 속도 계산
+  const okChars=wordResults.reduce((s,r)=>{
+    let c=0; for(let i=0;i<Math.min(r.typed.length,r.word.length);i++) if(r.typed[i]===r.word[i]) c++;
+    return s+c;
+  },0);
+  if(mode==='kor'){ const ks=keystrokes(wordResults.filter(r=>r.ok).map(r=>r.word).join('')); const cpm=sec>0?Math.round(ks/sec*60):0; return {speed:cpm,cpm,sec}; }
+  const cpm=sec>0?Math.round(okChars/sec*60):0;
+  const wpm=sec>0?Math.round((okChars/5)/sec*60):0;
   return {speed:cpm,cpm,wpm,sec};
 }
+
 function liveStats(){
   const {speed,cpm,wpm}=computeSpeed();
   $('#s-speed').textContent=speed;
@@ -373,49 +462,61 @@ function liveStats(){
   if(style==='time'){ const remain=(deadline-Date.now())/1000; $('#s-time').textContent=fmtClock(remain); if(remain<=0) finish(); }
   else { $('#s-time').textContent=fmtClock((Date.now()-startTime)/1000); }
 }
+
 function startTimer(){
   started=true; startTime=Date.now(); deadline=startTime+dur*1000;
   timerId=setInterval(liveStats,100);
   $('#hint').textContent=style==='time'?'시간이 끝나면 자동 종료됩니다':'끝까지 다 치면 종료됩니다';
 }
+
+// ── 입력 이벤트 ──
 field.addEventListener('input',()=>{
   if(finished) return;
   if(!started) startTimer();
-  const typed=field.value;
-  if(typed.length>stableLen){
-    for(let i=stableLen;i<typed.length;i++){ if(typed[i]!==target[i]) typedWrong++; }
-    typedTotal+=typed.length-stableLen; stableLen=typed.length;
-  } else { stableLen=typed.length; }
-  paint(typed);
-  progressEl.style.width=Math.min(100,typed.length/target.length*100)+'%';
-  liveStats();
-  if(style==='length' && typed===target) finish();
+  paintActive();
 });
+
 field.addEventListener('keydown',e=>{
-  if(e.key==='Escape') reset();
+  if(e.key==='Escape'){ reset(); return; }
+  if(e.key===' '){
+    e.preventDefault();
+    if(finished) return;
+    if(!started) startTimer();
+    if(field.value.length===0) return; // 빈 칸 스페이스 무시
+    commitWord();
+    liveStats();
+  }
+  if(e.key==='Backspace'){
+    // 입력창이 비어있으면 이전 단어로 못 돌아감 (스페이스 확정 후 잠금)
+    if(field.value.length===0) e.preventDefault();
+  }
 });
-field.addEventListener('paste',e=>e.preventDefault()); // 붙여넣기 방지
+
+field.addEventListener('paste',e=>e.preventDefault());
+
 function finish(){
   if(finished) return;
   finished=true; clearInterval(timerId); field.disabled=true;
   const {speed,cpm,wpm,sec}=computeSpeed();
-  const speedLabel = '타수 CPM';
-  $('#rl-speed').textContent=speedLabel;
-  if($('#rl-cpm')) $('#rl-cpm').textContent = mode==='eng'?'WPM':'타/분';
+  $('#rl-speed').textContent='타수 CPM';
+  if($('#rl-cpm')) $('#rl-cpm').textContent=mode==='eng'?'WPM':'타/분';
   $('#r-speed').textContent=speed;
-  $('#r-cpm').textContent=mode==='eng'?(wpm||0):cpm; $('#r-acc').textContent=accuracy()+'%'; $('#r-time').textContent=sec.toFixed(1)+'s';
+  $('#r-cpm').textContent=mode==='eng'?(wpm||0):cpm;
+  $('#r-acc').textContent=accuracy()+'%';
+  $('#r-time').textContent=sec.toFixed(1)+'s';
   $('#r-sub').textContent=`${mode==='kor'?'한글':'영타'} · ${style==='time'?fmtClock(dur)+' 시간제':'분량제'}`;
   pendingScore={mode,style,dur,speed,cpm,wpm:wpm||0,acc:accuracy(),elapsed:sec,speedLabel:'타수 CPM',t:Date.now()};
   $('#overlay').classList.add('show'); $('#pname').focus();
 }
+
 function reset(){
   clearInterval(timerId); started=false; finished=false; startTime=0;
-  typedTotal=0; typedWrong=0; stableLen=0; target=makeTarget();
-  field.value=''; field.disabled=false; field.classList.toggle('kor',mode==='kor');
-  answerRow.style.transform='translateX(0)';
-  $('#typed-row').style.transform='translateX(0)';
-  buildTarget(); paint('');
+  typedTotal=0; typedWrong=0; wordIdx=0; wordResults=[];
+  words=makeWords();
+  field.value=''; field.disabled=false;
+  field.classList.toggle('kor',mode==='kor');
   progressEl.style.width='0%';
+  buildBelt();
   if(mode==='kor'){ $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='타/분'; $('#rl-cpm')&&($('#rl-cpm').textContent='타/분'); }
   else { $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='WPM'; $('#rl-cpm')&&($('#rl-cpm').textContent='WPM'); }
   $('#s-speed').textContent='0'; $('#s-cpm').textContent='0'; $('#s-acc').innerHTML='100<span>%</span>';
@@ -426,16 +527,17 @@ function reset(){
   $('#hint').textContent='입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작';
   field.focus();
 }
+
 // ===== 순위표 =====
 let pendingScore=null;
 const LB_KEY='type_lb_v3';
 const loadLB=()=>{try{return JSON.parse(localStorage.getItem(LB_KEY))||[]}catch{return[]}};
 const saveLB=l=>localStorage.setItem(LB_KEY,JSON.stringify(l));
 function styleText(r){
-  const min = r.dur%60===0 ? (r.dur/60)+'분' : r.dur+'초';
-  return (r.style==='time'?'시간제 '+min : '분량제 '+min);
+  const min=r.dur%60===0?(r.dur/60)+'분':r.dur+'초';
+  return (r.style==='time'?'시간제 '+min:'분량제 '+min);
 }
-function fmtStamp(ts){ // 기록 일시: 5/31 11:37
+function fmtStamp(ts){
   const d=new Date(ts);
   const mm=d.getMonth()+1, dd=d.getDate();
   const hh=String(d.getHours()).padStart(2,'0'), mi=String(d.getMinutes()).padStart(2,'0');
@@ -458,11 +560,7 @@ $('#save-score').addEventListener('click',()=>{
   if(!pendingScore) return;
   const name=$('#pname').value.trim().slice(0,5);
   if(!name){
-    const inp=$('#pname');
-    inp.placeholder='이름을 입력해 주세요';
-    inp.style.borderColor='var(--bad)';
-    inp.focus();
-    return;
+    const inp=$('#pname'); inp.placeholder='이름을 입력해 주세요'; inp.style.borderColor='var(--bad)'; inp.focus(); return;
   }
   const list=loadLB(); const entry={...pendingScore,name};
   list.push(entry); saveLB(list); renderLB(entry.t);
@@ -487,8 +585,7 @@ $('#dur-pill').addEventListener('click',e=>{
   btn.classList.add('on'); dur=+btn.dataset.dur; reset();
 });
 renderLB(); reset();
-document.getElementById('mirror-wrap').addEventListener('click',()=>field.focus());
-window.addEventListener('resize',()=>{ paint(field.value); });
+window.addEventListener('resize',()=>{ alignBelt(); });
 </script>
 </body>
 </html>

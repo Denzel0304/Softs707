@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPE — 타자연습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Gowun+Dodum&family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eaf4e4; --bg2:#dcebd0; --panel:#ffffff; --ink:#1f2a1c; --muted:#6d7d63;
+    --line:#cfe0c2; --accent:#3fa34d; --accent-soft:#d4eecb; --good:#2f9e44;
+    --bad:#e03131; --bad-bg:rgba(224,49,49,.12); --cur-bg:#fff7c2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(900px 480px at 82% -8%, rgba(63,163,77,.14), transparent 60%),
+      radial-gradient(720px 560px at -8% 108%, rgba(63,163,77,.10), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:'Archivo',sans-serif; min-height:100%;
+    display:flex;flex-direction:column;align-items:center; padding:0 20px 60px;
+  }
+  .wrap{width:100%;max-width:880px}
+  /* 고정 헤더 */
+  header{position:sticky;top:0;z-index:20;background:var(--bg);
+    display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:1px solid var(--line);padding:24px 0 16px;margin-bottom:22px;flex-wrap:wrap;gap:14px}
+  .logo{font-weight:900;font-size:34px;letter-spacing:-2px;line-height:.9}
+  .logo small{display:block;font-family:'Space Mono',monospace;font-weight:400;
+    font-size:11px;letter-spacing:3px;color:var(--muted);margin-top:6px}
+  .logo b{color:var(--accent)}
+  .modes{display:flex;gap:6px}
+  .mode-btn{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;
+    background:var(--panel);color:var(--muted);border:1px solid var(--line);
+    padding:9px 14px;border-radius:999px;cursor:pointer;transition:.18s}
+  .mode-btn:hover{color:var(--ink);border-color:var(--accent)}
+  .mode-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+  .config{display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+  .seg{display:flex;align-items:center;gap:10px}
+  .seg .cap{font-family:'Archivo',sans-serif;font-size:15px;font-weight:800;letter-spacing:.5px;color:var(--ink)}
+  .pill{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+  .pill button{border:none;background:transparent;color:var(--muted);font-family:'Space Mono',monospace;
+    font-size:12px;padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s}
+  .pill button.on{background:var(--accent-soft);color:var(--ink);font-weight:700}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:20px}
+  .stat{background:var(--panel);padding:15px 14px}
+  .stat .label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  .stat .val{font-size:30px;font-weight:800;letter-spacing:-1px;margin-top:3px}
+  .stat .val span{font-size:13px;color:var(--muted);font-weight:600;margin-left:3px}
+  .stat.live .val{color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 30px 24px;position:relative;
+    box-shadow:0 10px 30px -18px rgba(47,107,46,.4)}
+  .progress{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent);border-radius:16px 0 0 0;transition:width .15s}
+  .viewport{overflow:hidden;position:relative}
+  .stream{position:relative;transition:transform .18s ease}
+  .target{line-height:1.9;letter-spacing:.3px}
+  .target.kor .stream{font-family:'Gowun Dodum',sans-serif;font-size:24px}
+  .target.eng .stream{font-family:'Space Mono',monospace;font-size:20px}
+  .ch{position:relative;white-space:pre-wrap}
+  .ch.pending{color:var(--muted)}
+  .ch.done{color:var(--good)}
+  .ch.wrong{color:var(--bad);background:var(--bad-bg);border-radius:3px}
+  .ch.cur{color:var(--ink);background:var(--cur-bg);border-radius:3px}
+  .ch.cur::after{content:"";position:absolute;left:-1px;top:8%;height:84%;width:2px;background:var(--accent);animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .input-row{margin-top:20px;display:flex;gap:10px}
+  #field{flex:1;background:#f6fbf2;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+    font-family:'Space Mono',monospace;font-size:16px;padding:14px 16px;outline:none;transition:.18s}
+  #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16)}
+  #field.kor{font-family:'Gowun Dodum',sans-serif}
+  .btn{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:1px;background:var(--accent);
+    color:#fff;border:none;border-radius:10px;padding:0 22px;font-weight:700;cursor:pointer;transition:.15s}
+  .btn:hover{filter:brightness(1.06)}
+  .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
+  .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent)}
+  .btn.soft:hover{filter:brightness(.97);border-color:var(--accent)}
+  .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px}
+  .overlay{position:fixed;inset:0;background:rgba(31,42,28,.42);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
+  .overlay.show{display:flex}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:440px;padding:30px;
+    box-shadow:0 24px 60px -20px rgba(47,107,46,.45);animation:pop .25s ease}
+  @keyframes pop{from{transform:translateY(12px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  .card h2{font-size:26px;font-weight:900;letter-spacing:-1px;margin-bottom:2px}
+  .card h2 em{color:var(--accent);font-style:normal}
+  .card .sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px}
+  .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+  .rbox{background:#f6fbf2;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .rbox .l{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+  .rbox .v{font-size:28px;font-weight:800;margin-top:3px}
+  .name-row{display:flex;gap:8px;margin-top:6px}
+  #pname{flex:1;background:#f6fbf2;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+    font-family:'Space Mono',monospace;padding:12px 14px;outline:none}
+  #pname:focus{border-color:var(--accent)}
+  .lb{margin-top:28px}
+  .lb h3{font-family:'Archivo',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--ink);
+    margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+  .lb h3 button{font-family:'Archivo',sans-serif;font-size:14px;font-weight:800;background:none;border:none;color:var(--bad);cursor:pointer;letter-spacing:0}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:fixed}
+  th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  th{font-family:'Archivo',sans-serif;font-size:13px;font-weight:800;letter-spacing:.3px;color:var(--ink)}
+  td.rank,th.rank{font-family:'Space Mono',monospace;color:var(--accent);font-weight:700;width:32px;text-align:center}
+  td.score{font-weight:800}
+  .col-name{width:13%}
+  .col-mode{width:10%}
+  .col-style{width:18%}
+  .col-score{width:16%}
+  .col-acc{width:13%}
+  .col-time{width:22%}
+  tr.empty td{color:var(--muted);text-align:center;font-family:'Space Mono',monospace;font-size:12px;padding:24px;white-space:normal}
+  .you{background:var(--accent-soft)}
+  td .unit{color:var(--muted);font-weight:400;font-size:10px}
+  footer{margin-top:32px;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.5px;text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">TYPE<b>.</b><small>TYPING TRAINER</small></div>
+    <div class="modes">
+      <button class="mode-btn on" data-mode="eng">영타 ENG</button>
+      <button class="mode-btn" data-mode="kor">한글 KOR</button>
+    </div>
+  </header>
+  <div class="config">
+    <div class="seg">
+      <span class="cap">방식</span>
+      <div class="pill" id="style-pill">
+        <button data-style="time" class="on">시간제</button>
+        <button data-style="length">분량제</button>
+      </div>
+    </div>
+    <div class="seg" id="dur-seg">
+      <span class="cap" id="dur-cap">시간</span>
+      <div class="pill" id="dur-pill">
+        <button data-dur="60" class="on">1분</button>
+        <button data-dur="180">3분</button>
+        <button data-dur="300">5분</button>
+      </div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat live"><div class="label" id="speed-label">WPM</div><div class="val" id="s-speed">0</div></div>
+    <div class="stat"><div class="label" id="cpm-label">타수 CPM</div><div class="val" id="s-cpm">0</div></div>
+    <div class="stat"><div class="label">정확도</div><div class="val" id="s-acc">100<span>%</span></div></div>
+    <div class="stat"><div class="label" id="time-label">남은시간</div><div class="val" id="s-time">1:00</div></div>
+  </div>
+  <div class="panel">
+    <div class="progress" id="progress"></div>
+    <div class="target eng viewport" id="target"><div class="stream" id="stream"></div></div>
+    <div class="input-row">
+      <input id="field" type="text" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn soft" id="restart">다시 ↻</button>
+    </div>
+    <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작</div>
+  </div>
+  <div class="lb">
+    <h3>기록 <button id="clear-lb">기록 삭제</button></h3>
+    <table>
+      <thead><tr>
+        <th class="rank">#</th>
+        <th class="col-name">이름</th>
+        <th class="col-mode">모드</th>
+        <th class="col-style">방식</th>
+        <th class="col-score" id="th-score">WPM</th>
+        <th class="col-acc">정확도</th>
+        <th class="col-time">수행시간</th>
+      </tr></thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+  <footer>한글=타건수 기반 타수(CPM) · 영타=5글자 1단어 기준 WPM</footer>
+</div>
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>완료<em>!</em></h2>
+    <div class="sub" id="r-sub"></div>
+    <div class="rgrid">
+      <div class="rbox"><div class="l" id="rl-speed">WPM</div><div class="v" id="r-speed">0</div></div>
+      <div class="rbox"><div class="l">타수 CPM</div><div class="v" id="r-cpm">0</div></div>
+      <div class="rbox"><div class="l">정확도</div><div class="v" id="r-acc">0%</div></div>
+      <div class="rbox"><div class="l">수행시간</div><div class="v" id="r-time">0s</div></div>
+    </div>
+    <div class="name-row">
+      <input id="pname" placeholder="이름 입력 (최대 5자)" maxlength="5">
+      <button class="btn" id="save-score">등록</button>
+    </div>
+    <div style="margin-top:14px"><button class="btn ghost" id="again" style="width:100%;padding:12px 0">다시 도전 →</button></div>
+  </div>
+</div>
+<script>
+// ===== 콘텐츠 풀 (대폭 확장) =====
+const ENG_WORDS=("the be of and a to in he have it that for they with as not on she at by this we you do but from or which one would all will there say who make when can more if no man out other so what time up go about than into could state only new year some take come these know see use get like then first any work now may such give over think most even find day also after way many must look before great back through long where much should well people down own just because good each those feel seem how high too place little world very still nation hand old life tell write become here show house both between need mean call develop under last right move thing general school never same another begin while number part turn real leave might want point form off child few small since against ask late home interest large person end open public follow during present without again hold govern around possible head consider word program problem however lead system set order eye plan run keep face fact group play stand increase early course change help line city door without family night picture learn money serve appear road map science rule govern pull cold notice voice fall power town fine certain fly unit lead cry dark machine note wait plan figure star box noun field rest correct able pound done beauty drive stood contain front teach week final gave green oh quick develop sleep warm free minute strong special mind behind clear tail produce fact street inch lot nothing course stay wheel full force blue object decide surface deep moon island foot yet busy test record boat common gold possible plane stead dry wonder laugh thousand ago ran check game shape yes hot miss brought heat snow bed bring sit perhaps fill east weight language among").split(" ");
+const ENG_SENT=[
+  "the quick brown fox jumps over the lazy dog every morning",
+  "practice makes perfect when you keep your hands steady and your eyes ahead",
+  "a journey of a thousand miles begins with a single step forward",
+  "code is read far more often than it is ever written by anyone",
+  "stay hungry stay foolish and never stop learning something new each day",
+  "simplicity is the ultimate form of sophistication in any honest design",
+  "the best way to predict the future is to invent it with your own hands",
+  "great work comes from loving what you do and doing it again tomorrow",
+  "small daily habits quietly compound into remarkable long term results",
+  "speed will follow naturally once accuracy becomes second nature to you",
+  "type with rhythm and let the words flow like a calm steady river",
+  "every expert was once a beginner who simply refused to give up early",
+  "focus on one clean line at a time and the page will finish itself",
+  "consistent gentle effort beats short bursts of frantic energy almost always",
+  "good posture and relaxed shoulders make a longer session feel effortless",
+  "read the whole word before you reach for the very next single key"
+];
+const KOR_SENT=[
+  "오늘도 한 걸음씩 천천히 나아가면 분명히 어딘가에 닿게 됩니다",
+  "타자 연습은 매일 조금씩 꾸준히 하는 것이 가장 좋은 방법입니다",
+  "바른 자세로 손을 가볍게 올려 두고 어깨에 힘을 빼고 시작하세요",
+  "꾸준함이 결국 가장 빠른 지름길이 된다는 사실을 자주 잊곤 합니다",
+  "작은 습관이 모여서 어느새 큰 변화를 만들어 내는 법입니다",
+  "정확하게 치는 연습이 빠르게 치는 것보다 언제나 먼저여야 합니다",
+  "봄바람이 부는 거리를 걷다 보면 마음이 한결 가벼워지곤 합니다",
+  "좋은 글은 천천히 읽고 또박또박 따라 쓰는 동안 몸에 새겨집니다",
+  "오늘 하루도 수고한 나에게 따뜻한 위로의 말을 건네어 봅니다",
+  "키보드 위에 놓인 열 손가락이 각자의 자리를 기억하게 만드세요",
+  "조급한 마음을 내려놓으면 오히려 속도가 자연스럽게 붙습니다",
+  "새벽의 고요함 속에서 또박또박 글자를 쳐 내려가는 일은 즐겁습니다",
+  "실수를 두려워하지 말고 틀린 곳을 차분히 다시 고쳐 나가면 됩니다",
+  "푸른 하늘과 흰 구름을 바라보며 잠시 손을 쉬어 가도 좋습니다",
+  "한 문장을 끝까지 정확하게 마치는 작은 성취가 모여 실력이 됩니다",
+  "노을이 물든 저녁 창가에서 좋아하는 글귀를 옮겨 적어 봅니다",
+  "물 흐르듯 이어지는 리듬을 느끼며 단어와 단어 사이를 건너가세요",
+  "어제보다 한 글자라도 더 정확해졌다면 그것으로 충분히 잘한 것입니다"
+];
+const KOR_WORDS=("오늘 우리 사람 시간 하루 마음 생각 사랑 행복 친구 가족 학교 공부 연습 자세 손가락 키보드 화면 단어 문장 속도 정확 노력 습관 꾸준 천천히 빠르게 가볍게 바르게 함께 조금씩 매일 결국 변화 시작 도전 성장 자신 미래 희망 즐거움 여유 평화 봄날 햇살 바람 나무 강물 하늘 구름 별빛 새벽 저녁 노을 향기 미소 위로 응원 용기 바다 산책 음악 책상 연필 공책 가방 시계 거울 의자 창문 햇볕 빗방울 무지개 들판 골목 정원 호수 언덕 구슬 편지 약속 기억 추억 계절 새벽녘").split(" ");
+
+// ===== 상태 =====
+let mode='eng', style='time', dur=60, target='';
+let started=false, finished=false, startTime=0, deadline=0, timerId=null;
+let typedTotal=0, typedWrong=0, stableLen=0, lineH=40;
+const $=s=>document.querySelector(s);
+const field=$('#field'), targetEl=$('#target'), streamEl=$('#stream'), progressEl=$('#progress');
+const CHO=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+const JUNG=["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
+const JONG=["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+const DOUBLE={"ㄲ":2,"ㄸ":2,"ㅃ":2,"ㅆ":2,"ㅉ":2,"ㄳ":2,"ㄵ":2,"ㄶ":2,"ㄺ":2,"ㄻ":2,"ㄼ":2,"ㄽ":2,"ㄾ":2,"ㄿ":2,"ㅀ":2,"ㅄ":2,"ㅘ":2,"ㅙ":2,"ㅚ":2,"ㅝ":2,"ㅞ":2,"ㅟ":2,"ㅢ":2,"ㅒ":2,"ㅖ":2};
+function keystrokes(str){
+  let k=0;
+  for(const ch of str){
+    const code=ch.charCodeAt(0);
+    if(code>=0xAC00 && code<=0xD7A3){
+      const s=code-0xAC00, cho=Math.floor(s/588), jung=Math.floor((s%588)/28), jong=s%28;
+      k+=DOUBLE[CHO[cho]]||1; k+=DOUBLE[JUNG[jung]]||1; if(jong>0) k+=DOUBLE[JONG[jong]]||1;
+    } else { k+=1; }
+  }
+  return k;
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function makeTarget(){
+  if(style==='time'){
+    // 시간제: 시간이 다 될 만큼 길게. 단어를 섞어 무작위로 길게 이어붙임
+    const pool = mode==='eng'?ENG_WORDS:KOR_WORDS;
+    let arr=[]; while(arr.length<260) arr=arr.concat(shuffle(pool));
+    return arr.slice(0,260).join(' ');
+  } else {
+    // 분량제: 실제 문장을 무작위로 이어붙여 분량 구성 (다양성 ↑)
+    const sents = mode==='eng'?ENG_SENT:KOR_SENT;
+    const target_chars=({60:170,180:520,300:880})[dur]||300;
+    const order=shuffle(sents); let out=[]; let len=0, i=0;
+    while(len<target_chars){ const s=order[i%order.length]; out.push(s); len+=s.length+1; i++; }
+    return out.join(' ');
+  }
+}
+function fmtClock(sec){ sec=Math.max(0,Math.round(sec)); const m=Math.floor(sec/60),s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+function fmtDur(sec){ // 순위표용 짧은 표기 (예: 1:23, 47s)
+  sec=Math.round(sec);
+  if(sec<60) return sec+'s';
+  return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+}
+function buildTarget(){
+  const chars=[...target]; let html='';
+  chars.forEach((c,i)=>{
+    if(c===' ') html+=`<span class="ch pending"> </span>`;
+    else html+=`<span class="ch pending">${c.replace('<','&lt;')}</span>`;
+  });
+  streamEl.innerHTML=html;
+  const cs=getComputedStyle(streamEl);
+  lineH=parseFloat(cs.lineHeight)|| (parseFloat(cs.fontSize)*1.9);
+  targetEl.style.height=(lineH*3)+'px';
+}
+function paint(typed){
+  const spans=streamEl.children;
+  for(let i=0;i<spans.length;i++){
+    const s=spans[i]; let cls='ch';
+    if(i<typed.length) cls += (typed[i]===target[i]?' done':' wrong');
+    else if(i===typed.length) cls+=' cur';
+    else cls+=' pending';
+    s.className=cls;
+  }
+  const cur=streamEl.querySelector('.cur')||spans[spans.length-1];
+  if(cur){
+    const lineIndex=Math.round(cur.offsetTop/lineH);
+    const shift=Math.max(0,(lineIndex-1))*lineH;
+    streamEl.style.transform=`translateY(${-shift}px)`;
+  }
+}
+function accuracy(){ if(typedTotal===0) return 100; return Math.max(0,Math.round((1-typedWrong/typedTotal)*100)); }
+function computeSpeed(){
+  const sec=(Date.now()-startTime)/1000;
+  const typed=field.value.slice(0,target.length);
+  const okStr=[...typed].filter((c,i)=>c===target[i]).join('');
+  if(mode==='kor'){ const ks=keystrokes(okStr); const cpm=sec>0?Math.round(ks/sec*60):0; return {speed:cpm,cpm,sec}; }
+  const cpm=sec>0?Math.round(okStr.length/sec*60):0;
+  const wpm=sec>0?Math.round((okStr.length/5)/sec*60):0;
+  return {speed:wpm,cpm,sec};
+}
+function liveStats(){
+  const {speed,cpm}=computeSpeed();
+  $('#s-speed').textContent=speed; $('#s-cpm').textContent=cpm;
+  $('#s-acc').innerHTML=accuracy()+'<span>%</span>';
+  if(style==='time'){ const remain=(deadline-Date.now())/1000; $('#s-time').textContent=fmtClock(remain); if(remain<=0) finish(); }
+  else { $('#s-time').textContent=fmtClock((Date.now()-startTime)/1000); }
+}
+function startTimer(){
+  started=true; startTime=Date.now(); deadline=startTime+dur*1000;
+  timerId=setInterval(liveStats,100);
+  $('#hint').textContent=style==='time'?'시간이 끝나면 자동 종료됩니다':'끝까지 다 치면 종료됩니다';
+}
+field.addEventListener('input',()=>{
+  if(finished) return;
+  if(!started) startTimer();
+  const typed=field.value;
+  if(typed.length>stableLen){
+    for(let i=stableLen;i<typed.length;i++){ if(typed[i]!==target[i]) typedWrong++; }
+    typedTotal+=typed.length-stableLen; stableLen=typed.length;
+  } else { stableLen=typed.length; }
+  paint(typed);
+  progressEl.style.width=Math.min(100,typed.length/target.length*100)+'%';
+  liveStats();
+  if(style==='length' && typed===target) finish();
+});
+field.addEventListener('keydown',e=>{ if(e.key==='Escape') reset(); });
+function finish(){
+  if(finished) return;
+  finished=true; clearInterval(timerId); field.disabled=true;
+  const {speed,cpm,sec}=computeSpeed();
+  const speedLabel = mode==='kor'?'타수 CPM':'WPM';
+  $('#rl-speed').textContent=speedLabel; $('#r-speed').textContent=speed;
+  $('#r-cpm').textContent=cpm; $('#r-acc').textContent=accuracy()+'%'; $('#r-time').textContent=sec.toFixed(1)+'s';
+  $('#r-sub').textContent=`${mode==='kor'?'한글':'영타'} · ${style==='time'?fmtClock(dur)+' 시간제':'분량제'}`;
+  pendingScore={mode,style,dur,speed,cpm,acc:accuracy(),elapsed:sec,speedLabel,t:Date.now()};
+  $('#overlay').classList.add('show'); $('#pname').focus();
+}
+function reset(){
+  clearInterval(timerId); started=false; finished=false; startTime=0;
+  typedTotal=0; typedWrong=0; stableLen=0; target=makeTarget();
+  field.value=''; field.disabled=false; field.classList.toggle('kor',mode==='kor');
+  targetEl.className='target viewport '+mode;
+  buildTarget(); streamEl.style.transform='translateY(0)'; paint('');
+  progressEl.style.width='0%';
+  if(mode==='kor'){ $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='타/분'; }
+  else { $('#speed-label').textContent='WPM'; $('#cpm-label').textContent='타수 CPM'; }
+  $('#s-speed').textContent='0'; $('#s-cpm').textContent='0'; $('#s-acc').innerHTML='100<span>%</span>';
+  $('#time-label').textContent=style==='time'?'남은시간':'경과시간';
+  $('#s-time').textContent=style==='time'?fmtClock(dur):'0:00';
+  $('#th-score').textContent=mode==='kor'?'CPM':'WPM';
+  $('#dur-cap').textContent=style==='time'?'시간':'분량';
+  $('#hint').textContent='입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작';
+  field.focus();
+}
+// ===== 순위표 =====
+let pendingScore=null;
+const LB_KEY='type_lb_v3';
+const loadLB=()=>{try{return JSON.parse(localStorage.getItem(LB_KEY))||[]}catch{return[]}};
+const saveLB=l=>localStorage.setItem(LB_KEY,JSON.stringify(l));
+function styleText(r){
+  const min = r.dur%60===0 ? (r.dur/60)+'분' : r.dur+'초';
+  return (r.style==='time'?'시간제 '+min : '분량제 '+min);
+}
+function fmtStamp(ts){ // 기록 일시: 5/31 11:37
+  const d=new Date(ts);
+  const mm=d.getMonth()+1, dd=d.getDate();
+  const hh=String(d.getHours()).padStart(2,'0'), mi=String(d.getMinutes()).padStart(2,'0');
+  return `${mm}/${dd}, ${hh}:${mi}`;
+}
+function renderLB(hl=null){
+  const list=loadLB().slice().reverse().slice(0,20);
+  const body=$('#lb-body');
+  if(!list.length){ body.innerHTML='<tr class="empty"><td colspan="7">아직 기록이 없습니다 — 첫 기록의 주인공이 되어보세요</td></tr>'; return; }
+  body.innerHTML=list.map((r,i)=>`<tr class="${r.t===hl?'you':''}">
+    <td class="rank">${list.length-i}</td>
+    <td class="col-name">${(r.name||'익명').replace(/</g,'&lt;')}</td>
+    <td class="col-mode">${r.mode==='kor'?'한글':'영타'}</td>
+    <td class="col-style">${styleText(r)}</td>
+    <td class="col-score score">${r.speed} <span class="unit">${r.speedLabel.replace('타수 ','')}</span></td>
+    <td class="col-acc">${r.acc}%</td>
+    <td class="col-time">${fmtStamp(r.t)}</td></tr>`).join('');
+}
+$('#save-score').addEventListener('click',()=>{
+  if(!pendingScore) return;
+  const name=$('#pname').value.trim().slice(0,5);
+  if(!name){
+    const inp=$('#pname');
+    inp.placeholder='이름을 입력해 주세요';
+    inp.style.borderColor='var(--bad)';
+    inp.focus();
+    return;
+  }
+  const list=loadLB(); const entry={...pendingScore,name};
+  list.push(entry); saveLB(list); renderLB(entry.t);
+  $('#overlay').classList.remove('show'); $('#pname').value=''; $('#pname').style.borderColor=''; reset();
+});
+$('#pname').addEventListener('input',()=>{ $('#pname').style.borderColor=''; });
+$('#clear-lb').addEventListener('click',()=>{ if(confirm('순위표 기록을 모두 지울까요?')){localStorage.removeItem(LB_KEY);renderLB();} });
+$('#again').addEventListener('click',()=>{ $('#overlay').classList.remove('show'); reset(); });
+$('#restart').addEventListener('click',reset);
+document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); mode=b.dataset.mode; reset();
+}));
+$('#style-pill').addEventListener('click',e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  $('#style-pill').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on'); style=btn.dataset.style; reset();
+});
+$('#dur-pill').addEventListener('click',e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  $('#dur-pill').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on'); dur=+btn.dataset.dur; reset();
+});
+renderLB(); reset();
+window.addEventListener('resize',()=>{ buildTarget(); paint(field.value); });
+</script>
+</body>
+</html>

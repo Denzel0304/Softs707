@@ -67,13 +67,16 @@
   .ch.cur{color:var(--ink);background:var(--cur-bg);border-radius:3px}
   .ch.cur::after{content:"";position:absolute;left:-1px;top:8%;height:84%;width:2px;background:var(--accent);animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
-  .input-row{margin-top:20px;display:flex;gap:10px}
+  .input-row{margin-top:20px;display:flex;gap:10px;align-items:flex-start}
   #field{flex:1;background:#f6fbf2;border:1px solid var(--line);border-radius:10px;color:var(--ink);
-    font-family:'Space Mono',monospace;font-size:16px;padding:14px 16px;outline:none;transition:.18s}
+    font-family:'Space Mono',monospace;font-size:22px;line-height:1.7;
+    padding:16px 18px;outline:none;transition:.18s;
+    resize:none;height:130px;overflow-y:auto;
+    word-break:break-all;white-space:pre-wrap;}
   #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16)}
-  #field.kor{font-family:'Gowun Dodum',sans-serif}
+  #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:24px;}
   .btn{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:1px;background:var(--accent);
-    color:#fff;border:none;border-radius:10px;padding:0 22px;font-weight:700;cursor:pointer;transition:.15s}
+    color:#fff;border:none;border-radius:10px;padding:14px 22px;font-weight:700;cursor:pointer;transition:.15s}
   .btn:hover{filter:brightness(1.06)}
   .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
   .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
@@ -155,7 +158,7 @@
     <div class="progress" id="progress"></div>
     <div class="target eng viewport" id="target"><div class="stream" id="stream"></div></div>
     <div class="input-row">
-      <input id="field" type="text" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <textarea id="field" placeholder="여기에 입력하세요…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
       <button class="btn soft" id="restart">다시 ↻</button>
     </div>
     <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작</div>
@@ -175,7 +178,7 @@
       <tbody id="lb-body"></tbody>
     </table>
   </div>
-  <footer>한글=타건수 기반 타수(CPM) · 영타=5글자 1단어 기준 WPM</footer>
+  <footer>한글=타건수 기반 CPM · 영타=분당 타건수 CPM (WPM은 CPM÷5, 참고용)</footer>
 </div>
 <div class="overlay" id="overlay">
   <div class="card">
@@ -183,7 +186,7 @@
     <div class="sub" id="r-sub"></div>
     <div class="rgrid">
       <div class="rbox"><div class="l" id="rl-speed">WPM</div><div class="v" id="r-speed">0</div></div>
-      <div class="rbox"><div class="l">타수 CPM</div><div class="v" id="r-cpm">0</div></div>
+      <div class="rbox"><div class="l" id="rl-cpm">WPM</div><div class="v" id="r-cpm">0</div></div>
       <div class="rbox"><div class="l">정확도</div><div class="v" id="r-acc">0%</div></div>
       <div class="rbox"><div class="l">수행시간</div><div class="v" id="r-time">0s</div></div>
     </div>
@@ -313,13 +316,15 @@ function computeSpeed(){
   const typed=field.value.slice(0,target.length);
   const okStr=[...typed].filter((c,i)=>c===target[i]).join('');
   if(mode==='kor'){ const ks=keystrokes(okStr); const cpm=sec>0?Math.round(ks/sec*60):0; return {speed:cpm,cpm,sec}; }
+  // 영타: CPM = 분당 타건수 (한글 타수 개념과 동일)
   const cpm=sec>0?Math.round(okStr.length/sec*60):0;
   const wpm=sec>0?Math.round((okStr.length/5)/sec*60):0;
-  return {speed:wpm,cpm,sec};
+  return {speed:cpm,cpm,wpm,sec};
 }
 function liveStats(){
-  const {speed,cpm}=computeSpeed();
-  $('#s-speed').textContent=speed; $('#s-cpm').textContent=cpm;
+  const {speed,cpm,wpm}=computeSpeed();
+  $('#s-speed').textContent=speed;
+  $('#s-cpm').textContent=mode==='eng'?(wpm||0):cpm;
   $('#s-acc').innerHTML=accuracy()+'<span>%</span>';
   if(style==='time'){ const remain=(deadline-Date.now())/1000; $('#s-time').textContent=fmtClock(remain); if(remain<=0) finish(); }
   else { $('#s-time').textContent=fmtClock((Date.now()-startTime)/1000); }
@@ -342,16 +347,22 @@ field.addEventListener('input',()=>{
   liveStats();
   if(style==='length' && typed===target) finish();
 });
-field.addEventListener('keydown',e=>{ if(e.key==='Escape') reset(); });
+field.addEventListener('keydown',e=>{
+  if(e.key==='Escape') reset();
+  if(e.key==='Enter') e.preventDefault(); // textarea 줄바꿈 방지
+});
+field.addEventListener('paste',e=>e.preventDefault()); // 붙여넣기 방지
 function finish(){
   if(finished) return;
   finished=true; clearInterval(timerId); field.disabled=true;
-  const {speed,cpm,sec}=computeSpeed();
-  const speedLabel = mode==='kor'?'타수 CPM':'WPM';
-  $('#rl-speed').textContent=speedLabel; $('#r-speed').textContent=speed;
-  $('#r-cpm').textContent=cpm; $('#r-acc').textContent=accuracy()+'%'; $('#r-time').textContent=sec.toFixed(1)+'s';
+  const {speed,cpm,wpm,sec}=computeSpeed();
+  const speedLabel = '타수 CPM';
+  $('#rl-speed').textContent=speedLabel;
+  if($('#rl-cpm')) $('#rl-cpm').textContent = mode==='eng'?'WPM':'타/분';
+  $('#r-speed').textContent=speed;
+  $('#r-cpm').textContent=mode==='eng'?(wpm||0):cpm; $('#r-acc').textContent=accuracy()+'%'; $('#r-time').textContent=sec.toFixed(1)+'s';
   $('#r-sub').textContent=`${mode==='kor'?'한글':'영타'} · ${style==='time'?fmtClock(dur)+' 시간제':'분량제'}`;
-  pendingScore={mode,style,dur,speed,cpm,acc:accuracy(),elapsed:sec,speedLabel,t:Date.now()};
+  pendingScore={mode,style,dur,speed,cpm,wpm:wpm||0,acc:accuracy(),elapsed:sec,speedLabel:'타수 CPM',t:Date.now()};
   $('#overlay').classList.add('show'); $('#pname').focus();
 }
 function reset(){
@@ -361,12 +372,12 @@ function reset(){
   targetEl.className='target viewport '+mode;
   buildTarget(); streamEl.style.transform='translateY(0)'; paint('');
   progressEl.style.width='0%';
-  if(mode==='kor'){ $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='타/분'; }
-  else { $('#speed-label').textContent='WPM'; $('#cpm-label').textContent='타수 CPM'; }
+  if(mode==='kor'){ $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='타/분'; $('#rl-cpm')&&($('#rl-cpm').textContent='타/분'); }
+  else { $('#speed-label').textContent='타수 CPM'; $('#cpm-label').textContent='WPM'; $('#rl-cpm')&&($('#rl-cpm').textContent='WPM'); }
   $('#s-speed').textContent='0'; $('#s-cpm').textContent='0'; $('#s-acc').innerHTML='100<span>%</span>';
   $('#time-label').textContent=style==='time'?'남은시간':'경과시간';
   $('#s-time').textContent=style==='time'?fmtClock(dur):'0:00';
-  $('#th-score').textContent=mode==='kor'?'CPM':'WPM';
+  $('#th-score').textContent='CPM';
   $('#dur-cap').textContent=style==='time'?'시간':'분량';
   $('#hint').textContent='입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작';
   field.focus();
@@ -395,7 +406,7 @@ function renderLB(hl=null){
     <td class="col-name">${(r.name||'익명').replace(/</g,'&lt;')}</td>
     <td class="col-mode">${r.mode==='kor'?'한글':'영타'}</td>
     <td class="col-style">${styleText(r)}</td>
-    <td class="col-score score">${r.speed} <span class="unit">${r.speedLabel.replace('타수 ','')}</span></td>
+    <td class="col-score score">${r.speed} <span class="unit">CPM</span></td>
     <td class="col-acc">${r.acc}%</td>
     <td class="col-time">${fmtStamp(r.t)}</td></tr>`).join('');
 }

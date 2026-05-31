@@ -59,10 +59,9 @@
   /* ── 단어 스트림 뷰 ── */
   .word-stage{
     position:relative;overflow:hidden;
-    height:64px;
+    height:90px;
     display:flex;align-items:center;
     border-bottom:1px solid var(--line);
-    margin-bottom:0;
   }
   /* 흐르는 단어들 컨테이너 */
   .word-belt{
@@ -72,12 +71,12 @@
     transition:transform .22s cubic-bezier(.4,0,.2,1);
     will-change:transform;
   }
-  /* 개별 단어 칩 */
+  /* 개별 단어 칩 — 기본(지나간/먼 앞) */
   .w{
     display:inline-flex;align-items:center;
     font-family:'Space Mono',monospace;
-    font-size:17px;color:var(--muted);
-    padding:0 10px;
+    font-size:22px;color:var(--muted);
+    padding:0 12px;
     transition:font-size .18s, color .18s, font-weight .18s, opacity .18s;
     cursor:default;user-select:none;
     line-height:1;
@@ -85,24 +84,21 @@
   .w.kor{font-family:'Gowun Dodum',sans-serif;}
   .w.done-ok{color:var(--good);}
   .w.done-bad{color:var(--bad);}
-  .w.active{
-    font-size:34px;font-weight:700;color:var(--ink);
-  }
-  .w.active.kor{font-size:36px;}
-  .w.pending{opacity:.55;}
+  /* 완료 단어는 더 작게 */
+  .w.done-ok, .w.done-bad{font-size:18px;}
+  /* 활성 단어 */
+  .w.active{font-size:42px;font-weight:700;color:var(--ink);}
+  .w.active.kor{font-size:44px;}
+  /* 다음 단어 (next 클래스) */
+  .w.next-word{font-size:28px;font-weight:600;color:var(--ink);opacity:1;}
+  .w.next-word.kor{font-size:30px;}
+  /* 그 뒤 단어들 */
+  .w.pending{font-size:22px;opacity:.45;}
   /* 활성 단어 안의 글자 색 */
   .w.active .lch.ok{color:var(--good);}
   .w.active .lch.bad{color:var(--bad);background:var(--bad-bg);border-radius:2px;}
   .w.active .lch.rest{color:var(--muted);}
   .w.active .lch.next{color:var(--ink);}
-
-  /* 중앙 커서 선 */
-  .stage-cursor{
-    position:absolute;left:50%;top:12%;height:76%;width:2px;
-    background:var(--accent);opacity:.35;border-radius:2px;
-    pointer-events:none;
-    animation:blink 1s steps(1) infinite;
-  }
   @keyframes blink{50%{opacity:0}}
 
   /* ── 입력창 ── */
@@ -202,11 +198,10 @@
     <!-- 단어 스트림 -->
     <div class="word-stage" id="word-stage">
       <div class="word-belt" id="word-belt"></div>
-      <div class="stage-cursor" id="stage-cursor"></div>
     </div>
     <!-- 입력 + 버튼 (하단 일체형) -->
     <div class="input-row">
-      <input type="text" id="field" placeholder="여기에 입력하세요…"
+      <input type="text" id="field"
         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <button class="btn soft" id="restart">다시 ↻</button>
     </div>
@@ -342,9 +337,13 @@ function buildBelt(){
   const isKor=mode==='kor';
   words.forEach((w,i)=>{
     const span=document.createElement('span');
-    span.className='w'+(isKor?' kor':'')+(i<wordIdx?' done-ok':i===wordIdx?' active':' pending');
+    let cls='w'+(isKor?' kor':'');
+    if(i<wordIdx)       cls+=' '+(wordResults[i]&&wordResults[i].ok?'done-ok':'done-bad');
+    else if(i===wordIdx) cls+=' active';
+    else if(i===wordIdx+1) cls+=' next-word';
+    else                cls+=' pending';
+    span.className=cls;
     span.dataset.idx=i;
-    // 활성 단어는 글자별 span
     if(i===wordIdx) span.innerHTML=renderActiveWord(w,'');
     else span.textContent=w;
     belt.appendChild(span);
@@ -354,15 +353,21 @@ function buildBelt(){
 
 function renderActiveWord(word, typed){
   let html='';
-  for(let i=0;i<word.length;i++){
-    const ch=word[i]==='<'?'&lt;':word[i];
-    if(i<typed.length){
-      const ok=typed[i]===word[i];
-      html+=`<span class="lch ${ok?'ok':'bad'}">${ch}</span>`;
-    } else if(i===typed.length){
-      html+=`<span class="lch next">${ch}</span>`;
+  const maxLen=Math.max(word.length, typed.length);
+  for(let i=0;i<maxLen;i++){
+    if(i<word.length){
+      const ch=word[i]==='<'?'&lt;':word[i];
+      if(i<typed.length){
+        const ok=typed[i]===word[i];
+        html+=`<span class="lch ${ok?'ok':'bad'}">${ch}</span>`;
+      } else if(i===typed.length){
+        html+=`<span class="lch next">${ch}</span>`;
+      } else {
+        html+=`<span class="lch rest">${ch}</span>`;
+      }
     } else {
-      html+=`<span class="lch rest">${ch}</span>`;
+      // 단어보다 더 친 글자 — 빨간 점으로 표시
+      html+=`<span class="lch bad">·</span>`;
     }
   }
   return html;
@@ -430,7 +435,18 @@ function commitWord(){
 
   // 다음 단어 활성화
   const nc=belt.children[wordIdx];
-  if(nc){ nc.className='w'+(mode==='kor'?' kor':'')+' active'; nc.innerHTML=renderActiveWord(words[wordIdx],''); }
+  if(nc){
+    const isKor=mode==='kor';
+    nc.className='w'+(isKor?' kor':'')+' active';
+    nc.innerHTML=renderActiveWord(words[wordIdx],'');
+  }
+  // 다다음 단어: next-word 클래스
+  const nnc=belt.children[wordIdx+1];
+  if(nnc){
+    const isKor=mode==='kor';
+    nnc.className='w'+(isKor?' kor':'')+' next-word';
+  }
+  // 이전 next-word였던 것(현재 active)은 이미 위에서 처리됨
 
   // 진행률
   const total=style==='length'?words.length:Math.max(words.length,wordIdx+1);
@@ -478,16 +494,15 @@ field.addEventListener('input',()=>{
 
 field.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ reset(); return; }
-  if(e.key===' '){
+  if(e.key===' ' || e.key==='Enter'){
     e.preventDefault();
     if(finished) return;
     if(!started) startTimer();
-    if(field.value.length===0) return; // 빈 칸 스페이스 무시
+    if(field.value.length===0) return; // 빈 칸 무시
     commitWord();
     liveStats();
   }
   if(e.key==='Backspace'){
-    // 입력창이 비어있으면 이전 단어로 못 돌아감 (스페이스 확정 후 잠금)
     if(field.value.length===0) e.preventDefault();
   }
 });

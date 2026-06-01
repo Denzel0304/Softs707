@@ -59,15 +59,16 @@
   /* ── 단어 스트림 뷰 ── */
   .word-stage{
     position:relative;overflow:hidden;
-    height:90px;
+    height:160px;
     display:flex;align-items:center;
-    border-bottom:1px solid var(--line);
   }
-  /* 흐르는 단어들 컨테이너 */
+  /* 흐르는 단어들 컨테이너 — 세로 중앙 정렬 */
   .word-belt{
     position:absolute;
+    top:50%;left:0;
     display:flex;align-items:center;gap:0;
     white-space:nowrap;
+    transform:translate(0,-50%);
     transition:transform .22s cubic-bezier(.4,0,.2,1);
     will-change:transform;
   }
@@ -75,8 +76,8 @@
   .w{
     display:inline-flex;align-items:center;
     font-family:'Space Mono',monospace;
-    font-size:22px;color:var(--muted);
-    padding:0 12px;
+    font-size:44px;color:var(--muted);
+    padding:0 20px;
     transition:font-size .18s, color .18s, font-weight .18s, opacity .18s;
     cursor:default;user-select:none;
     line-height:1;
@@ -85,15 +86,15 @@
   .w.done-ok{color:var(--good);}
   .w.done-bad{color:var(--bad);}
   /* 완료 단어는 더 작게 */
-  .w.done-ok, .w.done-bad{font-size:18px;}
+  .w.done-ok, .w.done-bad{font-size:36px;}
   /* 활성 단어 */
-  .w.active{font-size:42px;font-weight:700;color:var(--ink);}
-  .w.active.kor{font-size:44px;}
+  .w.active{font-size:84px;font-weight:700;color:var(--ink);}
+  .w.active.kor{font-size:88px;}
   /* 다음 단어 (next 클래스) */
-  .w.next-word{font-size:28px;font-weight:600;color:var(--ink);opacity:1;}
-  .w.next-word.kor{font-size:30px;}
+  .w.next-word{font-size:56px;font-weight:600;color:var(--ink);opacity:1;}
+  .w.next-word.kor{font-size:60px;}
   /* 그 뒤 단어들 */
-  .w.pending{font-size:22px;opacity:.45;}
+  .w.pending{font-size:44px;opacity:.45;}
   /* 활성 단어 안의 글자 색 */
   .w.active .lch.ok{color:var(--good);}
   .w.active .lch.bad{color:var(--bad);background:var(--bad-bg);border-radius:2px;}
@@ -102,16 +103,17 @@
   @keyframes blink{50%{opacity:0}}
 
   /* ── 입력창 ── */
-  .input-row{margin-top:0;display:flex;gap:0;align-items:stretch;}
+  .input-row{position:relative;margin-top:26px;display:flex;gap:10px;align-items:center;justify-content:center;}
   #field{
-    flex:1;background:#f6fbf2;border:1px solid var(--line);
-    border-top:none;border-radius:0 0 0 10px;
-    color:var(--ink);
+    flex:0 0 460px;max-width:100%;
+    background:#f6fbf2;border:1px solid var(--line);
+    border-radius:14px;
+    color:var(--ink);text-align:center;
     font-family:'Space Mono',monospace;font-size:32px;line-height:1;
     padding:0 20px;outline:none;transition:border-color .18s, box-shadow .18s;
-    height:80px;overflow:hidden;
+    height:74px;overflow:hidden;
   }
-  #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16);z-index:1;position:relative;}
+  #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16);}
   #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:34px;}
   .btn{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:1px;background:var(--accent);
     color:#fff;border:none;border-radius:10px;padding:14px 22px;font-weight:700;cursor:pointer;transition:.15s}
@@ -119,7 +121,8 @@
   .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
   .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
   .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent);
-    border-top:none;border-radius:0 0 10px 0;height:80px;padding:0 22px;}
+    border-radius:14px;height:74px;padding:0 22px;
+    position:absolute;right:0;top:50%;transform:translateY(-50%);}
   .btn.soft:hover{filter:brightness(.97);border-color:var(--accent)}
   .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px}
   .overlay{position:fixed;inset:0;background:rgba(31,42,28,.42);backdrop-filter:blur(4px);
@@ -374,20 +377,19 @@ function renderActiveWord(word, typed){
 }
 
 function alignBelt(){
-  // 활성 단어의 첫 글자를 stage 중앙(50%)에 고정
+  // 활성 단어의 첫 글자를 stage의 정확한 가로 중앙에 고정
   const stage=$('#word-stage');
   const stageW=stage.offsetWidth;
   const center=stageW/2;
 
-  // 활성 칩의 offsetLeft 계산
   const chips=belt.children;
   if(!chips.length) return;
-  let offset=0;
-  for(let i=0;i<chips.length;i++){
-    if(i===wordIdx){ offset=chips[i].offsetLeft; break; }
-  }
-  // 활성 단어 앞쪽 절반 너비만큼 더 당겨서 단어 시작이 중앙에 오게
-  belt.style.transform=`translateX(${center - offset}px)`;
+  const active=chips[wordIdx];
+  if(!active) return;
+  // 칩의 왼쪽 패딩만큼 보정해서 '첫 글자'가 정확히 중앙에 오게
+  const padL=parseFloat(getComputedStyle(active).paddingLeft)||0;
+  const firstLetterX=active.offsetLeft+padL;
+  belt.style.transform=`translate(${center - firstLetterX}px,-50%)`;
 }
 
 function paintActive(){
@@ -601,6 +603,7 @@ $('#dur-pill').addEventListener('click',e=>{
 });
 renderLB(); reset();
 window.addEventListener('resize',()=>{ alignBelt(); });
+if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(()=>alignBelt()); }
 </script>
 </body>
 </html>

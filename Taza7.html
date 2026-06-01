@@ -138,7 +138,7 @@
   .lb{margin-top:28px}
   .lb h3{font-family:'Archivo',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--ink);
     margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-  .lb h3 button{font-family:'Archivo',sans-serif;font-size:14px;font-weight:800;background:none;border:none;color:var(--bad);cursor:pointer;letter-spacing:0}
+  .lb h3 button{font-family:'Archivo',sans-serif;font-size:14px;font-weight:400;background:none;border:none;color:var(--bad);cursor:pointer;letter-spacing:0}
   table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:fixed}
   th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   tr:last-child td{border-bottom:none}
@@ -514,10 +514,38 @@ function finish(){
   $('#r-time').textContent=sec.toFixed(1)+'s';
   $('#r-sub').textContent=`${mode==='kor'?'한글':'영타'} · ${style==='time'?fmtClock(dur)+' 시간제':'분량제'}`;
   pendingScore={mode,style,dur,speed,cpm,wpm:wpm||0,acc:accuracy(),elapsed:sec,speedLabel:'타수 CPM',t:Date.now()};
-  $('#overlay').classList.add('show'); $('#pname').focus();
+  $('#overlay').classList.add('show'); armNameInput();
+}
+
+// 종료 모달이 뜬 직후, 타자 잔여 입력이 이름칸에 흘러드는 것 방지
+// → 키 입력이 0.5초 멈출 때까지 모든 키를 가로채고, 멈추면 이름칸을 비우고 포커스
+let nameLockCleanup=null;
+function armNameInput(){
+  const pn=$('#pname');
+  pn.value=''; pn.blur();
+  let t=null;
+  const open=()=>{
+    if(nameLockCleanup===cancel) nameLockCleanup=null;
+    document.removeEventListener('keydown',onKey,true);
+    pn.value='';                 // 흘러든 글자 정리
+    pn.focus();
+  };
+  const cancel=()=>{
+    clearTimeout(t);
+    document.removeEventListener('keydown',onKey,true);
+    nameLockCleanup=null;
+  };
+  const onKey=(e)=>{
+    e.preventDefault(); e.stopPropagation();   // 잔여 타자 입력 차단
+    clearTimeout(t); t=setTimeout(open,500);   // 마지막 키 후 0.5초 멈추면 해제
+  };
+  document.addEventListener('keydown',onKey,true);
+  nameLockCleanup=cancel;
+  t=setTimeout(open,500);        // 추가 입력이 없으면 0.5초 뒤 바로 활성화
 }
 
 function reset(){
+  if(nameLockCleanup) nameLockCleanup();
   clearInterval(timerId); started=false; finished=false; startTime=0;
   typedTotal=0; typedWrong=0; wordIdx=0; wordResults=[];
   words=makeWords();

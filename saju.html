@@ -708,7 +708,7 @@ function openYear(id){
   $('#y_saju').value=y?y.saju:''; $('#y_reading').value=y?y.reading:'';
   $('#y_score').value=y?y.score:5; $('#y_scoreval').textContent=y?y.score:5;
   $('#y_delete').style.display=y?'inline-flex':'none';
-  $('#yearScrim').classList.add('open');
+  openModal('yearScrim');
 }
 $('#addYear').addEventListener('click',()=>openYear(null));
 $('#y_score').addEventListener('input',e=>$('#y_scoreval').textContent=e.target.value);
@@ -751,7 +751,7 @@ function openMonth(month){
   $('#mo_saju').value=m?m.saju:''; $('#mo_reading').value=m?m.reading:'';
   $('#mo_score').value=m?m.score:5; $('#mo_scoreval').textContent=m?m.score:5;
   $('#mo_delete').style.display=m?'inline-flex':'none';
-  $('#monthScrim').classList.add('open');
+  openModal('monthScrim');
 }
 $('#mPrev').addEventListener('click',()=>{state.monthYear--;renderMonth();});
 $('#mNext').addEventListener('click',()=>{state.monthYear++;renderMonth();});
@@ -769,10 +769,39 @@ $('#mo_delete').addEventListener('click',async()=>{
   closeModals(); await persist();
 });
 
-/* ============ Modals close ============ */
-function closeModals(){ $$('.scrim').forEach(s=>s.classList.remove('open')); }
-$$('[data-close]').forEach(b=>b.addEventListener('click',closeModals));
-$$('.scrim').forEach(s=>s.addEventListener('click',e=>{ if(e.target===s) closeModals(); }));
+/* ============ Modal manager + back-button (History API) ============ */
+/* 원칙:
+   - 모달을 열 때만 history.pushState 로 항목 1개 추가 (탭 전환엔 안 씀).
+   - 뒤로가기 / ESC / X / 배경클릭 → 전부 history.back() 한 경로로 통일.
+     → popstate 가 받아서 '최상위 모달'만 닫음.
+   - modalStack 깊이 = 현재 열려 있는 모달 수. 닫으면 항상 1 줄어듦 → 무한정 안 쌓임.
+   - 스택이라 중첩(하위) 모달도 위에서부터 하나씩 닫힘. 모달 없을 땐 뒤로가기 = 사이트 탈출. */
+const modalStack=[];
+function isModalOpen(){ return modalStack.length>0; }
+function openModal(id){
+  const s=document.getElementById(id); if(!s) return;
+  if(modalStack[modalStack.length-1]===id) return;   // 같은 모달 중복 push 방지
+  s.classList.add('open');
+  modalStack.push(id);
+  history.pushState({sajuModal:id, depth:modalStack.length}, '');
+}
+function hideTopModal(){                              // 실제 DOM 닫기 (popstate에서만 호출)
+  const id=modalStack.pop();
+  if(!id) return;
+  const s=document.getElementById(id);
+  if(s) s.classList.remove('open');
+}
+function requestCloseTop(){                           // 사용자가 닫으려는 모든 동작의 단일 입구
+  if(modalStack.length) history.back();               // → popstate → hideTopModal
+}
+function closeModals(){ requestCloseTop(); }          // 기존 호출부 호환 (최상위 1개만 닫음)
+
+window.addEventListener('popstate',()=>{
+  if(modalStack.length){ hideTopModal(); }            // 모달 있으면 닫기, 없으면 정상 이탈
+});
+$$('[data-close]').forEach(b=>b.addEventListener('click',requestCloseTop));
+$$('.scrim').forEach(s=>s.addEventListener('click',e=>{ if(e.target===s) requestCloseTop(); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && modalStack.length){ e.preventDefault(); requestCloseTop(); } });
 
 /* ============ Charts ============ */
 let homeChart, flowChart;

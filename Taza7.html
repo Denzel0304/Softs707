@@ -59,8 +59,8 @@
   /* ── 단어 목록 뷰 (여러 줄, 아래로 스크롤) ── */
   .word-stage{
     position:relative;overflow:hidden;
-    height:228px;            /* 3줄 + 여백 */
-    padding:18px 4px;
+    height:210px;            /* 정확히 3줄만 보이도록(4번째 줄 글자 잘림 방지) */
+    padding:18px 4px 0;
   }
   /* 단어들이 줄바꿈되며 흐르는 컨테이너 — 세로 스크롤 */
   .word-belt{
@@ -96,7 +96,8 @@
   @keyframes blink{50%{box-shadow:inset 2px 0 0 transparent}}
 
   /* ── 입력창 ── */
-  .input-row{position:relative;margin-top:26px;display:flex;gap:10px;align-items:center;justify-content:center;}
+  .input-row{position:relative;margin-top:26px;display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:nowrap;}
+  .ispacer{flex:0 0 auto;}
   #field{
     flex:0 0 460px;max-width:100%;
     background:#f6fbf2;border:1px solid var(--line);
@@ -114,8 +115,7 @@
   .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
   .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
   .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent);
-    border-radius:14px;height:104px;padding:0 26px;font-size:15px;
-    position:absolute;left:50%;top:50%;transform:translateY(-50%);margin-left:250px;}
+    border-radius:14px;height:104px;padding:0 26px;font-size:15px;flex:0 0 auto;}
   .btn.soft:hover{filter:brightness(.97);border-color:var(--accent)}
   .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px;text-align:center}
   .overlay{position:fixed;inset:0;background:rgba(31,42,28,.42);backdrop-filter:blur(4px);
@@ -197,6 +197,7 @@
     </div>
     <!-- 입력 + 버튼 (하단 일체형) -->
     <div class="input-row">
+      <span class="ispacer" id="ispacer"></span>
       <input type="text" id="field"
         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <button class="btn soft" id="restart">다시 ↻</button>
@@ -591,9 +592,10 @@ $('#dur-pill').addEventListener('click',e=>{
   $('#dur-pill').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
   btn.classList.add('on'); dur=+btn.dataset.dur; reset();
 });
-renderLB(); reset();
-window.addEventListener('resize',()=>{ alignBelt(); });
-if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(()=>alignBelt()); }
+function balanceInput(){ const b=$('#restart'),sp=$('#ispacer'); if(b&&sp) sp.style.width=b.offsetWidth+'px'; }
+renderLB(); reset(); balanceInput();
+window.addEventListener('resize',()=>{ alignBelt(); balanceInput(); });
+if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(()=>{ alignBelt(); balanceInput(); }); }
 </script>
 </body>
 </html>

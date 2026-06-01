@@ -104,7 +104,7 @@
     color:var(--ink);text-align:center;
     font-family:'Space Mono',monospace;font-size:44px;line-height:1;
     padding:0 20px;outline:none;transition:border-color .18s, box-shadow .18s;
-    height:148px;overflow:hidden;
+    height:104px;overflow:hidden;
   }
   #field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,163,77,.16);}
   #field.kor{font-family:'Gowun Dodum',sans-serif;font-size:46px;}
@@ -114,10 +114,10 @@
   .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted)}
   .btn.ghost:hover{color:var(--ink);border-color:var(--accent)}
   .btn.soft{background:var(--accent-soft);border:1px solid var(--line);color:var(--accent);
-    border-radius:14px;height:148px;padding:0 26px;font-size:15px;
-    position:absolute;right:0;top:50%;transform:translateY(-50%);}
+    border-radius:14px;height:104px;padding:0 26px;font-size:15px;
+    position:absolute;left:50%;top:50%;transform:translateY(-50%);margin-left:250px;}
   .btn.soft:hover{filter:brightness(.97);border-color:var(--accent)}
-  .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px}
+  .hint{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:13px;letter-spacing:.5px;text-align:center}
   .overlay{position:fixed;inset:0;background:rgba(31,42,28,.42);backdrop-filter:blur(4px);
     display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
   .overlay.show{display:flex}
@@ -201,7 +201,7 @@
         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <button class="btn soft" id="restart">다시 ↻</button>
     </div>
-    <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작</div>
+    <div class="hint" id="hint">입력을 시작하면 측정이 시작됩니다</div>
   </div>
   <div class="lb">
     <h3>기록 <button id="clear-lb">기록 삭제</button></h3>
@@ -474,7 +474,7 @@ function liveStats(){
 function startTimer(){
   started=true; startTime=Date.now(); deadline=startTime+dur*1000;
   timerId=setInterval(liveStats,100);
-  $('#hint').textContent=style==='time'?'시간이 끝나면 자동 종료됩니다':'끝까지 다 치면 종료됩니다';
+  $('#hint').textContent='ESC = 다시 시작';
 }
 
 // ── 입력 이벤트 ──
@@ -531,7 +531,7 @@ function reset(){
   $('#s-time').textContent=style==='time'?fmtClock(dur):'0:00';
   $('#th-score').textContent='CPM';
   $('#dur-cap').textContent=style==='time'?'시간':'분량';
-  $('#hint').textContent='입력을 시작하면 측정이 시작됩니다 · ESC = 다시 시작';
+  $('#hint').textContent='입력을 시작하면 측정이 시작됩니다';
   field.focus();
 }
 

@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rebuild</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f8f4;
+    --bg2: #eaf3ea;
+    --surface: #ffffff;
+    --surface2: #f0f7f0;
+    --border: #cde3cd;
+    --border-light: #e2f0e2;
+    --green-1: #4a9e6b;
+    --green-2: #3d8a5c;
+    --green-3: #6bbf8e;
+    --green-soft: #a8d5b5;
+    --green-pale: #d4edda;
+    --green-mist: #e8f5eb;
+    --text-primary: #1e3a2f;
+    --text-secondary: #4a7060;
+    --text-muted: #7da98d;
+    --text-light: #aec9b5;
+    --accent: #4a9e6b;
+    --accent-hover: #3d8a5c;
+    --danger: #c0392b;
+    --danger-soft: #fdecea;
+    --shadow-sm: 0 1px 4px rgba(74,158,107,0.08);
+    --shadow-md: 0 4px 20px rgba(74,158,107,0.12);
+    --shadow-lg: 0 8px 40px rgba(74,158,107,0.18);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ── APP SHELL ── */
+  #app {
+    width: 100%; max-width: 430px;
+    height: 100dvh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 72px;
+  }
+
+  .header-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--green-1);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 72px;
+    justify-content: flex-end;
+  }
+
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--green-mist);
+    color: var(--green-1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background var(--transition), transform 0.15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:active { transform: scale(0.92); background: var(--green-pale); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  .back-btn {
+    background: transparent;
+    color: var(--green-1);
+  }
+  .back-btn:active { background: var(--green-mist); }
+
+  /* ── SCREENS ── */
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── MAIN SCREEN ── */
+  #screen-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 28px;
+    gap: 0;
+  }
+
+  /* Decorative background */
+  #screen-main::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(107,191,142,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  #screen-main::after {
+    content: '';
+    position: absolute;
+    bottom: 20px; left: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(74,158,107,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .quote-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .quote-card {
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 44px 32px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    position: relative;
+    overflow: hidden;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .quote-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green-3), var(--green-1), var(--green-soft));
+    border-radius: 24px 24px 0 0;
+  }
+
+  .quote-deco {
+    font-family: 'DM Serif Display', serif;
+    font-size: 72px;
+    line-height: 1;
+    color: var(--green-pale);
+    margin-bottom: -16px;
+    display: block;
+    user-select: none;
+  }
+
+  .quote-text {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--text-primary);
+    text-align: center;
+    word-break: keep-all;
+    letter-spacing: 0.01em;
+  }
+
+  .quote-text.empty {
+    font-size: 16px;
+    color: var(--text-muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 300;
+  }
+
+  .quote-counter {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-light);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    max-width: 200px;
+  }
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .dot.played { background: var(--green-soft); }
+  .dot.current { background: var(--green-1); transform: scale(1.3); }
+
+  /* Timer bar */
+  .timer-bar-wrap {
+    width: 100%;
+    height: 3px;
+    background: var(--border-light);
+    border-radius: 2px;
+    margin-top: 16px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+  .timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-3), var(--green-1));
+    border-radius: 2px;
+    width: 100%;
+    transform-origin: left;
+    animation: timerShrink 7s linear forwards;
+  }
+  @keyframes timerShrink {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
+
+  /* Bottom controls */
+  .bottom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+
+  .time-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    background: var(--surface);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+  }
+
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .toggle {
+    position: relative;
+    width: 46px; height: 26px;
+    cursor: pointer;
+  }
+  .toggle input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 13px;
+    background: var(--border);
+    transition: background var(--transition);
+  }
+  .toggle input:checked ~ .toggle-track { background: var(--green-1); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition: transform var(--transition);
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+  /* Quote fade animation */
+  .quote-fade-out { opacity: 0; transform: translateY(-8px); }
+  .quote-fade-in  { animation: fadeInUp 0.5s ease forwards; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SETTINGS SCREEN ── */
+  #screen-settings {
+    display: none;
+    flex-direction: column;
+  }
+  #screen-settings.active { display: flex; }
+
+  .settings-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-section {
+    margin-bottom: 20px;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px 10px;
+    margin-bottom: 4px;
+  }
+
+  .category-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .cat-morning .category-dot { background: #f4a946; }
+  .cat-afternoon .category-dot { background: #4ab8d4; }
+  .cat-evening .category-dot { background: #e07060; }
+  .cat-night .category-dot { background: #7c6bae; }
+  .cat-always .category-dot { background: var(--green-1); }
+
+  .category-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    flex: 1;
+  }
+
+  .category-count {
+    font-size: 11px;
+    color: var(--text-light);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .phrase-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 14px 14px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition);
+    cursor: pointer;
+  }
+  .phrase-item:active { background: var(--green-mist); }
+
+  .phrase-item-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  .phrase-delete-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition), color var(--transition);
+    padding: 0;
+  }
+  .phrase-delete-btn:active { background: var(--danger-soft); color: var(--danger); }
+  .phrase-delete-btn svg { width: 14px; height: 14px; }
+
+  .empty-category {
+    text-align: center;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 300;
+  }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(30,58,47,0.35);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal-sheet {
+    width: 100%;
+    max-width: 430px;
+    background: var(--surface);
+    border-radius: 28px 28px 0 0;
+    padding: 0 0 max(28px, env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-overlay.open .modal-sheet {
+    transform: translateY(0);
+  }
+
+  .modal-handle {
+    width: 40px; height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 14px auto 0;
+    flex-shrink: 0;
+  }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    flex-shrink: 0;
+  }
+
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+
+  .modal-body {
+    padding: 0 24px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  /* Category tabs */
+  .cat-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .cat-tab {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all var(--transition);
+    font-weight: 400;
+  }
+  .cat-tab.selected {
+    border-color: var(--green-1);
+    background: var(--green-mist);
+    color: var(--green-2);
+    font-weight: 500;
+  }
+
+  .input-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+    display: block;
+  }
+
+  .phrase-textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'Noto Serif KR', serif;
+    color: var(--text-primary);
+    background: var(--surface2);
+    resize: none;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color var(--transition);
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .phrase-textarea:focus {
+    border-color: var(--green-1);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(74,158,107,0.1);
+  }
+  .phrase-textarea::placeholder { color: var(--text-light); font-family: 'Noto Sans KR', sans-serif; font-size: 14px; }
+
+  .modal-footer {
+    padding: 12px 24px 0;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .btn-primary {
+    background: var(--green-1);
+    color: white;
+  }
+  .btn-primary:active { background: var(--green-2); transform: scale(0.98); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:active { background: var(--border); }
+
+  .btn-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(192,57,43,0.15);
+  }
+
+  /* Confirm modal */
+  .confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(30,58,47,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .confirm-modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .confirm-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 320px;
+    transform: scale(0.92);
+    transition: transform 0.25s cubic-bezier(0.32,0.72,0,1);
+    box-shadow: var(--shadow-lg);
+  }
+  .confirm-modal-overlay.open .confirm-card { transform: scale(1); }
+
+  .confirm-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .confirm-msg {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .confirm-quote-preview {
+    font-size: 13px;
+    color: var(--green-2);
+    background: var(--green-mist);
+    border-radius: var(--radius-xs);
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    font-style: italic;
+    word-break: keep-all;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: max(30px, env(safe-area-inset-bottom, 30px));
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text-primary);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 300;
+    z-index: 300;
+    opacity: 0;
+    transition: all 0.3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--green-soft); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left" id="header-left">
+      <!-- back button injected by JS when on settings -->
+    </div>
+    <span class="header-title">Rebuild</span>
+    <div class="header-right" id="header-right">
+      <button class="icon-btn" id="btn-add" aria-label="문구 추가">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-label="설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN SCREEN -->
+  <section class="screen" id="screen-main">
+    <div class="quote-container">
+      <div class="quote-card" id="quote-card">
+        <span class="quote-deco">"</span>
+        <p class="quote-text" id="quote-text">문구를 추가해보세요</p>
+        <div class="timer-bar-wrap" id="timer-bar-wrap" style="display:none">
+          <div class="timer-bar" id="timer-bar"></div>
+        </div>
+        <p class="quote-counter" id="quote-counter"></p>
+        <div class="progress-dots" id="progress-dots"></div>
+      </div>
+    </div>
+
+    <div class="bottom-controls">
+      <span class="time-label" id="time-label">—</span>
+      <label class="toggle-wrap">
+        <span class="toggle-label">늘</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-always">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </label>
+    </div>
+  </section>
+
+  <!-- SETTINGS SCREEN -->
+  <section class="screen" id="screen-settings">
+    <div class="settings-list" id="settings-list">
+      <!-- rendered by JS -->
+    </div>
+  </section>
+</div>
+
+<!-- ADD/EDIT PHRASE MODAL -->
+<div class="modal-overlay" id="modal-add" role="dialog" aria-modal="true">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-add-title">새 문구 추가</h2>
+    </div>
+    <div class="modal-body">
+      <label class="input-label">카테고리</label>
+      <div class="cat-tabs" id="cat-tabs">
+        <button class="cat-tab selected" data-cat="morning">오전</button>
+        <button class="cat-tab" data-cat="afternoon">오후</button>
+        <button class="cat-tab" data-cat="evening">저녁</button>
+        <button class="cat-tab" data-cat="night">밤</button>
+        <button class="cat-tab" data-cat="always">늘</button>
+      </div>
+      <label class="input-label" for="phrase-input">문구</label>
+      <textarea class="phrase-textarea" id="phrase-input" placeholder="마음에 새길 문구를 입력하세요…" maxlength="200"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-add-cancel">취소</button>
+      <button class="btn btn-primary" id="modal-add-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="confirm-modal-overlay" id="modal-confirm" role="alertdialog" aria-modal="true">
+  <div class="confirm-card">
+    <p class="confirm-title">문구를 삭제할까요?</p>
+    <p class="confirm-msg">삭제한 문구는 복구할 수 없습니다.</p>
+    <div class="confirm-quote-preview" id="confirm-preview"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" id="confirm-cancel">취소</button>
+      <button class="btn btn-danger" id="confirm-ok">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA LAYER  (localStorage)
+// ══════════════════════════════════════════════
+const STORAGE_KEY = 'rebuild_phrases';
+
+function loadPhrases() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function savePhrases(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+const CATEGORIES = [
+  { key: 'morning',   label: '오전', cls: 'cat-morning' },
+  { key: 'afternoon', label: '오후', cls: 'cat-afternoon' },
+  { key: 'evening',   label: '저녁', cls: 'cat-evening' },
+  { key: 'night',     label: '밤',   cls: 'cat-night' },
+  { key: 'always',    label: '늘',   cls: 'cat-always' },
+];
+
+function getTimeCat(date) {
+  const h = date.getHours();
+  if (h >= 7 && h < 12) return 'morning';
+  if (h >= 12 && h < 18) return 'afternoon';
+  if (h >= 18 && h < 22) return 'evening';
+  return 'night'; // 22~6
+}
+
+function getTimeCatLabel(cat) {
+  const map = { morning: '오전', afternoon: '오후', evening: '저녁', night: '밤', always: '늘' };
+  return map[cat] || '';
+}
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let phrases = loadPhrases();
+let currentScreen = 'main'; // 'main' | 'settings'
+let isAlwaysMode = false;
+
+// Playback
+let shuffleQueue = [];
+let playedCount = 0;
+let currentIdx = 0;
+let playTimer = null;
+let timerBarEl = null;
+
+// Modal state
+let editingId = null; // null = add new, string = edit existing
+let pendingDeleteId = null;
+let addModalOpen = false;
+
+// ══════════════════════════════════════════════
+// SHUFFLE
+// ══════════════════════════════════════════════
+function fisherYates(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQueue() {
+  const cat = isAlwaysMode ? 'always' : getTimeCat(new Date());
+  let pool;
+  if (isAlwaysMode) {
+    pool = phrases.filter(p => p.cat === 'always');
+  } else {
+    pool = phrases.filter(p => p.cat === cat);
+  }
+  shuffleQueue = fisherYates(pool);
+  playedCount = 0;
+  currentIdx = 0;
+}
+
+// ══════════════════════════════════════════════
+// PLAYBACK ENGINE
+// ══════════════════════════════════════════════
+function startPlayback() {
+  stopPlayback();
+  buildQueue();
+  showCurrentQuote();
+}
+
+function stopPlayback() {
+  if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+}
+
+function showCurrentQuote() {
+  const card = document.getElementById('quote-card');
+  const textEl = document.getElementById('quote-text');
+  const counter = document.getElementById('quote-counter');
+  const timerWrap = document.getElementById('timer-bar-wrap');
+
+  if (shuffleQueue.length === 0) {
+    // No phrases
+    card.classList.remove('quote-fade-in');
+    textEl.textContent = '문구를 추가해보세요';
+    textEl.classList.add('empty');
+    counter.textContent = '';
+    timerWrap.style.display = 'none';
+    renderDots(0, 0);
+    return;
+  }
+
+  textEl.classList.remove('empty');
+
+  // Fade transition
+  card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(6px)';
+
+  setTimeout(() => {
+    const phrase = shuffleQueue[currentIdx];
+    textEl.textContent = phrase ? phrase.text : '';
+    counter.textContent = `${currentIdx + 1} / ${shuffleQueue.length}`;
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+
+    // Timer bar restart
+    timerWrap.style.display = 'block';
+    resetTimerBar();
+
+    renderDots(shuffleQueue.length, currentIdx);
+
+    // Schedule next
+    playTimer = setTimeout(() => advanceQuote(), 7000);
+  }, 350);
+}
+
+function advanceQuote() {
+  currentIdx++;
+  if (currentIdx >= shuffleQueue.length) {
+    // All played — reshuffle
+    shuffleQueue = fisherYates(shuffleQueue);
+    currentIdx = 0;
+  }
+  showCurrentQuote();
+}
+
+function resetTimerBar() {
+  const wrap = document.getElementById('timer-bar-wrap');
+  wrap.innerHTML = '<div class="timer-bar" id="timer-bar"></div>';
+}
+
+function renderDots(total, current) {
+  const container = document.getElementById('progress-dots');
+  const MAX_DOTS = 20;
+  container.innerHTML = '';
+  if (total === 0) return;
+  const show = Math.min(total, MAX_DOTS);
+  // If more than MAX_DOTS, scale index
+  const currentDot = total <= MAX_DOTS ? current : Math.round((current / total) * MAX_DOTS);
+  for (let i = 0; i < show; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentDot ? ' played' : '') + (i === currentDot ? ' current' : '');
+    container.appendChild(d);
+  }
+}
+
+// ══════════════════════════════════════════════
+// TIME LABEL
+// ══════════════════════════════════════════════
+function updateTimeLabel() {
+  const el = document.getElementById('time-label');
+  if (isAlwaysMode) {
+    el.textContent = '늘 모드';
+  } else {
+    const cat = getTimeCat(new Date());
+    el.textContent = getTimeCatLabel(cat) + ' 문구';
+  }
+}
+
+// ══════════════════════════════════════════════
+// SCREEN NAVIGATION
+// ══════════════════════════════════════════════
+function showMain() {
+  currentScreen = 'main';
+  document.getElementById('screen-main').style.display = '';
+  document.getElementById('screen-settings').style.display = 'none';
+  document.getElementById('screen-settings').classList.remove('active');
+  // Header buttons
+  document.getElementById('header-left').innerHTML = '';
+  document.getElementById('btn-add').style.display = '';
+  document.getElementById('btn-settings').style.display = '';
+  updateTimeLabel();
+  startPlayback();
+}
+
+function showSettings() {
+  currentScreen = 'settings';
+  stopPlayback();
+  document.getElementById('screen-main').style.display = 'none';
+  document.getElementById('screen-settings').style.display = '';
+  document.getElementById('screen-settings').classList.add('active');
+  // Header: back button, no + or settings
+  const headerLeft = document.getElementById('header-left');
+  headerLeft.innerHTML = `
+    <button class="icon-btn back-btn" id="btn-back" aria-label="뒤로가기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>`;
+  document.getElementById('btn-back').addEventListener('click', showMain);
+  document.getElementById('btn-add').style.display = 'none';
+  document.getElementById('btn-settings').style.display = 'none';
+  renderSettings();
+}
+
+// ══════════════════════════════════════════════
+// SETTINGS RENDER
+// ══════════════════════════════════════════════
+function renderSettings() {
+  const container = document.getElementById('settings-list');
+  container.innerHTML = '';
+
+  CATEGORIES.forEach(cat => {
+    const items = phrases
+      .filter(p => p.cat === cat.key)
+      .sort((a, b) => a.text.localeCompare(b.text, 'ko'));
+
+    const section = document.createElement('div');
+    section.className = 'category-section';
+
+    section.innerHTML = `
+      <div class="category-header ${cat.cls}">
+        <div class="category-dot"></div>
+        <span class="category-name">${cat.label}</span>
+        <span class="category-count">${items.length}</span>
+      </div>
+    `;
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-category';
+      empty.textContent = '문구가 없습니다';
+      section.appendChild(empty);
+    } else {
+      items.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'phrase-item';
+        row.innerHTML = `
+          <span class="phrase-item-text">${escapeHtml(p.text)}</span>
+          <button class="phrase-delete-btn" data-id="${p.id}" aria-label="삭제">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>`;
+
+        // Click on text = edit
+        row.querySelector('.phrase-item-text').addEventListener('click', () => {
+          openAddModal(p.id);
+        });
+        row.querySelector('.phrase-item-text').style.cursor = 'pointer';
+
+        // Delete
+        row.querySelector('.phrase-delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openDeleteConfirm(p.id);
+        });
+
+        section.appendChild(row);
+      });
+    }
+
+    container.appendChild(section);
+  });
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════
+// ADD/EDIT MODAL
+// ══════════════════════════════════════════════
+function openAddModal(id = null) {
+  editingId = id;
+  addModalOpen = true;
+  const modal = document.getElementById('modal-add');
+  const title = document.getElementById('modal-add-title');
+  const textarea = document.getElementById('phrase-input');
+  const tabs = document.querySelectorAll('.cat-tab');
+
+  if (id) {
+    // Edit mode
+    const phrase = phrases.find(p => p.id === id);
+    if (!phrase) return;
+    title.textContent = '문구 수정';
+    textarea.value = phrase.text;
+    tabs.forEach(t => {
+      t.classList.toggle('selected', t.dataset.cat === phrase.cat);
+    });
+  } else {
+    // Add mode
+    title.textContent = '새 문구 추가';
+    textarea.value = '';
+    // Default to current time cat, or morning
+    const defaultCat = isAlwaysMode ? 'always' : getTimeCat(new Date());
+    tabs.forEach(t => {
+      t.classList.toggle('selected', t.dataset.cat === defaultCat);
+    });
+  }
+
+  modal.classList.add('open');
+  setTimeout(() => textarea.focus(), 400);
+}
+
+function closeAddModal() {
+  addModalOpen = false;
+  const modal = document.getElementById('modal-add');
+  modal.classList.remove('open');
+  document.getElementById('phrase-input').blur();
+}
+
+function savePhrase() {
+  const text = document.getElementById('phrase-input').value.trim();
+  if (!text) { showToast('문구를 입력해주세요'); return; }
+
+  const selectedTab = document.querySelector('.cat-tab.selected');
+  const cat = selectedTab ? selectedTab.dataset.cat : 'morning';
+
+  if (editingId) {
+    // Update
+    const idx = phrases.findIndex(p => p.id === editingId);
+    if (idx !== -1) {
+      phrases[idx].text = text;
+      phrases[idx].cat = cat;
+    }
+    showToast('문구가 수정되었습니다');
+  } else {
+    // Add
+    phrases.push({ id: genId(), text, cat });
+    showToast('문구가 추가되었습니다');
+  }
+
+  savePhrases(phrases);
+  closeAddModal();
+
+  if (currentScreen === 'settings') {
+    renderSettings();
+  } else {
+    startPlayback();
+  }
+}
+
+// ══════════════════════════════════════════════
+// DELETE CONFIRM
+// ══════════════════════════════════════════════
+function openDeleteConfirm(id) {
+  pendingDeleteId = id;
+  const phrase = phrases.find(p => p.id === id);
+  if (!phrase) return;
+  document.getElementById('confirm-preview').textContent = phrase.text;
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+function closeDeleteConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('modal-confirm').classList.remove('open');
+}
+
+function confirmDelete() {
+  if (!pendingDeleteId) return;
+  phrases = phrases.filter(p => p.id !== pendingDeleteId);
+  savePhrases(phrases);
+  closeDeleteConfirm();
+  showToast('문구가 삭제되었습니다');
+  if (currentScreen === 'settings') {
+    renderSettings();
+  } else {
+    startPlayback();
+  }
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════════════
+// BACK BUTTON (browser back / Android)
+// ══════════════════════════════════════════════
+// Push a state so we can intercept popstate
+function pushState() {
+  history.pushState({ rebuild: true }, '');
+}
+
+window.addEventListener('popstate', (e) => {
+  // If add modal is open, close it
+  if (addModalOpen) {
+    closeAddModal();
+    pushState(); // repush so next back is interceptable
+    return;
+  }
+  // If delete confirm open, close it
+  if (document.getElementById('modal-confirm').classList.contains('open')) {
+    closeDeleteConfirm();
+    pushState();
+    return;
+  }
+  // If on settings, go back to main
+  if (currentScreen === 'settings') {
+    showMain();
+    pushState();
+    return;
+  }
+  // Otherwise, let the browser navigate away (do nothing)
+});
+
+// ══════════════════════════════════════════════
+// EVENT BINDINGS
+// ══════════════════════════════════════════════
+document.getElementById('btn-add').addEventListener('click', () => {
+  openAddModal(null);
+  pushState();
+});
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  showSettings();
+  pushState();
+});
+
+// Category tabs in modal
+document.querySelectorAll('.cat-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('selected'));
+    tab.classList.add('selected');
+  });
+});
+
+// Modal close on overlay click
+document.getElementById('modal-add').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-add')) {
+    closeAddModal();
+  }
+});
+
+document.getElementById('modal-add-cancel').addEventListener('click', closeAddModal);
+document.getElementById('modal-add-save').addEventListener('click', savePhrase);
+
+document.getElementById('modal-confirm').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-confirm')) closeDeleteConfirm();
+});
+document.getElementById('confirm-cancel').addEventListener('click', closeDeleteConfirm);
+document.getElementById('confirm-ok').addEventListener('click', confirmDelete);
+
+// Toggle "늘"
+document.getElementById('toggle-always').addEventListener('change', (e) => {
+  isAlwaysMode = e.target.checked;
+  updateTimeLabel();
+  startPlayback();
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+// Push initial state so back button can be captured
+pushState();
+showMain();
+</script>
+</body>
+</html>

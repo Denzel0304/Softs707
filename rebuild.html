@@ -1198,69 +1198,45 @@ function showToast(msg) {
 // ══════════════════════════════════════════════
 // NAVIGATION & BACK-BUTTON HANDLING
 // ──────────────────────────────────────────────
-// Invariant: there is exactly ONE "guard" history entry on top of the
-// app's base entry whenever any layer (settings screen / add modal /
-// confirm modal) is open above the main screen — and ZERO guards when
-// we're on the bare main screen. This guarantees:
-//   • back from a modal       → closes only that modal
-//   • back from settings      → returns to main
-//   • back from bare main     → exits the site in ONE press
-//   • guards never accumulate (no "press back 10 times" problem)
+// Model: ONE history entry ("guard") per open layer (settings screen /
+// add modal / confirm modal), and popstate is the SINGLE place that ever
+// closes a layer. Every open pushes exactly one guard; every in-app
+// dismiss is simply history.back(). Because pushes and backs are strictly
+// 1-to-1, the stack never desyncs, so:
+//   • back from a modal    → closes only that modal (returns to screen behind)
+//   • back from settings   → returns to main
+//   • back from bare main  → exits the site in ONE press
+//   • guards never accumulate, regardless of how many times you
+//     open/close (no "press back many times" problem)
 // ══════════════════════════════════════════════
 
-let navSelfBack = false; // true while we trigger history.back() ourselves
-
-// How many layers are currently stacked above the main screen.
-function navDepth() {
-  return (currentScreen === 'settings' ? 1 : 0)
-       + (addModalOpen ? 1 : 0)
-       + (confirmOpen ? 1 : 0);
+// Close the top-most open layer (priority: confirm > add modal > settings).
+// Returns true if something was closed.
+function closeTopVisually() {
+  if (confirmOpen)  { closeDeleteConfirm(); return true; }
+  if (addModalOpen) { closeAddModal();      return true; }
+  if (currentScreen === 'settings') { showMain(); return true; }
+  return false;
 }
 
-function armGuard() {
+// Open a layer: show it, then push exactly one guard for it.
+function openLayer(openFn) {
+  openFn();
   history.pushState({ rebuildGuard: true }, '');
 }
 
-// Hide the top-most open layer (priority: confirm > add modal > settings).
-function closeTopVisually() {
-  if (confirmOpen) { closeDeleteConfirm(); return; }
-  if (addModalOpen) { closeAddModal(); return; }
-  if (currentScreen === 'settings') { showMain(); return; }
-}
-
-// Open a layer through this wrapper so the guard is armed on 0 -> >0.
-function openLayer(openFn) {
-  const wasBare = navDepth() === 0;
-  openFn();
-  if (wasBare && navDepth() > 0) armGuard();
-}
-
-// In-app dismiss (Cancel button, overlay tap, Save, Delete, back arrow).
-// Consumes the guard from history only when closing the LAST layer.
+// In-app dismiss (Cancel, overlay tap, back arrow, Save, Delete).
+// Just step back in history; popstate performs the actual visual close.
 function dismissLayer() {
-  const before = navDepth();
-  closeTopVisually();
-  const after = navDepth();
-  if (before > 0 && after === 0) {
-    navSelfBack = true;
-    history.back(); // pop the single guard so bare main = one back to exit
-  }
+  history.back();
 }
 
-// Hardware / browser back button.
+// Hardware / browser back button AND our own history.back() both land here.
+// Either way the intent is identical: close one top layer.
 window.addEventListener('popstate', () => {
-  if (navSelfBack) { navSelfBack = false; return; } // ignore our own back()
-
-  // Browser has already popped the guard entry.
-  if (navDepth() === 0) {
-    // Bare main with no guard: nothing to intercept, allow normal exit.
-    return;
-  }
   closeTopVisually();
-  if (navDepth() > 0) {
-    armGuard(); // layers remain (e.g. modal closed but settings still open)
-  }
-  // else: we're back at the base entry on main — correct, next back exits.
+  // If nothing was open, we were on bare main: the browser has already
+  // navigated away (site exit). No guard remains to re-add.
 });
 
 // ══════════════════════════════════════════════

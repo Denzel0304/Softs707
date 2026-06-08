@@ -126,6 +126,7 @@
   /* ── SCREENS ── */
   .screen {
     flex: 1;
+    min-height: 0;
     overflow: hidden;
     position: relative;
     display: flex;
@@ -138,8 +139,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 28px;
+    padding: 32px 28px;
     gap: 0;
+    min-height: 0;
   }
 
   /* Decorative background */
@@ -164,10 +166,11 @@
 
   .quote-container {
     flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px 0;
+    padding: 16px 0;
     position: relative;
     z-index: 1;
     width: 100%;
@@ -176,12 +179,15 @@
   .quote-card {
     background: var(--surface);
     border-radius: 24px;
-    padding: 44px 32px;
+    padding: 36px 30px 30px;
     width: 100%;
+    max-height: 100%;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-light);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     transition: opacity 0.6s ease, transform 0.6s ease;
   }
 
@@ -196,39 +202,56 @@
 
   .quote-deco {
     font-family: 'DM Serif Display', serif;
-    font-size: 72px;
-    line-height: 1;
+    font-size: 64px;
+    line-height: 0.7;
     color: var(--green-pale);
-    margin-bottom: -16px;
+    margin-bottom: 2px;
     display: block;
+    flex-shrink: 0;
     user-select: none;
+  }
+
+  /* Flexible text area: takes remaining space, text auto-fits inside it */
+  .quote-text-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 6px 0;
   }
 
   .quote-text {
     font-family: 'Noto Serif KR', serif;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 400;
-    line-height: 1.7;
+    line-height: 1.55;
     color: var(--text-primary);
     text-align: center;
     word-break: keep-all;
+    overflow-wrap: break-word;
+    text-wrap: balance;
     letter-spacing: 0.01em;
+    width: 100%;
+    margin: 0;
   }
 
   .quote-text.empty {
-    font-size: 16px;
+    font-size: 16px !important;
     color: var(--text-muted);
     font-family: 'Noto Sans KR', sans-serif;
     font-weight: 300;
   }
 
   .quote-counter {
-    margin-top: 20px;
+    margin-top: 18px;
     text-align: center;
     font-size: 12px;
     color: var(--text-light);
     font-weight: 300;
     letter-spacing: 0.05em;
+    flex-shrink: 0;
   }
 
   /* Progress dots */
@@ -236,9 +259,10 @@
     display: flex;
     gap: 4px;
     justify-content: center;
-    margin-top: 10px;
+    margin: 10px auto 0;
     flex-wrap: wrap;
     max-width: 200px;
+    flex-shrink: 0;
   }
   .dot {
     width: 5px; height: 5px;
@@ -259,6 +283,7 @@
     overflow: hidden;
     position: relative;
     z-index: 1;
+    flex-shrink: 0;
   }
   .timer-bar {
     height: 100%;
@@ -542,6 +567,22 @@
     display: block;
   }
 
+  .input-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .input-label-row .input-label { margin-bottom: 8px; }
+
+  .char-counter {
+    font-size: 11px;
+    color: var(--text-light);
+    font-weight: 300;
+    letter-spacing: 0.03em;
+    transition: color 0.2s;
+  }
+  .char-counter.near-limit { color: var(--green-1); font-weight: 500; }
+
   .phrase-textarea {
     width: 100%;
     min-height: 120px;
@@ -723,7 +764,9 @@
     <div class="quote-container">
       <div class="quote-card" id="quote-card">
         <span class="quote-deco">"</span>
-        <p class="quote-text" id="quote-text">문구를 추가해보세요</p>
+        <div class="quote-text-wrap">
+          <p class="quote-text" id="quote-text">문구를 추가해보세요</p>
+        </div>
         <div class="timer-bar-wrap" id="timer-bar-wrap" style="display:none">
           <div class="timer-bar" id="timer-bar"></div>
         </div>
@@ -769,8 +812,11 @@
         <button class="cat-tab" data-cat="night">밤</button>
         <button class="cat-tab" data-cat="always">늘</button>
       </div>
-      <label class="input-label" for="phrase-input">문구</label>
-      <textarea class="phrase-textarea" id="phrase-input" placeholder="마음에 새길 문구를 입력하세요…" maxlength="200"></textarea>
+      <div class="input-label-row">
+        <label class="input-label" for="phrase-input">문구</label>
+        <span class="char-counter" id="char-counter">0 / 140</span>
+      </div>
+      <textarea class="phrase-textarea" id="phrase-input" placeholder="마음에 새길 문구를 입력하세요…" maxlength="140"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="modal-add-cancel">취소</button>
@@ -901,8 +947,11 @@ function showCurrentQuote() {
   if (shuffleQueue.length === 0) {
     // No phrases
     card.classList.remove('quote-fade-in');
+    card.style.height = '';
+    card.style.maxHeight = '';
     textEl.textContent = '문구를 추가해보세요';
     textEl.classList.add('empty');
+    textEl.style.fontSize = '';
     counter.textContent = '';
     timerWrap.style.display = 'none';
     renderDots(0, 0);
@@ -920,18 +969,60 @@ function showCurrentQuote() {
     const phrase = shuffleQueue[currentIdx];
     textEl.textContent = phrase ? phrase.text : '';
     counter.textContent = `${currentIdx + 1} / ${shuffleQueue.length}`;
-    card.style.opacity = '1';
-    card.style.transform = 'translateY(0)';
 
-    // Timer bar restart
+    // Make timer bar + dots visible/rendered FIRST so they occupy their final
+    // space, then fit the text against the truly remaining area (otherwise the
+    // text is sized against a budget that later shrinks → clipping).
     timerWrap.style.display = 'block';
     resetTimerBar();
-
     renderDots(shuffleQueue.length, currentIdx);
+
+    fitQuoteText();
+
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
 
     // Schedule next
     playTimer = setTimeout(() => advanceQuote(), 7000);
   }, 350);
+}
+
+// Auto-fit: pick the largest font size (between MIN and MAX) at which the
+// current phrase fully fits inside the flexible text area — no clipping,
+// no overflow. Short phrases get big & bold; long phrases shrink gracefully.
+function fitQuoteText() {
+  const textEl = document.getElementById('quote-text');
+  const wrap = textEl.parentElement;            // .quote-text-wrap
+  const card = document.getElementById('quote-card');
+  const container = card ? card.parentElement : null; // .quote-container
+  if (!wrap || !card || !container) return;
+  const MAX = 30, MIN = 13;
+
+  // Give the card a FIXED height equal to the available space. This keeps the
+  // text budget constant (so the fit loop has a stable target instead of a
+  // card that shrinks along with the font) and avoids the card jumping size
+  // between short and long phrases during the 7s rotation.
+  const cs = getComputedStyle(container);
+  const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const avail = Math.max(0, container.clientHeight - padV);
+  card.style.height = avail + 'px';
+  card.style.maxHeight = avail + 'px';
+
+  // Stable budget for the text region.
+  const budgetH = wrap.clientHeight;
+  const budgetW = wrap.clientWidth;
+
+  // Largest size (MAX..MIN) at which the phrase fits the budget.
+  let size = MAX;
+  textEl.style.fontSize = size + 'px';
+  let guard = 0;
+  while (size > MIN && guard < 40 &&
+         (textEl.scrollHeight > budgetH + 1 ||
+          textEl.scrollWidth  > budgetW + 1)) {
+    size -= 1;
+    textEl.style.fontSize = size + 'px';
+    guard++;
+  }
 }
 
 function advanceQuote() {
@@ -1109,7 +1200,17 @@ function openAddModal(id = null) {
 
   modal.classList.add('open');
   addModalOpen = true;
+  updateCharCounter();
   setTimeout(() => textarea.focus(), 400);
+}
+
+function updateCharCounter() {
+  const textarea = document.getElementById('phrase-input');
+  const counter = document.getElementById('char-counter');
+  const max = textarea.getAttribute('maxlength') || 140;
+  const len = textarea.value.length;
+  counter.textContent = `${len} / ${max}`;
+  counter.classList.toggle('near-limit', len >= max * 0.85);
 }
 
 function closeAddModal() {
@@ -1279,6 +1380,21 @@ document.getElementById('toggle-always').addEventListener('change', (e) => {
   isAlwaysMode = e.target.checked;
   updateTimeLabel();
   startPlayback();
+});
+
+// Live character counter while typing
+document.getElementById('phrase-input').addEventListener('input', updateCharCounter);
+
+// Re-fit the visible quote when the screen size / orientation changes
+let resizeFitTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeFitTimer);
+  resizeFitTimer = setTimeout(() => {
+    const textEl = document.getElementById('quote-text');
+    if (currentScreen === 'main' && shuffleQueue.length > 0 && !textEl.classList.contains('empty')) {
+      fitQuoteText();
+    }
+  }, 150);
 });
 
 // ══════════════════════════════════════════════

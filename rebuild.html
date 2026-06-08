@@ -87,9 +87,9 @@
     left: 50%;
     transform: translateX(-50%);
     font-family: 'DM Serif Display', serif;
-    font-size: 22px;
+    font-size: 27px;
     font-weight: 400;
-    color: var(--green-1);
+    color: #1a1a1a;
     letter-spacing: 0.02em;
     white-space: nowrap;
     pointer-events: none;
@@ -278,8 +278,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 16px;
+    padding: 18px 28px 22px;
+    padding-bottom: max(22px, env(safe-area-inset-bottom));
     position: relative;
     z-index: 1;
     flex-shrink: 0;
@@ -851,6 +852,7 @@ let timerBarEl = null;
 let editingId = null; // null = add new, string = edit existing
 let pendingDeleteId = null;
 let addModalOpen = false;
+let confirmOpen = false;
 
 // ══════════════════════════════════════════════
 // SHUFFLE
@@ -1005,7 +1007,7 @@ function showSettings() {
         <polyline points="15 18 9 12 15 6"/>
       </svg>
     </button>`;
-  document.getElementById('btn-back').addEventListener('click', showMain);
+  document.getElementById('btn-back').addEventListener('click', dismissLayer);
   document.getElementById('btn-add').style.display = 'none';
   document.getElementById('btn-settings').style.display = 'none';
   renderSettings();
@@ -1053,14 +1055,14 @@ function renderSettings() {
 
         // Click on text = edit
         row.querySelector('.phrase-item-text').addEventListener('click', () => {
-          openAddModal(p.id);
+          openLayer(() => openAddModal(p.id));
         });
         row.querySelector('.phrase-item-text').style.cursor = 'pointer';
 
         // Delete
         row.querySelector('.phrase-delete-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          openDeleteConfirm(p.id);
+          openLayer(() => openDeleteConfirm(p.id));
         });
 
         section.appendChild(row);
@@ -1080,7 +1082,6 @@ function escapeHtml(str) {
 // ══════════════════════════════════════════════
 function openAddModal(id = null) {
   editingId = id;
-  addModalOpen = true;
   const modal = document.getElementById('modal-add');
   const title = document.getElementById('modal-add-title');
   const textarea = document.getElementById('phrase-input');
@@ -1107,13 +1108,14 @@ function openAddModal(id = null) {
   }
 
   modal.classList.add('open');
+  addModalOpen = true;
   setTimeout(() => textarea.focus(), 400);
 }
 
 function closeAddModal() {
-  addModalOpen = false;
   const modal = document.getElementById('modal-add');
   modal.classList.remove('open');
+  addModalOpen = false;
   document.getElementById('phrase-input').blur();
 }
 
@@ -1139,9 +1141,10 @@ function savePhrase() {
   }
 
   savePhrases(phrases);
-  closeAddModal();
+  const wasSettings = (currentScreen === 'settings');
+  dismissLayer(); // closes add modal + syncs history guard
 
-  if (currentScreen === 'settings') {
+  if (wasSettings) {
     renderSettings();
   } else {
     startPlayback();
@@ -1157,20 +1160,23 @@ function openDeleteConfirm(id) {
   if (!phrase) return;
   document.getElementById('confirm-preview').textContent = phrase.text;
   document.getElementById('modal-confirm').classList.add('open');
+  confirmOpen = true;
 }
 
 function closeDeleteConfirm() {
   pendingDeleteId = null;
   document.getElementById('modal-confirm').classList.remove('open');
+  confirmOpen = false;
 }
 
 function confirmDelete() {
   if (!pendingDeleteId) return;
   phrases = phrases.filter(p => p.id !== pendingDeleteId);
   savePhrases(phrases);
-  closeDeleteConfirm();
+  const wasSettings = (currentScreen === 'settings');
+  dismissLayer(); // closes confirm modal + syncs history guard
   showToast('문구가 삭제되었습니다');
-  if (currentScreen === 'settings') {
+  if (wasSettings) {
     renderSettings();
   } else {
     startPlayback();
@@ -1190,46 +1196,82 @@ function showToast(msg) {
 }
 
 // ══════════════════════════════════════════════
-// BACK BUTTON (browser back / Android)
+// NAVIGATION & BACK-BUTTON HANDLING
+// ──────────────────────────────────────────────
+// Invariant: there is exactly ONE "guard" history entry on top of the
+// app's base entry whenever any layer (settings screen / add modal /
+// confirm modal) is open above the main screen — and ZERO guards when
+// we're on the bare main screen. This guarantees:
+//   • back from a modal       → closes only that modal
+//   • back from settings      → returns to main
+//   • back from bare main     → exits the site in ONE press
+//   • guards never accumulate (no "press back 10 times" problem)
 // ══════════════════════════════════════════════
-// Push a state so we can intercept popstate
-function pushState() {
-  history.pushState({ rebuild: true }, '');
+
+let navSelfBack = false; // true while we trigger history.back() ourselves
+
+// How many layers are currently stacked above the main screen.
+function navDepth() {
+  return (currentScreen === 'settings' ? 1 : 0)
+       + (addModalOpen ? 1 : 0)
+       + (confirmOpen ? 1 : 0);
 }
 
-window.addEventListener('popstate', (e) => {
-  // If add modal is open, close it
-  if (addModalOpen) {
-    closeAddModal();
-    pushState(); // repush so next back is interceptable
+function armGuard() {
+  history.pushState({ rebuildGuard: true }, '');
+}
+
+// Hide the top-most open layer (priority: confirm > add modal > settings).
+function closeTopVisually() {
+  if (confirmOpen) { closeDeleteConfirm(); return; }
+  if (addModalOpen) { closeAddModal(); return; }
+  if (currentScreen === 'settings') { showMain(); return; }
+}
+
+// Open a layer through this wrapper so the guard is armed on 0 -> >0.
+function openLayer(openFn) {
+  const wasBare = navDepth() === 0;
+  openFn();
+  if (wasBare && navDepth() > 0) armGuard();
+}
+
+// In-app dismiss (Cancel button, overlay tap, Save, Delete, back arrow).
+// Consumes the guard from history only when closing the LAST layer.
+function dismissLayer() {
+  const before = navDepth();
+  closeTopVisually();
+  const after = navDepth();
+  if (before > 0 && after === 0) {
+    navSelfBack = true;
+    history.back(); // pop the single guard so bare main = one back to exit
+  }
+}
+
+// Hardware / browser back button.
+window.addEventListener('popstate', () => {
+  if (navSelfBack) { navSelfBack = false; return; } // ignore our own back()
+
+  // Browser has already popped the guard entry.
+  if (navDepth() === 0) {
+    // Bare main with no guard: nothing to intercept, allow normal exit.
     return;
   }
-  // If delete confirm open, close it
-  if (document.getElementById('modal-confirm').classList.contains('open')) {
-    closeDeleteConfirm();
-    pushState();
-    return;
+  closeTopVisually();
+  if (navDepth() > 0) {
+    armGuard(); // layers remain (e.g. modal closed but settings still open)
   }
-  // If on settings, go back to main
-  if (currentScreen === 'settings') {
-    showMain();
-    pushState();
-    return;
-  }
-  // Otherwise, let the browser navigate away (do nothing)
+  // else: we're back at the base entry on main — correct, next back exits.
 });
 
 // ══════════════════════════════════════════════
 // EVENT BINDINGS
 // ══════════════════════════════════════════════
 document.getElementById('btn-add').addEventListener('click', () => {
-  openAddModal(null);
-  pushState();
+  openLayer(() => openAddModal(null));
 });
 
 document.getElementById('btn-settings').addEventListener('click', () => {
-  showSettings();
-  pushState();
+  openLayer(() => showSettings());
 });
 
 // Category tabs in modal
@@ -1240,20 +1282,20 @@ document.querySelectorAll('.cat-tab').forEach(tab => {
   });
 });
 
-// Modal close on overlay click
+// Add modal: overlay tap to dismiss
 document.getElementById('modal-add').addEventListener('click', (e) => {
   if (e.target === document.getElementById('modal-add')) {
-    closeAddModal();
+    dismissLayer();
   }
 });
-
-document.getElementById('modal-add-cancel').addEventListener('click', closeAddModal);
+document.getElementById('modal-add-cancel').addEventListener('click', dismissLayer);
 document.getElementById('modal-add-save').addEventListener('click', savePhrase);
 
+// Confirm modal: overlay tap to dismiss
 document.getElementById('modal-confirm').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modal-confirm')) closeDeleteConfirm();
+  if (e.target === document.getElementById('modal-confirm')) dismissLayer();
 });
-document.getElementById('confirm-cancel').addEventListener('click', closeDeleteConfirm);
+document.getElementById('confirm-cancel').addEventListener('click', dismissLayer);
 document.getElementById('confirm-ok').addEventListener('click', confirmDelete);
 
 // Toggle "늘"
@@ -1266,9 +1308,10 @@ document.getElementById('toggle-always').addEventListener('change', (e) => {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-// Push initial state so back button can be captured
-pushState();
+// Mark the base entry. No guard yet — bare main exits with a single back.
+history.replaceState({ rebuildBase: true }, '');
 showMain();
+
 </script>
 </body>
 </html>

@@ -453,12 +453,12 @@ function updateStats(){
 }
 
 function setProg(ratio,isIn){
-  progCircle.style.strokeDasharray=`${CIRC*ratio} ${CIRC}`;
-  progCircle.style.stroke=isIn?'#78cc78':'#267326';
+  progCircle.style.strokeDasharray=`${CIRC*(isIn?ratio:1-ratio)} ${CIRC}`;
+  progCircle.style.stroke='#78cc78';
   const r=isIn?ratio*90:(1-ratio)*90;
   const pc=document.getElementById('pulse-circle');
   pc.setAttribute('r',r);
-  pc.setAttribute('fill',isIn?'#78cc78':'#267326');
+  pc.setAttribute('fill','#78cc78');
   const pt=document.getElementById('pulse-time');
   pt.style.color=r>20?'#fff':'#267326';
   document.getElementById('pulse-unit').style.color=r>20?'rgba(255,255,255,0.8)':'#4db84d';
@@ -469,13 +469,13 @@ function fmt(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,
 function drawWave(r,isIn){
   const W=waveCanvas.width,H=waveCanvas.height;
   wCtx.clearRect(0,0,W,H);
-  const amp=15+r*35;
+  const amp=32;
   wCtx.beginPath();
   for(let x=0;x<=W;x++){
     const y=H/2+amp*Math.sin(x/W*1.5*2*Math.PI+wavePhase);
     x===0?wCtx.moveTo(x,y):wCtx.lineTo(x,y);
   }
-  wCtx.strokeStyle=isIn?'#78cc78':'#267326';
+  wCtx.strokeStyle='#78cc78';
   wCtx.lineWidth=4;wCtx.stroke();
   wavePhase+=isIn?0.04:-0.04;
 }

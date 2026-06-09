@@ -118,10 +118,10 @@
   .icon-btn svg { width: 18px; height: 18px; }
 
   .back-btn {
-    background: transparent;
+    background: var(--green-mist);
     color: var(--green-1);
   }
-  .back-btn:active { background: var(--green-mist); }
+  .back-btn:active { transform: scale(0.92); background: var(--green-pale); }
 
   /* ── SCREENS ── */
   .screen {
@@ -841,6 +841,23 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- ALERT MODAL (import result / errors) -->
+<div class="confirm-modal-overlay" id="modal-alert" role="alertdialog" aria-modal="true">
+  <div class="confirm-card">
+    <p class="confirm-title" id="alert-title"></p>
+    <p class="confirm-msg" id="alert-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-primary" id="alert-ok" style="flex:1">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for import -->
+<input type="file" id="import-file" accept="application/json,.json" style="display:none">
+
+<!-- Background music: loops on the main screen. Silent no-op if the file is absent. -->
+<audio id="bgm" src="rebuild.mp3" loop preload="auto"></audio>
+
 <script>
 // ══════════════════════════════════════════════
 // DATA LAYER  (localStorage)
@@ -899,6 +916,7 @@ let editingId = null; // null = add new, string = edit existing
 let pendingDeleteId = null;
 let addModalOpen = false;
 let confirmOpen = false;
+let alertOpen = false;
 
 // ══════════════════════════════════════════════
 // SHUFFLE
@@ -1076,12 +1094,30 @@ function showMain() {
   document.getElementById('screen-main').style.display = '';
   document.getElementById('screen-settings').style.display = 'none';
   document.getElementById('screen-settings').classList.remove('active');
-  // Header buttons
-  document.getElementById('header-left').innerHTML = '';
+  // Header buttons: left = import / export (same size as the right buttons)
+  const headerLeft = document.getElementById('header-left');
+  headerLeft.innerHTML = `
+    <button class="icon-btn" id="btn-import" aria-label="파일 가져오기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="btn-export" aria-label="파일 내보내기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </button>`;
+  document.getElementById('btn-import').addEventListener('click', onImportClick);
+  document.getElementById('btn-export').addEventListener('click', onExportClick);
   document.getElementById('btn-add').style.display = '';
   document.getElementById('btn-settings').style.display = '';
   updateTimeLabel();
   startPlayback();
+  updateAudio();
 }
 
 function showSettings() {
@@ -1102,6 +1138,7 @@ function showSettings() {
   document.getElementById('btn-add').style.display = 'none';
   document.getElementById('btn-settings').style.display = 'none';
   renderSettings();
+  updateAudio();
 }
 
 // ══════════════════════════════════════════════
@@ -1201,6 +1238,7 @@ function openAddModal(id = null) {
   modal.classList.add('open');
   addModalOpen = true;
   updateCharCounter();
+  updateAudio();
   setTimeout(() => textarea.focus(), 400);
 }
 
@@ -1218,6 +1256,7 @@ function closeAddModal() {
   modal.classList.remove('open');
   addModalOpen = false;
   document.getElementById('phrase-input').blur();
+  updateAudio();
 }
 
 function savePhrase() {
@@ -1297,6 +1336,126 @@ function showToast(msg) {
 }
 
 // ══════════════════════════════════════════════
+// ALERT MODAL (info / import result)
+// ══════════════════════════════════════════════
+function openAlert(title, msg) {
+  document.getElementById('alert-title').textContent = title;
+  document.getElementById('alert-msg').textContent = msg;
+  document.getElementById('modal-alert').classList.add('open');
+  alertOpen = true;
+  updateAudio();
+}
+function closeAlert() {
+  document.getElementById('modal-alert').classList.remove('open');
+  alertOpen = false;
+  updateAudio();
+}
+
+// ══════════════════════════════════════════════
+// IMPORT / EXPORT  (with signature so foreign files are rejected)
+// ══════════════════════════════════════════════
+const FILE_SIGNATURE = 'REBUILD_BACKUP_V1';
+
+function onExportClick() {
+  const payload = {
+    __signature__: FILE_SIGNATURE,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    phrases: phrases
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `rebuild-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('파일을 내보냈습니다');
+}
+
+function onImportClick() {
+  // Opens the OS file picker. Cancelling it (e.g. hardware back) simply
+  // returns to the app — it does not touch our history guard at all.
+  const input = document.getElementById('import-file');
+  input.value = ''; // allow re-selecting the same file
+  input.click();
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try {
+      data = JSON.parse(reader.result);
+    } catch (e) {
+      openLayer(() => openAlert('가져오기 실패', '파일을 읽을 수 없습니다. 올바른 Rebuild 백업 파일이 아닙니다.'));
+      return;
+    }
+    // Signature check — reject anything not exported by this app.
+    if (!data || data.__signature__ !== FILE_SIGNATURE || !Array.isArray(data.phrases)) {
+      openLayer(() => openAlert('가져오기 실패', '서명이 확인되지 않았습니다. 이 파일은 Rebuild에서 내보낸 파일이 아닙니다.'));
+      return;
+    }
+    // Sanitise the incoming phrases.
+    const validCats = ['morning', 'afternoon', 'evening', 'night', 'always'];
+    const imported = [];
+    data.phrases.forEach(p => {
+      if (!p || typeof p.text !== 'string') return;
+      const text = p.text.trim().slice(0, 140);
+      if (!text) return;
+      imported.push({
+        id: (typeof p.id === 'string' && p.id) ? p.id : genId(),
+        text: text,
+        cat: validCats.includes(p.cat) ? p.cat : 'always'
+      });
+    });
+    phrases = imported;
+    savePhrases(phrases);
+    if (currentScreen === 'settings') renderSettings(); else startPlayback();
+    openLayer(() => openAlert('가져오기 완료', `${imported.length}개의 문구를 불러왔습니다.`));
+  };
+  reader.onerror = () => {
+    openLayer(() => openAlert('가져오기 실패', '파일을 읽는 중 오류가 발생했습니다.'));
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════
+// BACKGROUND MUSIC (rebuild.mp3) — main screen only, loops.
+// Silent no-op if the file is missing.
+// ══════════════════════════════════════════════
+const bgm = document.getElementById('bgm');
+let audioWanted = false;
+
+function updateAudio() {
+  if (!bgm) return;
+  // Play only on the bare main screen (no modal/sheet/settings open).
+  const shouldPlay = currentScreen === 'main' && !addModalOpen && !confirmOpen && !alertOpen;
+  audioWanted = shouldPlay;
+  if (shouldPlay) {
+    const pr = bgm.play();
+    if (pr && pr.catch) pr.catch(() => {}); // ignore autoplay-block / missing file
+  } else {
+    try { bgm.pause(); } catch (e) {}
+  }
+}
+
+// Browsers may block autoplay until the first interaction; retry quietly then.
+function primeAudioOnGesture() {
+  if (audioWanted && bgm) {
+    const pr = bgm.play();
+    if (pr && pr.catch) pr.catch(() => {});
+  }
+}
+document.addEventListener('pointerdown', primeAudioOnGesture);
+document.addEventListener('touchstart', primeAudioOnGesture, { passive: true });
+
+
+// ══════════════════════════════════════════════
 // NAVIGATION & BACK-BUTTON HANDLING
 // ──────────────────────────────────────────────
 // Model: ONE history entry ("guard") per open layer (settings screen /
@@ -1314,6 +1473,7 @@ function showToast(msg) {
 // Close the top-most open layer (priority: confirm > add modal > settings).
 // Returns true if something was closed.
 function closeTopVisually() {
+  if (alertOpen)    { closeAlert();          return true; }
   if (confirmOpen)  { closeDeleteConfirm(); return true; }
   if (addModalOpen) { closeAddModal();      return true; }
   if (currentScreen === 'settings') { showMain(); return true; }
@@ -1374,6 +1534,18 @@ document.getElementById('modal-confirm').addEventListener('click', (e) => {
 });
 document.getElementById('confirm-cancel').addEventListener('click', dismissLayer);
 document.getElementById('confirm-ok').addEventListener('click', confirmDelete);
+
+// Alert modal: OK button / overlay tap both dismiss through the guard system
+document.getElementById('alert-ok').addEventListener('click', dismissLayer);
+document.getElementById('modal-alert').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-alert')) dismissLayer();
+});
+
+// Import file chosen
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  handleImportFile(file);
+});
 
 // Toggle "늘"
 document.getElementById('toggle-always').addEventListener('change', (e) => {

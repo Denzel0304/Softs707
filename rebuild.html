@@ -1550,59 +1550,54 @@ function handleImportFile(file) {
 // Silent no-op if the file is missing.
 // ══════════════════════════════════════════════
 const bgm = document.getElementById('bgm');
-let audioWanted = false;
-let audioUnlocked = false; // becomes true after the first user gesture
+let audioWanted = false;  // we want music (on bare main screen)
+let soundOn = false;      // user has unlocked audible sound via a gesture
 
-function tryPlay() {
+// Apply the current desired state to the element. Safe to call repeatedly
+// (on screen changes, on a gesture, when the file finishes loading, etc.).
+function applyAudio() {
   if (!bgm) return;
-  const pr = bgm.play();
-  if (pr && pr.catch) pr.catch(() => {
-    // Sound-on autoplay was blocked — fall back to MUTED autoplay so the
-    // track is already running, then unmute on the first user gesture.
-    if (!audioUnlocked) {
-      bgm.muted = true;
-      const pr2 = bgm.play();
-      if (pr2 && pr2.catch) pr2.catch(() => {});
-    }
-  });
-}
-
-function updateAudio() {
-  if (!bgm) return;
-  // Play only on the bare main screen (no modal/sheet/settings open).
-  const shouldPlay = currentScreen === 'main' && !addModalOpen && !confirmOpen && !alertOpen;
-  audioWanted = shouldPlay;
-  if (shouldPlay) {
-    tryPlay();
+  if (audioWanted) {
+    bgm.muted = !soundOn;            // muted until unlocked, audible after
+    if (soundOn) bgm.volume = 1;
+    const pr = bgm.play();
+    if (pr && pr.catch) pr.catch(() => {}); // ignore block / missing file
   } else {
     try { bgm.pause(); } catch (e) {}
   }
 }
 
-// First real user interaction: unmute (turn the sound on) and ensure playback.
-function unlockAudio() {
-  if (!bgm) return;
-  audioUnlocked = true;
-  bgm.muted = false;
-  bgm.volume = 1;
-  if (audioWanted) tryPlay();
+function updateAudio() {
+  audioWanted = currentScreen === 'main' && !addModalOpen && !confirmOpen && !alertOpen;
+  applyAudio();
+}
+
+// First real user interaction turns the sound ON. Because this runs inside a
+// genuine gesture, the browser allows audible playback; once the element has
+// played within a gesture it stays unlocked for later applyAudio() retries.
+function unlockSound() {
+  soundOn = true;
+  if (bgm) { bgm.muted = false; bgm.volume = 1; }
+  applyAudio();
 }
 ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(ev => {
-  document.addEventListener(ev, unlockAudio, { passive: true });
+  document.addEventListener(ev, unlockSound, { passive: true });
 });
 
 if (bgm) {
-  // Kick off muted autoplay immediately so the track is already running.
+  // Warm up with muted autoplay so the track is already running before the
+  // first tap (allowed by every browser). It becomes audible on unlock.
   bgm.muted = true;
   const p0 = bgm.play();
   if (p0 && p0.catch) p0.catch(() => {});
 
-  // Retry once the file is buffered, and when returning to the tab.
+  // Re-apply desired state when the file is buffered or the tab regains focus.
   ['canplay', 'canplaythrough', 'loadeddata'].forEach(ev => {
-    bgm.addEventListener(ev, () => { if (audioWanted) tryPlay(); });
+    bgm.addEventListener(ev, applyAudio);
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && audioWanted) tryPlay();
+    if (!document.hidden) applyAudio();
+
   });
 }
 
@@ -1738,7 +1733,7 @@ showMain();
     if (dismissed) return;
     dismissed = true;
     splash.classList.add('hide');
-    if (bgm) { bgm.muted = false; tryPlay(); } // ensure sound is on immediately
+    if (bgm) { unlockSound(); } // turn sound on within this user gesture
     setTimeout(() => { splash.style.display = 'none'; }, 750);
   }
   splash.addEventListener('click', dismissSplash);

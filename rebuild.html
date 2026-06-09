@@ -977,7 +977,7 @@
 <input type="file" id="import-file" accept="application/json,.json" style="display:none">
 
 <!-- Background music: loops on the main screen. Silent no-op if the file is absent. -->
-<audio id="bgm" src="rebuild.mp3" loop preload="auto" muted playsinline></audio>
+<audio id="bgm" src="rebuild.mp3" loop preload="auto"></audio>
 
 <script>
 // ══════════════════════════════════════════════
@@ -1548,58 +1548,56 @@ function handleImportFile(file) {
 // ══════════════════════════════════════════════
 // BACKGROUND MUSIC (rebuild.mp3) — main screen only, loops.
 // Silent no-op if the file is missing.
+// Proven pattern: play with sound is FIRST triggered inside a real user
+// gesture (the splash tap), which every browser (incl. iOS) allows. No muted
+// autoplay / unmute dance — that was the unreliable part.
 // ══════════════════════════════════════════════
 const bgm = document.getElementById('bgm');
-let audioWanted = false;  // we want music (on bare main screen)
-let soundOn = false;      // user has unlocked audible sound via a gesture
+let audioWanted = false;  // we want music (on the bare main screen)
+let musicStarted = false; // a sound-on play has been initiated via a gesture
 
-// Apply the current desired state to the element. Safe to call repeatedly
-// (on screen changes, on a gesture, when the file finishes loading, etc.).
-function applyAudio() {
+function playMusic() {
   if (!bgm) return;
-  if (audioWanted) {
-    bgm.muted = !soundOn;            // muted until unlocked, audible after
-    if (soundOn) bgm.volume = 1;
-    const pr = bgm.play();
-    if (pr && pr.catch) pr.catch(() => {}); // ignore block / missing file
-  } else {
-    try { bgm.pause(); } catch (e) {}
-  }
+  bgm.volume = 1;
+  const pr = bgm.play();
+  if (pr && pr.catch) pr.catch(() => {}); // ignore block (pre-gesture) / missing file
+}
+function pauseMusic() {
+  if (!bgm) return;
+  try { bgm.pause(); } catch (e) {}
 }
 
 function updateAudio() {
   audioWanted = currentScreen === 'main' && !addModalOpen && !confirmOpen && !alertOpen;
-  applyAudio();
+  if (audioWanted) {
+    if (musicStarted) playMusic(); // resume once it has been unlocked by a gesture
+  } else {
+    pauseMusic();
+  }
 }
 
-// First real user interaction turns the sound ON. Because this runs inside a
-// genuine gesture, the browser allows audible playback; once the element has
-// played within a gesture it stays unlocked for later applyAudio() retries.
-function unlockSound() {
-  soundOn = true;
-  if (bgm) { bgm.muted = false; bgm.volume = 1; }
-  applyAudio();
+// Start (or resume) music from within a user gesture — the reliable path.
+function startMusicFromGesture() {
+  if (!bgm) return;
+  musicStarted = true;
+  if (audioWanted) playMusic();
 }
+// Safety net: any later gesture re-attempts playback if needed.
 ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(ev => {
-  document.addEventListener(ev, unlockSound, { passive: true });
+  document.addEventListener(ev, () => { if (audioWanted && musicStarted) playMusic(); }, { passive: true });
 });
 
 if (bgm) {
-  // Warm up with muted autoplay so the track is already running before the
-  // first tap (allowed by every browser). It becomes audible on unlock.
-  bgm.muted = true;
-  const p0 = bgm.play();
-  if (p0 && p0.catch) p0.catch(() => {});
-
-  // Re-apply desired state when the file is buffered or the tab regains focus.
+  // If the file is still buffering when play() was requested, the browser
+  // honours the gesture-initiated intent once it can play.
   ['canplay', 'canplaythrough', 'loadeddata'].forEach(ev => {
-    bgm.addEventListener(ev, applyAudio);
+    bgm.addEventListener(ev, () => { if (audioWanted && musicStarted) playMusic(); });
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) applyAudio();
-
+    if (!document.hidden && audioWanted && musicStarted) playMusic();
   });
 }
+
 
 
 // ══════════════════════════════════════════════
@@ -1733,7 +1731,7 @@ showMain();
     if (dismissed) return;
     dismissed = true;
     splash.classList.add('hide');
-    if (bgm) { unlockSound(); } // turn sound on within this user gesture
+    if (bgm) { startMusicFromGesture(); } // start music within this user gesture
     setTimeout(() => { splash.style.display = 'none'; }, 750);
   }
   splash.addEventListener('click', dismissSplash);

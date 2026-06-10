@@ -206,6 +206,23 @@
 
   .bottomnav{display:none}
 
+  /* copy buttons */
+  .copy-btn{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+    font-size:12px;font-weight:700;color:var(--text-muted);background:var(--surface-2);
+    border:1.5px solid var(--border);transition:.15s;cursor:pointer;flex-shrink:0;
+  }
+  .copy-btn:hover{background:var(--accent-faint);color:var(--accent-strong);border-color:var(--accent-soft)}
+  .copy-btn.ok{background:#eef4ec;color:#4d6b46;border-color:#c2d9be}
+  .copy-row{display:flex;align-items:center;justify-content:flex-end;margin-top:10px;gap:8px}
+  .copy-all-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--accent-faint);border:1.5px solid var(--accent-soft);
+    border-radius:var(--r-md);padding:14px 18px;margin-top:8px;
+  }
+  .copy-all-bar .msg{font-size:13px;color:var(--text-soft);line-height:1.5}
+  .copy-all-bar .msg b{color:var(--accent-strong)}
+
   /* helper text */
   .hint{font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.5}
   .callout{background:var(--accent-faint);border:1px solid var(--accent-soft);border-radius:var(--r-md);padding:14px 16px;font-size:13px;color:var(--text-soft);line-height:1.6}
@@ -296,8 +313,11 @@
       <!-- PROFILE -->
       <section class="view" id="view-profile">
         <div class="card pad">
-          <div class="section-title"><span class="bar"></span>기본 정보</div>
-          <p class="hint">평소 쓰시는 만세력/사주 앱에서 본 정보를 그대로 적어두세요.</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="section-title" style="margin-bottom:0"><span class="bar"></span>기본 정보</div>
+            <button class="copy-btn" id="copyBasic" title="기본 정보 복사">📋 복사</button>
+          </div>
+          <p class="hint" style="margin-top:6px">평소 쓰시는 만세력/사주 앱에서 본 정보를 그대로 적어두세요.</p>
           <div class="grid2" style="margin-top:16px">
             <label class="fld"><span class="lab">이름 / 별칭</span><input class="inp" id="p_name" placeholder="예) 홍길동"></label>
             <label class="fld"><span class="lab">성별</span>
@@ -313,8 +333,11 @@
         </div>
 
         <div class="card pad" style="margin-top:18px">
-          <div class="section-title"><span class="bar"></span>사주팔자 (네 기둥)</div>
-          <p class="hint">천간/지지 글자를 칸에 적으면 카드로 보여집니다. 비워두어도 됩니다.</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="section-title" style="margin-bottom:0"><span class="bar"></span>사주팔자 (네 기둥)</div>
+            <button class="copy-btn" id="copyPalja" title="사주팔자 복사">📋 복사</button>
+          </div>
+          <p class="hint" style="margin-top:6px">천간/지지 글자를 칸에 적으면 카드로 보여집니다. 비워두어도 됩니다.</p>
           <div class="palja" style="margin-top:16px">
             <div class="col"><div class="ctit">시주 (時)</div>
               <div class="gz"><input class="inp pg" id="g_hg" placeholder="천간" style="text-align:center;font-family:var(--serif);font-size:22px;background:transparent;border:none"></div>
@@ -336,16 +359,27 @@
         </div>
 
         <div class="card pad" style="margin-top:18px">
-          <div class="section-title"><span class="bar"></span>오행 / 십성 메모</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="section-title" style="margin-bottom:0"><span class="bar"></span>오행 / 십성 메모</div>
+            <button class="copy-btn" id="copyOhaeng" title="오행/십성 메모 복사">📋 복사</button>
+          </div>
           <label class="fld" style="margin-top:14px"><span class="lab">오행 분포 · 특징 (앱에서 가져온 내용)</span>
             <textarea class="ta" id="p_ohaeng" placeholder="예) 목2 화1 토2 금0 수3 — 금이 약함 …"></textarea></label>
         </div>
 
         <div class="card pad" style="margin-top:18px">
-          <div class="section-title"><span class="bar"></span>총평 / AI 풀이 (전체 사주)</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="section-title" style="margin-bottom:0"><span class="bar"></span>총평 / AI 풀이 (전체 사주)</div>
+            <button class="copy-btn" id="copyReading" title="총평/풀이 복사">📋 복사</button>
+          </div>
           <label class="fld" style="margin-top:14px"><span class="lab">사주 원국 해설을 붙여넣어 두세요</span>
             <textarea class="ta" id="p_reading" style="min-height:180px" placeholder="AI에게 받은 전체 사주 풀이를 여기에 붙여넣으세요."></textarea></label>
           <div class="row"><div class="spacer"></div><button class="btn primary" id="saveProfile">💾 사주 정보 저장</button></div>
+        </div>
+
+        <div class="copy-all-bar" style="margin-top:8px">
+          <div class="msg"><b>📤 전체 복사</b> — 기본 정보 · 팔자 · 오행 · 총평을 한 번에 AI 채팅창에 붙여넣을 수 있어요.</div>
+          <button class="copy-btn" id="copyAll" style="flex-shrink:0;padding:9px 16px;font-size:13px">📋 전체 복사</button>
         </div>
       </section>
 
@@ -682,6 +716,55 @@ function renderHomeProfile(){
     ${p.reading?`<p class="soft" style="margin-top:14px;white-space:pre-wrap;font-size:14px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">${esc(p.reading)}</p>`:''}`;
 }
 function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+/* ============ Copy helpers ============ */
+async function copyText(text, btnEl){
+  try{
+    await navigator.clipboard.writeText(text);
+    const orig = btnEl.innerHTML;
+    btnEl.innerHTML = '✅ 복사됨'; btnEl.classList.add('ok');
+    setTimeout(()=>{ btnEl.innerHTML=orig; btnEl.classList.remove('ok'); }, 2000);
+  } catch(e){ toast('복사 실패 — 브라우저 권한을 확인하세요', true); }
+}
+
+function buildBasicText(){
+  const p = state.data.profile;
+  const lines = ['[기본 정보]'];
+  if(p.name)   lines.push('이름: ' + p.name);
+  if(p.gender) lines.push('성별: ' + p.gender);
+  if(p.birth)  lines.push('생년월일: ' + p.birth);
+  if(p.cal)    lines.push('양음력: ' + p.cal);
+  if(p.time)   lines.push('태어난 시각: ' + p.time);
+  if(p.ilgan)  lines.push('일간(日干): ' + p.ilgan);
+  return lines.join('\n');
+}
+function buildPaljaText(){
+  const g = state.data.profile.gz || {};
+  const lines = ['[사주팔자 (네 기둥)]'];
+  const cols = [['시주(時)', g.hg, g.hj], ['일주(日)', g.dg, g.dj], ['월주(月)', g.mg, g.mj], ['년주(年)', g.yg, g.yj]];
+  cols.forEach(([label, gan, ji]) => {
+    if(gan || ji) lines.push(label + ' — 천간: ' + (gan||'·') + ' / 지지: ' + (ji||'·'));
+  });
+  if(lines.length === 1) lines.push('(입력된 내용 없음)');
+  return lines.join('\n');
+}
+function buildOhaengText(){
+  const v = (state.data.profile.ohaeng||'').trim();
+  return '[오행 / 십성 메모]\n' + (v || '(입력된 내용 없음)');
+}
+function buildReadingText(){
+  const v = (state.data.profile.reading||'').trim();
+  return '[총평 / AI 풀이]\n' + (v || '(입력된 내용 없음)');
+}
+function buildAllText(){
+  return [buildBasicText(), buildPaljaText(), buildOhaengText(), buildReadingText()].join('\n\n');
+}
+
+document.getElementById('copyBasic').addEventListener('click', function(){ copyText(buildBasicText(), this); });
+document.getElementById('copyPalja').addEventListener('click', function(){ copyText(buildPaljaText(), this); });
+document.getElementById('copyOhaeng').addEventListener('click', function(){ copyText(buildOhaengText(), this); });
+document.getElementById('copyReading').addEventListener('click', function(){ copyText(buildReadingText(), this); });
+document.getElementById('copyAll').addEventListener('click', function(){ copyText(buildAllText(), this); });
 
 /* ============ Year ============ */
 function renderYearList(){

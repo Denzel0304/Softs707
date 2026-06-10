@@ -314,10 +314,6 @@
           <div style="position:relative;height:230px;margin-top:14px"><canvas id="homeChart"></canvas></div>
         </div>
 
-        <div class="card pad">
-          <div class="section-title"><span class="bar"></span>최근 기록</div>
-          <div id="homeRecent" style="margin-top:14px"></div>
-        </div>
       </section>
 
       <!-- PROFILE -->
@@ -990,18 +986,6 @@ function renderHome(){
   $('#stThisYear').innerHTML = ty?`${getScore(ty)}<small> / 10</small>`:'–';
   renderHomeProfile();
   homeChart=drawChart('homeChart',homeChart,yearSeries());
-  // recent
-  const recent=[];
-  state.data.years.forEach(y=>recent.push({t:y.year+'년 년운',d:y.reading||y.saju,s:getScore(y),sort:y.year*100}));
-  state.data.months.forEach(m=>recent.push({t:`${m.year}년 ${m.month}월`,d:m.reading||m.saju,s:getScore(m),sort:m.year*100+m.month}));
-  recent.sort((a,b)=>b.sort-a.sort);
-  const el=$('#homeRecent');
-  if(!recent.length){ el.innerHTML='<div class="empty"><div class="em">📝</div>기록을 추가하면 여기에 모여요.</div>'; return; }
-  el.innerHTML=recent.slice(0,5).map(r=>`
-    <div class="entry" style="cursor:default">
-      <span class="score-badge" style="background:${scoreColor(r.s)}">${r.s}</span>
-      <div class="meta"><div class="et">${esc(r.t)}</div>${r.d?`<div class="prev">${esc(r.d)}</div>`:''}</div>
-    </div>`).join('');
 }
 function renderFlow(){
   const mode=$('#flowMode').value;

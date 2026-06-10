@@ -962,6 +962,9 @@ function openModal(id){
   const s=document.getElementById(id); if(!s) return;
   if(modalStack[modalStack.length-1]===id) return;   // 같은 모달 중복 push 방지
   s.classList.add('open');
+  // 스크롤 항상 최상단으로
+  const m=s.querySelector('.modal');
+  if(m) m.scrollTop=0;
   modalStack.push(id);
   history.pushState({sajuModal:id, depth:modalStack.length}, '');
 }
@@ -1113,9 +1116,14 @@ $('#importFile').addEventListener('change',e=>{
       if(typeof parsed!=='object'||!parsed.profile) throw new Error('올바른 사주 백업 파일이 아닙니다.');
       state.data={...emptyData(),...parsed};
       saveCache();
-      fillProfileForm(); refreshFlowYears(); renderAll();
-      $('#importMsg').textContent='✅ 불러오기 완료! 데이터가 복원됐습니다.';
-      toast('백업 파일을 불러왔어요');
+      fillProfileForm();
+      refreshFlowYears();
+      // 탭 이벤트 리스너가 안정적으로 붙도록 다음 프레임에서 렌더
+      setTimeout(()=>{
+        renderAll();
+        $('#importMsg').textContent='✅ 불러오기 완료! 데이터가 복원됐습니다.';
+        toast('백업 파일을 불러왔어요');
+      }, 0);
     }catch(err){
       $('#importMsg').textContent='⚠ '+err.message;
       toast('파일 형식이 올바르지 않습니다', true);

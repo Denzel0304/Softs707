@@ -732,8 +732,7 @@ function renderHomeProfile(){
       ${p.gender?`<span class="chip">${esc(p.gender)}</span>`:''}
       ${p.birth?`<span class="chip">${esc(p.birth)}</span>`:''}
       ${p.ilgan?`<span class="chip">일간 ${esc(p.ilgan)}</span>`:''}
-    </div>${gz}
-    ${p.reading?`<p class="soft" style="margin-top:14px;white-space:pre-wrap;font-size:14px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">${esc(p.reading)}</p>`:''}`;
+    </div>${gz}`;
 }
 function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 

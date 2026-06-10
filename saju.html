@@ -154,6 +154,16 @@
   .scorebar input[type=range]{flex:1;accent-color:var(--accent);height:6px}
   .scoreval{font-family:var(--serif);font-weight:800;font-size:26px;min-width:44px;text-align:center}
 
+  /* multi-score sliders */
+  .score-grid{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .score-row{display:flex;align-items:center;gap:10px}
+  .score-row .slabel{font-size:13px;font-weight:700;color:var(--text-soft);width:90px;flex-shrink:0}
+  .score-row input[type=range]{flex:1;accent-color:var(--accent);height:5px}
+  .score-row .sval{font-family:var(--serif);font-weight:800;font-size:18px;min-width:28px;text-align:right;color:var(--accent-strong)}
+  .score-avg{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 14px;background:var(--accent-faint);border:1px solid var(--accent-soft);border-radius:var(--r-sm)}
+  .score-avg .avg-label{font-size:13px;font-weight:700;color:var(--text-soft)}
+  .score-avg .avg-val{font-family:var(--serif);font-weight:800;font-size:22px;color:var(--accent-strong)}
+
   /* entry list */
   .entry{display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);transition:.16s;cursor:pointer;margin-bottom:11px}
   .entry:hover{border-color:var(--border-strong);box-shadow:var(--shadow-md);transform:translateY(-1px)}
@@ -323,7 +333,7 @@
             <label class="fld"><span class="lab">성별</span>
               <select class="inp" id="p_gender"><option value="">선택</option><option>남</option><option>여</option></select>
             </label>
-            <label class="fld"><span class="lab">생년월일</span><input class="inp" id="p_birth" placeholder="예) 1990-03-15"></label>
+            <label class="fld"><span class="lab">생년월일</span><input class="inp" id="p_birth" type="date"></label>
             <label class="fld"><span class="lab">태어난 시각</span><input class="inp" id="p_time" placeholder="예) 인시(03:30~05:30)"></label>
             <label class="fld"><span class="lab">양력 / 음력</span>
               <select class="inp" id="p_cal"><option value="">선택</option><option>양력</option><option>음력(평달)</option><option>음력(윤달)</option></select>
@@ -493,16 +503,22 @@
   <div class="modal">
     <div class="mhead"><h3 id="yModalTitle">년운 입력</h3><button class="xbtn" data-close>✕</button></div>
     <div class="mbody">
-      <div class="grid2">
-        <label class="fld"><span class="lab">연도</span><input class="inp" id="y_year" type="number" placeholder="2026"></label>
-        <label class="fld"><span class="lab">나이 (만)</span><input class="inp" id="y_age" type="number" placeholder="35"></label>
-      </div>
-      <label class="fld"><span class="lab">사주 정보 (세운 간지 등 — 앱에서 가져온 내용)</span>
+      <label class="fld"><span class="lab">연도</span><input class="inp" id="y_year" type="number" placeholder="2026" style="max-width:160px"></label>
+      <div class="fld" id="y_age_display" style="margin-bottom:14px;font-size:13px;color:var(--text-muted);font-weight:600"></div>
+      <label class="fld"><span class="lab">사주 정보</span>
         <textarea class="ta" id="y_saju" placeholder="예) 병오년(丙午) 세운, 식신운 …"></textarea></label>
       <label class="fld"><span class="lab">해설 / AI 풀이</span>
         <textarea class="ta" id="y_reading" style="min-height:160px" placeholder="이 해의 운세 풀이를 붙여넣으세요."></textarea></label>
       <label class="fld"><span class="lab">운세 점수</span>
-        <div class="scorebar"><input type="range" id="y_score" min="1" max="10" value="5"><span class="scoreval" id="y_scoreval">5</span></div></label>
+        <div class="score-grid">
+          <div class="score-row"><span class="slabel">💰 재물운</span><input type="range" id="y_s1" min="1" max="10" value="5"><span class="sval" id="y_v1">5</span></div>
+          <div class="score-row"><span class="slabel">💼 직업/사업</span><input type="range" id="y_s2" min="1" max="10" value="5"><span class="sval" id="y_v2">5</span></div>
+          <div class="score-row"><span class="slabel">🏥 건강운</span><input type="range" id="y_s3" min="1" max="10" value="5"><span class="sval" id="y_v3">5</span></div>
+          <div class="score-row"><span class="slabel">🤝 대인관계</span><input type="range" id="y_s4" min="1" max="10" value="5"><span class="sval" id="y_v4">5</span></div>
+          <div class="score-row"><span class="slabel">❤️ 애정/가정</span><input type="range" id="y_s5" min="1" max="10" value="5"><span class="sval" id="y_v5">5</span></div>
+          <div class="score-avg"><span class="avg-label">종합 (자동 평균)</span><span class="avg-val" id="y_avg">5.0</span></div>
+        </div>
+      </label>
     </div>
     <div class="mfoot">
       <button class="btn danger" id="y_delete" style="display:none">삭제</button>
@@ -517,12 +533,20 @@
   <div class="modal">
     <div class="mhead"><h3 id="mModalTitle">월운 입력</h3><button class="xbtn" data-close>✕</button></div>
     <div class="mbody">
-      <label class="fld"><span class="lab">사주 정보 (월운 간지 등)</span>
+      <label class="fld"><span class="lab">사주 정보</span>
         <textarea class="ta" id="mo_saju" placeholder="예) 갑인월(甲寅) 월운 …"></textarea></label>
       <label class="fld"><span class="lab">해설 / AI 풀이</span>
         <textarea class="ta" id="mo_reading" style="min-height:160px" placeholder="이 달의 운세 풀이를 붙여넣으세요."></textarea></label>
       <label class="fld"><span class="lab">운세 점수</span>
-        <div class="scorebar"><input type="range" id="mo_score" min="1" max="10" value="5"><span class="scoreval" id="mo_scoreval">5</span></div></label>
+        <div class="score-grid">
+          <div class="score-row"><span class="slabel">💰 재물운</span><input type="range" id="mo_s1" min="1" max="10" value="5"><span class="sval" id="mo_v1">5</span></div>
+          <div class="score-row"><span class="slabel">💼 직업/사업</span><input type="range" id="mo_s2" min="1" max="10" value="5"><span class="sval" id="mo_v2">5</span></div>
+          <div class="score-row"><span class="slabel">🏥 건강운</span><input type="range" id="mo_s3" min="1" max="10" value="5"><span class="sval" id="mo_v3">5</span></div>
+          <div class="score-row"><span class="slabel">🤝 대인관계</span><input type="range" id="mo_s4" min="1" max="10" value="5"><span class="sval" id="mo_v4">5</span></div>
+          <div class="score-row"><span class="slabel">❤️ 애정/가정</span><input type="range" id="mo_s5" min="1" max="10" value="5"><span class="sval" id="mo_v5">5</span></div>
+          <div class="score-avg"><span class="avg-label">종합 (자동 평균)</span><span class="avg-val" id="mo_avg">5.0</span></div>
+        </div>
+      </label>
     </div>
     <div class="mfoot">
       <button class="btn danger" id="mo_delete" style="display:none">삭제</button>
@@ -767,38 +791,72 @@ document.getElementById('copyReading').addEventListener('click', function(){ cop
 document.getElementById('copyAll').addEventListener('click', function(){ copyText(buildAllText(), this); });
 
 /* ============ Year ============ */
+const SCORE_KEYS = ['s1','s2','s3','s4','s5'];
+function calcAvg(scores){ return (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1); }
+function calcAge(year){
+  const birth = state.data.profile.birth;
+  if(!birth) return null;
+  const birthYear = new Date(birth).getFullYear();
+  return year - birthYear;
+}
+
+function updateYearAvg(){
+  const vals = SCORE_KEYS.map(k=>parseInt($('#y_'+k).value)||5);
+  $('#y_avg').textContent = calcAvg(vals);
+}
+function updateMonthAvg(){
+  const vals = SCORE_KEYS.map(k=>parseInt($('#mo_'+k).value)||5);
+  $('#mo_avg').textContent = calcAvg(vals);
+}
+
 function renderYearList(){
   const list=$('#yearList');
   const ys=[...state.data.years].sort((a,b)=>b.year-a.year);
   if(!ys.length){ list.innerHTML='<div class="empty"><div class="em">📅</div>아직 기록한 년운이 없어요.</div>'; return; }
-  list.innerHTML=ys.map(y=>`
+  list.innerHTML=ys.map(y=>{
+    const sc = y.scores ? parseFloat(calcAvg(y.scores)) : (y.score||5);
+    const age = calcAge(y.year);
+    return `
     <div class="entry" data-yid="${y.id}">
-      <span class="score-badge" style="background:${scoreColor(y.score)}">${y.score}</span>
+      <span class="score-badge" style="background:${scoreColor(sc)}">${sc}</span>
       <div class="meta">
-        <div class="et">${y.year}년 ${y.age!=null&&y.age!==''?`<span class="ag">만 ${y.age}세</span>`:''}</div>
+        <div class="et">${y.year}년 ${age!=null?`<span class="ag">만 ${age}세</span>`:''}</div>
         ${y.saju?`<div class="prev"><b style="color:var(--accent-strong)">사주</b> ${esc(y.saju)}</div>`:''}
         ${y.reading?`<div class="prev">${esc(y.reading)}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   $$('#yearList .entry').forEach(e=> e.addEventListener('click',()=>openYear(e.dataset.yid)));
 }
 function openYear(id){
   state.editingYearId=id;
   const y = id ? state.data.years.find(x=>x.id===id) : null;
   $('#yModalTitle').textContent = y?'년운 수정':'년운 입력';
-  $('#y_year').value=y?y.year:new Date().getFullYear();
-  $('#y_age').value=y?(y.age??''):'';
+  const yr = y ? y.year : new Date().getFullYear();
+  $('#y_year').value = yr;
+  // age display
+  const age = calcAge(yr);
+  $('#y_age_display').textContent = age!=null ? `만 ${age}세` : '';
   $('#y_saju').value=y?y.saju:''; $('#y_reading').value=y?y.reading:'';
-  $('#y_score').value=y?y.score:5; $('#y_scoreval').textContent=y?y.score:5;
+  const sc = y && y.scores ? y.scores : [5,5,5,5,5];
+  SCORE_KEYS.forEach((k,i)=>{ $('#y_'+k).value=sc[i]; $('#y_v'+(i+1)).textContent=sc[i]; });
+  updateYearAvg();
   $('#y_delete').style.display=y?'inline-flex':'none';
   openModal('yearScrim');
 }
 $('#addYear').addEventListener('click',()=>openYear(null));
-$('#y_score').addEventListener('input',e=>$('#y_scoreval').textContent=e.target.value);
+$('#y_year').addEventListener('input',()=>{
+  const age = calcAge(parseInt($('#y_year').value));
+  $('#y_age_display').textContent = age!=null ? `만 ${age}세` : '';
+});
+SCORE_KEYS.forEach((k,i)=>{
+  $('#y_'+k).addEventListener('input',e=>{ $('#y_v'+(i+1)).textContent=e.target.value; updateYearAvg(); });
+});
 $('#y_save').addEventListener('click',async()=>{
   const yr=parseInt($('#y_year').value); if(!yr){ toast('연도를 입력하세요',true); return; }
-  const obj={ year:yr, age:$('#y_age').value===''?'':parseInt($('#y_age').value),
-    saju:$('#y_saju').value.trim(), reading:$('#y_reading').value.trim(), score:parseInt($('#y_score').value) };
+  const scores = SCORE_KEYS.map(k=>parseInt($('#y_'+k).value)||5);
+  const score = parseFloat(calcAvg(scores));
+  const obj={ year:yr, scores, score, saju:$('#y_saju').value.trim(), reading:$('#y_reading').value.trim() };
   if(state.editingYearId){ Object.assign(state.data.years.find(x=>x.id===state.editingYearId),obj); }
   else { obj.id=uid(); state.data.years.push(obj); }
   closeModals(); await persist();
@@ -818,9 +876,10 @@ function renderMonth(){
   grid.innerHTML=MON.map((nm,i)=>{
     const m=items.find(x=>x.month===i+1);
     const has=!!m;
+    const sc = m ? (m.scores ? parseFloat(calcAvg(m.scores)) : (m.score||5)) : 5;
     return `<div class="mcell ${has?'has':''}" data-m="${i+1}">
-      ${has?`<div class="tint" style="background:${scoreTint(m.score)}"></div>`:''}
-      ${has?`<span class="sb score-badge" style="background:${scoreColor(m.score)};width:28px;height:28px;font-size:12px">${m.score}</span>`:''}
+      ${has?`<div class="tint" style="background:${scoreTint(sc)}"></div>`:''}
+      ${has?`<span class="sb score-badge" style="background:${scoreColor(sc)};width:28px;height:28px;font-size:12px">${sc}</span>`:''}
       <div class="mn">${nm}</div>
       ${has?`<div class="filled-prev">${esc(m.reading||m.saju||'기록됨')}</div>`:`<div class="mhint">기록 없음 · 누르기</div>`}
     </div>`;
@@ -832,17 +891,23 @@ function openMonth(month){
   const m=state.data.months.find(x=>x.year===state.monthYear&&x.month===month);
   $('#mModalTitle').textContent=`${state.monthYear}년 ${month}월`;
   $('#mo_saju').value=m?m.saju:''; $('#mo_reading').value=m?m.reading:'';
-  $('#mo_score').value=m?m.score:5; $('#mo_scoreval').textContent=m?m.score:5;
+  const sc = m && m.scores ? m.scores : [5,5,5,5,5];
+  SCORE_KEYS.forEach((k,i)=>{ $('#mo_'+k).value=sc[i]; $('#mo_v'+(i+1)).textContent=sc[i]; });
+  updateMonthAvg();
   $('#mo_delete').style.display=m?'inline-flex':'none';
   openModal('monthScrim');
 }
 $('#mPrev').addEventListener('click',()=>{state.monthYear--;renderMonth();});
 $('#mNext').addEventListener('click',()=>{state.monthYear++;renderMonth();});
-$('#mo_score').addEventListener('input',e=>$('#mo_scoreval').textContent=e.target.value);
+SCORE_KEYS.forEach((k,i)=>{
+  $('#mo_'+k).addEventListener('input',e=>{ $('#mo_v'+(i+1)).textContent=e.target.value; updateMonthAvg(); });
+});
 $('#mo_save').addEventListener('click',async()=>{
   const {year,month}=state.editingMonth;
   let m=state.data.months.find(x=>x.year===year&&x.month===month);
-  const obj={ saju:$('#mo_saju').value.trim(), reading:$('#mo_reading').value.trim(), score:parseInt($('#mo_score').value) };
+  const scores = SCORE_KEYS.map(k=>parseInt($('#mo_'+k).value)||5);
+  const score = parseFloat(calcAvg(scores));
+  const obj={ saju:$('#mo_saju').value.trim(), reading:$('#mo_reading').value.trim(), scores, score };
   if(m){ Object.assign(m,obj); } else { state.data.months.push({id:uid(),year,month,...obj}); }
   closeModals(); await persist();
 });
@@ -900,12 +965,13 @@ function mkGradient(ctx,area){
   g.addColorStop(0,'rgba(204,106,74,.32)'); g.addColorStop(1,'rgba(204,106,74,.02)');
   return g;
 }
+function getScore(item){ return item.scores ? parseFloat(calcAvg(item.scores)) : (item.score||5); }
 function yearSeries(){
   const ys=[...state.data.years].sort((a,b)=>a.year-b.year);
-  return { labels:ys.map(y=>y.year+'년'), data:ys.map(y=>y.score) };
+  return { labels:ys.map(y=>y.year+'년'), data:ys.map(y=>getScore(y)) };
 }
 function monthSeries(year){
-  return { labels:MON, data:MON.map((_,i)=>{ const m=state.data.months.find(x=>x.year===year&&x.month===i+1); return m?m.score:null; }) };
+  return { labels:MON, data:MON.map((_,i)=>{ const m=state.data.months.find(x=>x.year===year&&x.month===i+1); return m?getScore(m):null; }) };
 }
 function drawChart(canvasId,prev,series){
   const cv=$('#'+canvasId); const ctx=cv.getContext('2d');
@@ -921,13 +987,13 @@ function renderHome(){
   $('#stYears').innerHTML=state.data.years.length+'<small> 개</small>';
   $('#stMonths').innerHTML=state.data.months.length+'<small> 개</small>';
   const ty=state.data.years.find(y=>y.year===new Date().getFullYear());
-  $('#stThisYear').innerHTML = ty?`${ty.score}<small> / 10</small>`:'–';
+  $('#stThisYear').innerHTML = ty?`${getScore(ty)}<small> / 10</small>`:'–';
   renderHomeProfile();
   homeChart=drawChart('homeChart',homeChart,yearSeries());
   // recent
   const recent=[];
-  state.data.years.forEach(y=>recent.push({t:y.year+'년 년운',d:y.reading||y.saju,s:y.score,sort:y.year*100}));
-  state.data.months.forEach(m=>recent.push({t:`${m.year}년 ${m.month}월`,d:m.reading||m.saju,s:m.score,sort:m.year*100+m.month}));
+  state.data.years.forEach(y=>recent.push({t:y.year+'년 년운',d:y.reading||y.saju,s:getScore(y),sort:y.year*100}));
+  state.data.months.forEach(m=>recent.push({t:`${m.year}년 ${m.month}월`,d:m.reading||m.saju,s:getScore(m),sort:m.year*100+m.month}));
   recent.sort((a,b)=>b.sort-a.sort);
   const el=$('#homeRecent');
   if(!recent.length){ el.innerHTML='<div class="empty"><div class="em">📝</div>기록을 추가하면 여기에 모여요.</div>'; return; }
@@ -945,20 +1011,20 @@ function renderFlow(){
     series=yearSeries();
     const ys=[...state.data.years].sort((a,b)=>a.year-b.year);
     if(ys.length){
-      const avg=(ys.reduce((s,y)=>s+y.score,0)/ys.length).toFixed(1);
-      const best=ys.reduce((a,b)=>b.score>a.score?b:a);
-      const worst=ys.reduce((a,b)=>b.score<a.score?b:a);
+      const avg=(ys.reduce((s,y)=>s+getScore(y),0)/ys.length).toFixed(1);
+      const best=ys.reduce((a,b)=>getScore(b)>getScore(a)?b:a);
+      const worst=ys.reduce((a,b)=>getScore(b)<getScore(a)?b:a);
       summaryHtml=`<div class="row" style="gap:10px">
         <span class="chip">평균 ${avg}점</span>
-        <span class="chip" style="background:#eef4ec;color:#4d6b46">최고 ${best.year}년 (${best.score})</span>
-        <span class="chip" style="background:#f7eceb;color:#a3514a">최저 ${worst.year}년 (${worst.score})</span></div>`;
+        <span class="chip" style="background:#eef4ec;color:#4d6b46">최고 ${best.year}년 (${getScore(best)})</span>
+        <span class="chip" style="background:#f7eceb;color:#a3514a">최저 ${worst.year}년 (${getScore(worst)})</span></div>`;
     } else summaryHtml='<p class="muted">년운을 입력하면 흐름이 그려집니다.</p>';
   } else {
     const yr=parseInt($('#flowYear').value)||state.monthYear;
     series=monthSeries(yr);
     const ms=state.data.months.filter(m=>m.year===yr);
     if(ms.length){
-      const avg=(ms.reduce((s,m)=>s+m.score,0)/ms.length).toFixed(1);
+      const avg=(ms.reduce((s,m)=>s+getScore(m),0)/ms.length).toFixed(1);
       summaryHtml=`<div class="row"><span class="chip">${yr}년 · ${ms.length}개월 기록 · 평균 ${avg}점</span></div>`;
     } else summaryHtml=`<p class="muted">${yr}년 월운 기록이 없습니다.</p>`;
   }

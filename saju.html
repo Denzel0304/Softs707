@@ -472,11 +472,14 @@
 
         <div class="card pad">
           <div class="section-title"><span class="bar"></span>백업</div>
-          <p class="hint">언제든 현재 데이터를 파일로 내려받아 보관할 수 있습니다.</p>
+          <p class="hint">언제든 현재 데이터를 파일로 내려받거나, 백업 파일을 불러와 복원할 수 있습니다.</p>
           <div class="row" style="margin-top:12px">
             <button class="btn ghost" id="exportData">⬇ JSON 내보내기</button>
+            <button class="btn ghost" id="importData">⬆ JSON 가져오기</button>
             <button class="btn ghost" id="reloadData">↻ 저장소에서 다시 불러오기</button>
           </div>
+          <input type="file" id="importFile" accept=".json" style="display:none">
+          <p class="hint" id="importMsg" style="margin-top:10px"></p>
         </div>
       </section>
 
@@ -1097,6 +1100,28 @@ $('#exportData').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(state.data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`saju-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+});
+$('#importData').addEventListener('click',()=>{
+  $('#importFile').value=''; $('#importFile').click();
+});
+$('#importFile').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(typeof parsed!=='object'||!parsed.profile) throw new Error('올바른 사주 백업 파일이 아닙니다.');
+      state.data={...emptyData(),...parsed};
+      saveCache();
+      fillProfileForm(); refreshFlowYears(); renderAll();
+      $('#importMsg').textContent='✅ 불러오기 완료! 데이터가 복원됐습니다.';
+      toast('백업 파일을 불러왔어요');
+    }catch(err){
+      $('#importMsg').textContent='⚠ '+err.message;
+      toast('파일 형식이 올바르지 않습니다', true);
+    }
+  };
+  reader.readAsText(file);
 });
 
 /* ============ Render all ============ */

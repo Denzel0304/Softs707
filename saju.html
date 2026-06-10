@@ -812,16 +812,33 @@ function renderYearList(){
     const sc = y.scores ? parseFloat(calcAvg(y.scores)) : (y.score||5);
     const age = calcAge(y.year);
     return `
-    <div class="entry" data-yid="${y.id}">
+    <div class="entry" data-yid="${y.id}" style="position:relative">
       <span class="score-badge" style="background:${scoreColor(sc)}">${sc}</span>
       <div class="meta">
         <div class="et">${y.year}년 ${age!=null?`<span class="ag">만 ${age}세</span>`:''}</div>
         ${y.saju?`<div class="prev"><b style="color:var(--accent-strong)">사주</b> ${esc(y.saju)}</div>`:''}
         ${y.reading?`<div class="prev">${esc(y.reading)}</div>`:''}
       </div>
+      <button class="copy-btn year-copy-btn" data-yid="${y.id}" style="flex-shrink:0;align-self:center" title="복사">📋</button>
     </div>`;
   }).join('');
   $$('#yearList .entry').forEach(e=> e.addEventListener('click',()=>openYear(e.dataset.yid)));
+  $$('#yearList .year-copy-btn').forEach(btn=> btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const y = state.data.years.find(x=>x.id===btn.dataset.yid);
+    if(!y) return;
+    const age = calcAge(y.year);
+    const sc = y.scores ? parseFloat(calcAvg(y.scores)) : (y.score||5);
+    const LABELS = ['재물운','직업/사업운','건강운','대인관계','애정/가정운'];
+    const scoreLines = y.scores ? LABELS.map((l,i)=>`  ${l}: ${y.scores[i]}`).join('\n') : `  종합: ${sc}`;
+    const lines = [
+      `[${y.year}년 년운${age!=null?' (만 '+age+'세)':''}]`,
+      y.saju ? '사주 정보:\n'+y.saju : '',
+      `운세 점수 (종합 ${sc}):\n${scoreLines}`,
+      y.reading ? '풀이:\n'+y.reading : ''
+    ].filter(Boolean);
+    copyText(lines.join('\n\n'), btn);
+  }));
 }
 function openYear(id){
   state.editingYearId=id;
@@ -877,9 +894,26 @@ function renderMonth(){
       ${has?`<span class="sb score-badge" style="background:${scoreColor(sc)};width:28px;height:28px;font-size:12px">${sc}</span>`:''}
       <div class="mn">${nm}</div>
       ${has?`<div class="filled-prev">${esc(m.reading||m.saju||'기록됨')}</div>`:`<div class="mhint">기록 없음 · 누르기</div>`}
+      ${has?`<button class="copy-btn month-copy-btn" data-m="${i+1}" style="margin-top:8px;width:100%;justify-content:center" title="복사">📋 복사</button>`:''}
     </div>`;
   }).join('');
   $$('#monthGrid .mcell').forEach(c=> c.addEventListener('click',()=>openMonth(parseInt(c.dataset.m))));
+  $$('#monthGrid .month-copy-btn').forEach(btn=> btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const month = parseInt(btn.dataset.m);
+    const m = state.data.months.find(x=>x.year===state.monthYear&&x.month===month);
+    if(!m) return;
+    const sc = m.scores ? parseFloat(calcAvg(m.scores)) : (m.score||5);
+    const LABELS = ['재물운','직업/사업운','건강운','대인관계','애정/가정운'];
+    const scoreLines = m.scores ? LABELS.map((l,i)=>`  ${l}: ${m.scores[i]}`).join('\n') : `  종합: ${sc}`;
+    const lines = [
+      `[${state.monthYear}년 ${month}월 월운]`,
+      m.saju ? '사주 정보:\n'+m.saju : '',
+      `운세 점수 (종합 ${sc}):\n${scoreLines}`,
+      m.reading ? '풀이:\n'+m.reading : ''
+    ].filter(Boolean);
+    copyText(lines.join('\n\n'), btn);
+  }));
 }
 function openMonth(month){
   state.editingMonth={year:state.monthYear,month};

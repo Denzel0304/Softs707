@@ -778,7 +778,7 @@
     <div class="bottom-controls">
       <span class="time-label" id="time-label">—</span>
       <label class="toggle-wrap">
-        <span class="toggle-label">늘</span>
+        <span class="toggle-label">휴일</span>
         <label class="toggle">
           <input type="checkbox" id="toggle-always">
           <div class="toggle-track"></div>
@@ -810,7 +810,7 @@
         <button class="cat-tab" data-cat="afternoon">오후</button>
         <button class="cat-tab" data-cat="evening">저녁</button>
         <button class="cat-tab" data-cat="night">밤</button>
-        <button class="cat-tab" data-cat="always">늘</button>
+        <button class="cat-tab" data-cat="always">휴일</button>
       </div>
       <div class="input-label-row">
         <label class="input-label" for="phrase-input">문구</label>
@@ -879,7 +879,7 @@ const CATEGORIES = [
   { key: 'afternoon', label: '오후', cls: 'cat-afternoon' },
   { key: 'evening',   label: '저녁', cls: 'cat-evening' },
   { key: 'night',     label: '밤',   cls: 'cat-night' },
-  { key: 'always',    label: '늘',   cls: 'cat-always' },
+  { key: 'always',    label: '휴일', cls: 'cat-always' },
 ];
 
 function getTimeCat(date) {
@@ -891,16 +891,21 @@ function getTimeCat(date) {
 }
 
 function getTimeCatLabel(cat) {
-  const map = { morning: '오전', afternoon: '오후', evening: '저녁', night: '밤', always: '늘' };
+  const map = { morning: '오전', afternoon: '오후', evening: '저녁', night: '밤', always: '휴일' };
   return map[cat] || '';
 }
 
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
+function isWeekend() {
+  const day = new Date().getDay(); // 0=일, 6=토
+  return day === 0 || day === 6;
+}
+
 let phrases = loadPhrases();
 let currentScreen = 'main'; // 'main' | 'settings'
-let isAlwaysMode = false;
+let isAlwaysMode = isWeekend(); // 주말이면 휴일모드 ON, 평일이면 OFF
 
 // Playback
 let shuffleQueue = [];
@@ -1077,7 +1082,7 @@ function renderDots(total, current) {
 function updateTimeLabel() {
   const el = document.getElementById('time-label');
   if (isAlwaysMode) {
-    el.textContent = '늘 모드';
+    el.textContent = '휴일 모드';
   } else {
     const cat = getTimeCat(new Date());
     el.textContent = getTimeCatLabel(cat) + ' 문구';
@@ -1508,7 +1513,7 @@ document.getElementById('import-file').addEventListener('change', (e) => {
   handleImportFile(file);
 });
 
-// Toggle "늘"
+// Toggle "휴일"
 document.getElementById('toggle-always').addEventListener('change', (e) => {
   isAlwaysMode = e.target.checked;
   updateTimeLabel();
@@ -1535,6 +1540,8 @@ window.addEventListener('resize', () => {
 // ══════════════════════════════════════════════
 // Mark the base entry. No guard yet — bare main exits with a single back.
 history.replaceState({ rebuildBase: true }, '');
+// 주말이면 토글 체크박스를 ON으로 초기화
+document.getElementById('toggle-always').checked = isAlwaysMode;
 showMain();
 
 </script>

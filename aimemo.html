@@ -1012,7 +1012,7 @@
         <div class="field" style="max-width:140px"><label>날짜</label><input type="date" id="ec-date"></div>
         <div class="field"><label>제목</label><input type="text" id="ec-title" placeholder="제목을 입력하세요 (필수)"></div>
       </div>
-      <textarea id="ec-content" rows="14" placeholder="내용을 입력하세요 (필수)"></textarea>
+      <div class="field"><textarea id="ec-content" rows="14" placeholder="내용을 입력하세요 (필수)"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="HS.close('modal-edit-consult')">닫기</button>
@@ -1702,6 +1702,15 @@ function openEditConsult(id) {
   HS.open('modal-edit-consult');
   // 포커스는 아무데도 두지 않음 (요구사항) — 병원기록과 동일
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  // 모달은 항상 최상위(스크롤 0)에서 열리도록 — 직전 스크롤 위치 영향 제거 (자유메모와 동일)
+  const ecContentEl = document.getElementById('ec-content');
+  const ecModalBody = document.querySelector('#modal-edit-consult .modal-body');
+  ecContentEl.scrollTop = 0;
+  if (ecModalBody) ecModalBody.scrollTop = 0;
+  requestAnimationFrame(() => {
+    ecContentEl.scrollTop = 0;
+    if (ecModalBody) ecModalBody.scrollTop = 0;
+  });
 }
 
 function saveEditConsult() {

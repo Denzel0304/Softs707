@@ -544,7 +544,7 @@
   }
   /* 메모용 큰 textarea (modal-body 바로 자식일 때만) */
   .modal-body > textarea { flex: 1; min-height: 280px; border-radius: var(--radius); }
-  /* 새 메모/보기 모달 내용 textarea의 placeholder는 제목란(modal-title-input)과 동일한 글씨체로
+  /* 새 자유 메모/보기 모달 내용 textarea의 placeholder는 제목란(modal-title-input)과 동일한 글씨체로
      ※ 입력 글자는 monospace 유지 (자동 넘버링 정렬 때문에 필요), placeholder만 시스템 폰트 */
   #add-text::placeholder,
   #view-content::placeholder,
@@ -879,7 +879,7 @@
           <div class="panel-title">자유 메모</div>
         </div>
         <div class="panel-actions">
-          <button class="btn icon-only" title="새 메모" onclick="openAddModal()">＋</button>
+          <button class="btn icon-only" title="새 자유 메모" onclick="openAddModal()">＋</button>
           <button class="btn" onclick="copyAllMemos()">📋 복사</button>
         </div>
       </div>
@@ -914,11 +914,11 @@
   </main>
 </div>
 
-<!-- ===== MODAL: 새 메모 추가 ===== -->
+<!-- ===== MODAL: 새 자유 메모 추가 ===== -->
 <div class="modal-backdrop" id="modal-add">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <div class="modal-title">새 메모</div>
+      <div class="modal-title">새 자유 메모</div>
       <button class="modal-close" onclick="HS.close('modal-add')">✕</button>
     </div>
 

@@ -856,7 +856,7 @@
     </div>
     <div class="sidebar-footer">
       <div id="sync-indicator" class="sync-indicator">●  대기 중</div>
-      <button class="copy-all-btn" onclick="openCopyPicker()">📋 탭 복사</button>
+      <button class="copy-all-btn" onclick="openCopyPicker()">📋 선택 복사</button>
       <button class="logout-btn" onclick="doLogout()" title="로그아웃"><span class="logout-icon">🔒</span><span class="logout-text">로그아웃</span></button>
       <button class="mobile-menu-btn" onclick="HS.open('modal-mobile-menu')" title="메뉴" aria-label="메뉴">⚙️</button>
     </div>
@@ -974,7 +974,7 @@
     </div>
     <div class="mobile-menu-body">
       <button class="mobile-menu-item" onclick="mobileMenuAction('copy')">
-        <span class="mobile-menu-icon">📋</span><span>탭 복사</span>
+        <span class="mobile-menu-icon">📋</span><span>선택 복사</span>
       </button>
       <button class="mobile-menu-item" onclick="mobileMenuAction('logout')">
         <span class="mobile-menu-icon">🔒</span><span>로그아웃</span>
@@ -983,11 +983,11 @@
   </div>
 </div>
 
-<!-- ===== MODAL: 탭 복사 선택 ===== -->
+<!-- ===== MODAL: 선택 복사 선택 ===== -->
 <div class="modal-backdrop" id="modal-copy-picker">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <div class="modal-title">탭 복사</div>
+      <div class="modal-title">선택 복사</div>
       <button class="modal-close" onclick="HS.close('modal-copy-picker')">✕</button>
     </div>
     <div class="copy-picker-body" id="copy-picker-body">
@@ -2320,7 +2320,7 @@ function copySection(type) {
 }
 
 /* ============================================================
-   탭 복사 (선택형 picker)
+   선택 복사 (선택형 picker)
 ============================================================ */
 // 현재 picker 상태: 어떤 항목이 체크됐는지
 // 키 형식: "tab_id::index"

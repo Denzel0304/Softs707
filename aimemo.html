@@ -547,7 +547,8 @@
   /* 새 메모/보기 모달 내용 textarea의 placeholder는 제목란(modal-title-input)과 동일한 글씨체로
      ※ 입력 글자는 monospace 유지 (자동 넘버링 정렬 때문에 필요), placeholder만 시스템 폰트 */
   #add-text::placeholder,
-  #view-content::placeholder {
+  #view-content::placeholder,
+  #ec-content::placeholder {
     font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
     font-weight: 400;
     color: var(--text3);
@@ -847,6 +848,7 @@
     </div>
     <div class="sidebar-nav">
       <button class="nav-item active" onclick="switchTab('memo', this)"><span class="nav-icon">📝</span> 자유 메모</button>
+      <button class="nav-item" onclick="switchTab('consult', this)"><span class="nav-icon">💬</span> 상담 기록</button>
       <button class="nav-item" onclick="switchTab('hospital', this)"><span class="nav-icon">🏥</span> 병원 기록</button>
     </div>
     <div class="sidebar-footer">
@@ -881,6 +883,18 @@
       <div id="memo-list" class="memo-list"></div>
     </div>
 
+
+    <!-- 상담기록 -->
+    <div id="panel-consult" class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row"><div class="panel-title">상담 기록</div></div>
+        <div class="panel-actions">
+          <button class="btn icon-only" title="새 기록" onclick="openAddConsult()">＋</button>
+          <button class="btn" onclick="copySection('consult')">📋 복사</button>
+        </div>
+      </div>
+      <div id="consult-list" class="memo-list"></div>
+    </div>
 
     <!-- 병원기록 -->
     <div id="panel-hospital" class="panel">
@@ -980,6 +994,28 @@
       <span id="copy-picker-count" class="copy-picker-count">0개 선택됨</span>
       <button class="btn" onclick="HS.close('modal-copy-picker')">취소</button>
       <button class="btn primary" onclick="copySelected()">📋 복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 상담기록 추가/편집 ===== -->
+<div class="modal-backdrop" id="modal-edit-consult">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="ec-modal-title">새 상담 기록</div>
+      <button class="modal-close" onclick="HS.close('modal-edit-consult')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field" style="max-width:140px"><label>날짜</label><input type="date" id="ec-date"></div>
+        <div class="field"><label>제목</label><input type="text" id="ec-title" placeholder="제목을 입력하세요 (필수)"></div>
+      </div>
+      <textarea id="ec-content" rows="14" placeholder="내용을 입력하세요 (필수)"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="HS.close('modal-edit-consult')">닫기</button>
+      <button class="btn" onclick="copyEditConsult()">📋 복사</button>
+      <button class="btn primary" onclick="saveEditConsult()">저장</button>
     </div>
   </div>
 </div>
@@ -1102,6 +1138,7 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
 ============================================================ */
 let S = {
   memos: [],
+  consult: [],
   hospital: []
 };
 let viewIdx = -1; // 현재 보기 모달에서 보고 있는 메모 인덱스
@@ -1237,6 +1274,8 @@ function attachListMode(ta) {
 // 메모 textarea에 자동 목록 모드 적용
 attachListMode(document.getElementById('add-text'));
 attachListMode(document.getElementById('view-content'));
+// 상담기록 편집/추가 모달 textarea에 적용 (자유 메모와 동일하게)
+attachListMode(document.getElementById('ec-content'));
 // 병원 편집/추가 모달 textarea들에 적용
 attachListMode(document.getElementById('eh-content'));
 attachListMode(document.getElementById('eh-rx'));
@@ -1366,6 +1405,8 @@ function attachCaretScroll(ta) {
 // PC 모달 내 textarea들에 적용 (모바일은 OS가 처리해주므로 영향 없음)
 attachCaretScroll(document.getElementById('add-text'));
 attachCaretScroll(document.getElementById('view-content'));
+// 상담기록 모달의 textarea도 동일하게 처리
+attachCaretScroll(document.getElementById('ec-content'));
 // 병원 기록 모달의 textarea들도 동일하게 처리
 attachCaretScroll(document.getElementById('eh-content'));
 attachCaretScroll(document.getElementById('eh-rx'));
@@ -1442,15 +1483,27 @@ function copyViewMemo() {
 }
 
 let pendingDelIdx = -1;
-let pendingDelType = null; // 'memo' | 'hospital'
+let pendingDelType = null; // 'memo' | 'consult' | 'hospital'
 let pendingDelHospitalId = null;
+let pendingDelConsultId = null;
 
 function delMemo(idx) {
   pendingDelType = 'memo';
   pendingDelIdx = idx;
   pendingDelHospitalId = null;
+  pendingDelConsultId = null;
   document.getElementById('confirm-title').textContent = '메모 삭제';
   document.getElementById('confirm-message').innerHTML = '이 메모를 삭제할까요?<br>삭제 후에는 복구할 수 없어요.';
+  HS.open('modal-confirm');
+}
+
+function delConsult(id) {
+  pendingDelType = 'consult';
+  pendingDelConsultId = id;
+  pendingDelIdx = -1;
+  pendingDelHospitalId = null;
+  document.getElementById('confirm-title').textContent = '상담 기록 삭제';
+  document.getElementById('confirm-message').innerHTML = '이 기록을 삭제할까요?<br>삭제 후에는 복구할 수 없어요.';
   HS.open('modal-confirm');
 }
 
@@ -1458,6 +1511,7 @@ function delHospital(id) {
   pendingDelType = 'hospital';
   pendingDelHospitalId = id;
   pendingDelIdx = -1;
+  pendingDelConsultId = null;
   document.getElementById('confirm-title').textContent = '병원 기록 삭제';
   document.getElementById('confirm-message').innerHTML = '이 기록을 삭제할까요?<br>삭제 후에는 복구할 수 없어요.';
   HS.open('modal-confirm');
@@ -1474,6 +1528,23 @@ document.getElementById('confirm-del-btn').addEventListener('click', function() 
     }
     saveLocal();
     renderMemos();
+  } else if (pendingDelType === 'consult') {
+    if (pendingDelConsultId === null) return;
+    const idx = S.consult.findIndex(c => c.id === pendingDelConsultId);
+    if (idx < 0) {
+      pendingDelConsultId = null;
+      pendingDelType = null;
+      HS.close('modal-confirm');
+      return;
+    }
+    S.consult.splice(idx, 1);
+    // 누적 선택 동기화
+    if (pickedSet.delete('consult::' + pendingDelConsultId)) {
+      updatePickCountUI();
+    }
+    sortConsult();
+    saveLocal();
+    renderConsult();
   } else if (pendingDelType === 'hospital') {
     if (pendingDelHospitalId === null) return;
     const idx = S.hospital.findIndex(e => e.id === pendingDelHospitalId);
@@ -1494,6 +1565,7 @@ document.getElementById('confirm-del-btn').addEventListener('click', function() 
   }
   pendingDelIdx = -1;
   pendingDelHospitalId = null;
+  pendingDelConsultId = null;
   pendingDelType = null;
   refreshSearchIfActive();
   HS.close('modal-confirm');
@@ -1561,6 +1633,118 @@ function copyAllMemos() {
 }
 
 /* ============================================================
+   상담기록
+   - 자유 메모와 동일한 입력 구조(제목+내용) + 날짜 피커 1개 추가
+   - 항상 최신 날짜순 정렬 유지 (저장 시 sort) — 병원기록과 동일
+   - 항목 클릭 시 편집 모달 (HS 시스템 — 뒤로가기로 모달만 닫힘)
+   - 각 항목은 고유 id 보유 (인덱스 의존 제거) — 병원기록과 동일
+============================================================ */
+function sortConsult() {
+  // 날짜 내림차순 정렬. 같은 날짜면 id(생성순)로 최신이 위 — 병원기록과 동일 규칙
+  S.consult.sort((a, b) => {
+    if (a.date !== b.date) return (b.date || '').localeCompare(a.date || '');
+    return (b.id || 0) - (a.id || 0);
+  });
+}
+
+function renderConsult() {
+  const el = document.getElementById('consult-list');
+  if (!S.consult.length) {
+    el.innerHTML = '<div class="memo-empty"><div class="memo-empty-icon">💬</div>상담 기록이 없어요. ＋ 버튼으로 추가해보세요</div>';
+    return;
+  }
+  // 렌더 직전에 정렬 보장
+  sortConsult();
+  el.innerHTML = S.consult.map((c) => {
+    const preview = (c.content || '').replace(/\n/g, ' ');
+    const key = 'consult::' + c.id;
+    const pickCb = pickMode
+      ? `<div class="pick-cb-wrap" onclick="event.stopPropagation()">
+          <input type="checkbox" class="pick-cb"${pickedSet.has(key) ? ' checked' : ''} onchange="onPickCheckboxChange(this, '${key}')">
+        </div>`
+      : '';
+    return `<div class="memo-card${pickMode ? ' pickable' : ''}" onclick="openEditConsult(${c.id})">
+      ${pickCb}
+      <div class="memo-card-body">
+        <div class="memo-card-date">${esc(c.date || '')}</div>
+        <div class="memo-card-title">${esc(c.title || '(제목 없음)')}</div>
+        <div class="memo-card-preview">${esc(preview.substring(0, 70))}${preview.length > 70 ? '…' : ''}</div>
+      </div>
+      <button class="memo-card-del" onclick="event.stopPropagation();delConsult(${c.id})" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/* ── 추가 모달 열기 ── */
+let editingConsultId = null; // null이면 추가 모드 — 병원기록의 editingHospitalId와 동일 패턴
+
+function openAddConsult() {
+  editingConsultId = null;
+  document.getElementById('ec-modal-title').textContent = '새 상담 기록';
+  document.getElementById('ec-date').value    = today();
+  document.getElementById('ec-title').value   = '';
+  document.getElementById('ec-content').value = '';
+  HS.open('modal-edit-consult');
+  setTimeout(() => { const el = document.getElementById('ec-title'); if (el) el.focus(); }, 80);
+}
+
+/* ── 편집 모달 열기 ── */
+function openEditConsult(id) {
+  const c = S.consult.find(x => x.id === id);
+  if (!c) return;
+  editingConsultId = id;
+  document.getElementById('ec-modal-title').textContent = '상담 기록 편집';
+  document.getElementById('ec-date').value    = c.date || today();
+  document.getElementById('ec-title').value   = c.title || '';
+  document.getElementById('ec-content').value = c.content || '';
+  HS.open('modal-edit-consult');
+  // 포커스는 아무데도 두지 않음 (요구사항) — 병원기록과 동일
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+
+function saveEditConsult() {
+  const title   = document.getElementById('ec-title').value.trim();
+  const content = document.getElementById('ec-content').value;
+  const date    = document.getElementById('ec-date').value;
+
+  if (!date) { toast('날짜를 입력해요'); return; }
+  if (!title) { toast('제목을 입력해요'); return; }
+  if (!content.trim()) { toast('내용을 입력해요'); return; }
+
+  if (editingConsultId === null) {
+    // 추가 모드
+    S.consult.push({ id: Date.now(), date, title, content });
+  } else {
+    // 편집 모드
+    const c = S.consult.find(x => x.id === editingConsultId);
+    if (!c) { HS.close('modal-edit-consult'); return; }
+    c.date = date; c.title = title; c.content = content;
+  }
+  sortConsult();
+  saveLocal();
+  renderConsult();
+  refreshSearchIfActive();
+  HS.close('modal-edit-consult');
+  toast('저장됨 ✓');
+}
+
+/* 상담기록 항목 → 텍스트 변환 (복사용 공통 포맷) — fmtHospital과 동일 패턴 */
+function fmtConsult(c) {
+  const title = (c.title ? '[ ' + c.title + ' ]\n' : '');
+  const date = c.date ? c.date : '';
+  const content = c.content ? (date ? '\n' : '') + c.content : '';
+  return title + date + content;
+}
+
+function copyEditConsult() {
+  const title   = document.getElementById('ec-title').value.trim();
+  const content = document.getElementById('ec-content').value;
+  const date    = document.getElementById('ec-date').value || today();
+  const text = fmtConsult({ date, title, content });
+  navigator.clipboard.writeText(text).then(() => toast('복사됨 ✓'));
+}
+
+/* ============================================================
    데이터 저장/로드 (zaim73_data, 기존 ctx-v3 마이그레이션)
 ============================================================ */
 function saveLocal() {
@@ -1596,6 +1780,7 @@ function loadLocal() {
       delete S.vitamins; // 폐기된 섹션
       delete S.custom;   // 폐기된 섹션
       if (!Array.isArray(S.memos))    S.memos = [];
+      if (!Array.isArray(S.consult))  S.consult = [];
       if (!Array.isArray(S.hospital)) S.hospital = [];
     } else {
       // v2 마이그레이션
@@ -1613,7 +1798,9 @@ function loadLocal() {
   // 병원 항목 마이그레이션: id 없는 옛 항목에 자동 부여
   migrateHospital();
   migrateMemos();
+  migrateConsult();
   if (S.hospital.length) sortHospital();
+  if (S.consult.length) sortConsult();
 
   renderAll();
 }
@@ -1639,6 +1826,16 @@ function migrateMemos() {
   return changed;
 }
 
+/* 옛 상담기록 데이터에 id 없는 경우 부여 — pickedSet/cpChecked의 ID 키 안정성 보장 */
+function migrateConsult() {
+  let nextId = Date.now() + 2000000; // memo/hospital과 충돌 방지용 오프셋
+  let changed = false;
+  S.consult.forEach(c => {
+    if (!c.id) { c.id = nextId++; changed = true; }
+  });
+  return changed;
+}
+
 function refreshSearchIfActive() {
   const si = document.getElementById('search-input');
   if (si && si.value.trim()) runSearch(si.value);
@@ -1646,6 +1843,7 @@ function refreshSearchIfActive() {
 
 function renderAll() {
   renderMemos();
+  renderConsult();
   renderHospital();
   refreshSearchIfActive();
 }
@@ -1693,8 +1891,9 @@ function togglePickMode(on) {
     pickedSet.clear();
     updatePickCountUI();
   }
-  // 모든 카드(검색결과 + 메모탭 + 병원탭) 재렌더 → 체크박스 표시/제거
+  // 모든 카드(검색결과 + 메모탭 + 상담탭 + 병원탭) 재렌더 → 체크박스 표시/제거
   renderMemos();
+  renderConsult();
   renderHospital();
   const si = document.getElementById('search-input');
   if (si && si.value.trim()) runSearch(si.value);
@@ -1801,6 +2000,13 @@ function runSearch(rawQuery) {
     if (hay.indexOf(ql) !== -1) memoHits.push({ m, idx });
   });
 
+  // 상담기록 검색: title + content
+  const consultHits = [];
+  S.consult.forEach((c, idx) => {
+    const hay = ((c.title || '') + ' ' + (c.content || '')).toLowerCase();
+    if (hay.indexOf(ql) !== -1) consultHits.push({ c, idx });
+  });
+
   // 병원 검색: disease + name + content + rx
   const hospHits = [];
   S.hospital.forEach((e, idx) => {
@@ -1808,7 +2014,7 @@ function runSearch(rawQuery) {
     if (hay.indexOf(ql) !== -1) hospHits.push({ e, idx });
   });
 
-  const totalCount = memoHits.length + hospHits.length;
+  const totalCount = memoHits.length + consultHits.length + hospHits.length;
   document.getElementById('search-title').textContent = '검색 결과: "' + q + '" (' + totalCount + ')';
 
   const resEl = document.getElementById('search-results');
@@ -1841,6 +2047,34 @@ function runSearch(rawQuery) {
         return '<div class="search-hit-card" onclick="openViewModalFromSearch(' + idx + ')">' +
           '<div class="search-hit-meta">' + esc(m.date || '') + '</div>' +
           '<div class="search-hit-title">' + highlight(m.title || '(제목 없음)', q) + '</div>' +
+          '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>');
+  }
+  if (consultHits.length) {
+    parts.push('<div class="search-result-group">' +
+      '<div class="search-result-group-title">💬 상담 기록 <span class="search-result-group-count">(' + consultHits.length + ')</span></div>' +
+      consultHits.map(({ c, idx }) => {
+        const preview = makePreview(c.content || '', q, 90);
+        const key = 'consult::' + c.id;
+        if (pickMode) {
+          const checked = pickedSet.has(key) ? ' checked' : '';
+          return '<div class="search-hit-card pickable">' +
+            '<div class="pick-cb-wrap" onclick="event.stopPropagation()">' +
+              '<input type="checkbox" class="pick-cb"' + checked +
+              ' onchange="onPickCheckboxChange(this, \'' + key + '\')">' +
+            '</div>' +
+            '<div class="pick-body" onclick="openEditConsultFromSearch(' + c.id + ')">' +
+              '<div class="search-hit-meta">' + esc(c.date || '') + '</div>' +
+              '<div class="search-hit-title">' + highlight(c.title || '(제목 없음)', q) + '</div>' +
+              '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' +
+            '</div>' +
+          '</div>';
+        }
+        return '<div class="search-hit-card" onclick="openEditConsultFromSearch(' + c.id + ')">' +
+          '<div class="search-hit-meta">' + esc(c.date || '') + '</div>' +
+          '<div class="search-hit-title">' + highlight(c.title || '(제목 없음)', q) + '</div>' +
           '<div class="search-hit-preview">' + highlight(preview, q) + '</div>' +
         '</div>';
       }).join('') +
@@ -1885,6 +2119,9 @@ function openViewModalFromSearch(idx) {
 }
 function openEditHospitalFromSearch(id) {
   openEditHospital(id);
+}
+function openEditConsultFromSearch(id) {
+  openEditConsult(id);
 }
 
 // 검색 input 이벤트 연결
@@ -2054,6 +2291,7 @@ function buildText() {
     }).join('\n\n---\n\n');
     parts.push('## 메모\n' + mt);
   }
+  if (S.consult.length) parts.push('## 상담기록\n' + S.consult.map(fmtConsult).join('\n\n'));
   if (S.hospital.length) parts.push('## 병원기록\n' + S.hospital.map(fmtHospital).join('\n\n'));
   return parts.join('\n\n');
 }
@@ -2064,7 +2302,8 @@ function copyAll() {
 }
 function copySection(type) {
   let text = '';
-  if (type === 'hospital') text = '## 병원기록\n' + (S.hospital.length ? S.hospital.map(fmtHospital).join('\n\n') : '(없음)');
+  if (type === 'consult') text = '## 상담기록\n' + (S.consult.length ? S.consult.map(fmtConsult).join('\n\n') : '(없음)');
+  else if (type === 'hospital') text = '## 병원기록\n' + (S.hospital.length ? S.hospital.map(fmtHospital).join('\n\n') : '(없음)');
   navigator.clipboard.writeText(text).then(() => toast('복사됨 ✓'));
 }
 
@@ -2085,10 +2324,11 @@ function openCopyPicker() {
   } else {
     // 누적된 것이 없으면 기존처럼 전체 체크
     S.memos.forEach(m => cpChecked.add('memo::' + m.id));
+    S.consult.forEach(c => cpChecked.add('consult::' + c.id));
     S.hospital.forEach(e => cpChecked.add('hospital::' + e.id));
   }
   // 기본은 모든 탭 펼쳐서 보여줌
-  ['memo','hospital'].forEach(t => cpExpanded.add(t));
+  ['memo','consult','hospital'].forEach(t => cpExpanded.add(t));
 
   renderCopyPicker();
   HS.open('modal-copy-picker');
@@ -2099,6 +2339,7 @@ function renderCopyPicker() {
 
   const tabs = [
     { id: 'memo',     title: '자유 메모',    items: S.memos.map((m, i) => ({ key: 'memo::'+m.id,     text: (m.title && m.title !== '메모' ? '[' + m.title + '] ' : '') + (m.content || ''), meta: m.date })) },
+    { id: 'consult',  title: '상담 기록',    items: S.consult.map((c, i) => ({ key: 'consult::'+c.id, text: (c.title ? '[' + c.title + '] ' : '') + (c.content || ''), meta: c.date })) },
     { id: 'hospital', title: '병원 기록',     items: S.hospital.map((e, i) => ({ key: 'hospital::'+e.id, text: (e.disease || e.name || '(병명 없음)') + (e.disease && e.name ? ' · ' + e.name : '') + (e.content ? ' — ' + e.content.split('\n')[0] : ''), meta: e.date })) }
   ];
 
@@ -2155,6 +2396,7 @@ function cpToggleTab(tabId) {
   // 해당 탭 항목들 키 모음
   let keys = [];
   if (tabId === 'memo')     keys = S.memos.map(m => 'memo::' + m.id);
+  else if (tabId === 'consult')  keys = S.consult.map(c => 'consult::' + c.id);
   else if (tabId === 'hospital') keys = S.hospital.map(e => 'hospital::' + e.id);
 
   // 전체 체크 여부 판단
@@ -2189,6 +2431,12 @@ function copySelected() {
     parts.push('## 메모\n' + mt);
   }
 
+  // 상담기록
+  const selConsult = S.consult.filter(c => cpChecked.has('consult::' + c.id));
+  if (selConsult.length) {
+    parts.push('## 상담기록\n' + selConsult.map(c => fmtConsult(c)).join('\n\n'));
+  }
+
   // 병원
   const selHosp = S.hospital.filter(e => cpChecked.has('hospital::' + e.id));
   if (selHosp.length) {
@@ -2207,6 +2455,7 @@ function copySelected() {
       updatePickCountUI();
       if (pickMode) {
         renderMemos();
+        renderConsult();
         renderHospital();
         const si = document.getElementById('search-input');
         if (si && si.value.trim()) runSearch(si.value);
@@ -2304,7 +2553,7 @@ async function confirmLogout() {
     try { await rpc('zaim_logout', { p_key: key }); } catch(e) {}
   }
   Object.keys(localStorage).forEach(k => { if (k.startsWith('zaim73_')) localStorage.removeItem(k); });
-  S = { memos: [], hospital: [] };
+  S = { memos: [], consult: [], hospital: [] };
   renderAll();
   document.getElementById('login-overlay').classList.add('active');
   document.getElementById('login-btn').disabled = false;
@@ -2347,11 +2596,14 @@ async function pullFromServer(opts = {}) {
     const data = await r.json();
     if (data && typeof data === 'object') {
       S.memos    = Array.isArray(data.memos)    ? data.memos    : [];
+      S.consult  = Array.isArray(data.consult)  ? data.consult  : [];
       S.hospital = Array.isArray(data.hospital) ? data.hospital : [];
     }
     migrateHospital();
     migrateMemos();
+    migrateConsult();
     sortHospital();
+    sortConsult();
     localStorage.setItem('zaim73_data', JSON.stringify(S));
     renderAll();
     setSyncIndicator('ok', '✓ 동기화됨');
@@ -2376,7 +2628,7 @@ async function pushToServer() {
   syncing = true;
   setSyncIndicator('pending', '↑ 저장 중...');
   try {
-    const payload = { memos: S.memos, hospital: S.hospital };
+    const payload = { memos: S.memos, consult: S.consult, hospital: S.hospital };
     const r = await rpc('zaim_push', { p_key: key, p_data: payload });
     if (r.status === 401 || r.status === 403) {
       registerAuthFail();
@@ -2420,7 +2672,7 @@ function forceLogout(reason) {
   clearTimeout(syncTimer); syncTimer = null;
   stopPolling();
   Object.keys(localStorage).forEach(k => { if (k.startsWith('zaim73_')) localStorage.removeItem(k); });
-  S = { memos: [], hospital: [] };
+  S = { memos: [], consult: [], hospital: [] };
   renderAll();
   authFailCount = 0;
   document.getElementById('login-overlay').classList.add('active');
@@ -2521,22 +2773,26 @@ async function pullFromServerQuiet() {
 
     const newState = {
       memos:    Array.isArray(data.memos)    ? data.memos    : [],
+      consult:  Array.isArray(data.consult)  ? data.consult  : [],
       hospital: Array.isArray(data.hospital) ? data.hospital : []
     };
 
     // 로컬과 서버 동일하면 아무것도 안 함 (깜빡임 방지)
     const localSig = JSON.stringify({
-      memos: S.memos, hospital: S.hospital
+      memos: S.memos, consult: S.consult, hospital: S.hospital
     });
     const serverSig = JSON.stringify(newState);
     if (localSig === serverSig) return;
 
     // 변경 있음 → 적용
     S.memos    = newState.memos;
+    S.consult  = newState.consult;
     S.hospital = newState.hospital;
     migrateHospital();
     migrateMemos();
+    migrateConsult();
     sortHospital();
+    sortConsult();
     localStorage.setItem('zaim73_data', JSON.stringify(S));
     renderAll();
     setSyncIndicator('ok', '✓ 새 데이터 동기화됨');

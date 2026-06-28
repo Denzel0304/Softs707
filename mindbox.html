@@ -312,6 +312,7 @@
     .mobile-back { font-size: 14px; color: var(--text2); border: none; background: transparent; padding: 4px 6px 4px 0; }
     .panel-inner { padding: 20px 16px 80px; }
     .login-box { width: 86%; }
+    .entry-del-btn { display: flex; } /* 모바일은 hover가 없으므로 항상 표시 */
   }
   @media (min-width: 641px) {
     .mobile-topbar { display: none !important; }
@@ -593,16 +594,16 @@ function registerAuthFail() {
 /* ============================================================
    모달 헬퍼
 ============================================================ */
-let modalClosingByPop = false; // popstate로 인한 닫힘인지 구분 (history.back() 중복 호출 방지)
+let suppressNextModalPopstate = false; // closeModal()이 스스로 history.back()을 트리거한 경우, 뒤따르는 popstate가 추가 동작(메인화면 이탈 등)까지 하지 않도록 막는 플래그
 function openModal(id) {
   document.getElementById(id).classList.add('active');
   history.pushState({ mbModal: id }, '');
 }
 function closeModal(id) {
+  const wasOpenViaHistory = history.state && history.state.mbModal === id;
   document.getElementById(id).classList.remove('active');
-  // 사용자가 '취소'/'삭제' 버튼으로 직접 닫은 경우, 모달용으로 쌓인 history 항목을 되돌려준다.
-  // (popstate 이벤트로 인해 이미 호출된 경우는 또 back()을 부르면 한 단계 더 빠져나가므로 막아준다)
-  if (!modalClosingByPop && history.state && history.state.mbModal === id) {
+  if (wasOpenViaHistory) {
+    suppressNextModalPopstate = true; // 이 back()으로 발생할 popstate는 "모달만 닫는" 용도이지, 화면 전환이 아니다
     history.back();
   }
 }
@@ -632,17 +633,21 @@ function exitToListNow() {
 }
 
 window.addEventListener('popstate', (e) => {
-  // 1순위: 열려있는 모달이 있으면 그 모달만 닫고, 메인/리스트 전환은 하지 않음
+  // closeModal()이 스스로 발생시킨 back()이면, 이미 모달도 닫혔고 history도 정리됐으니 여기선 아무것도 더 하지 않음
+  if (suppressNextModalPopstate) {
+    suppressNextModalPopstate = false;
+    return;
+  }
+  // 1순위: (뒤로가기 제스처로 직접 들어온 경우) 열려있는 모달이 있으면 그 모달만 닫고, 메인/리스트 전환은 하지 않음
   const openModalEl = document.querySelector('.modal-overlay.active');
   if (openModalEl) {
-    modalClosingByPop = true;
     openModalEl.classList.remove('active');
-    modalClosingByPop = false;
     return;
   }
   // 2순위: 뒤로가기로 'main' 화면에서 빠져나오는 경우: 페이지 이탈 없이 목록 화면으로 전환
   if (document.body.classList.contains('show-main')) {
     exitToListNow();
+    return;
   }
 });
 

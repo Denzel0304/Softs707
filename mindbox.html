@@ -925,11 +925,15 @@ function resumeWizard(id) {
   const sortedQs = [...S.questions].sort((a,b) => a.order - b.order);
   const answers = {};
   (entry.answers || []).forEach(a => { if (a.answerText) answers[a.questionId] = a.answerText; });
-  // 저장된 답변이 채워진 마지막 문항 다음 단계부터 이어서 시작
+  // 저장된 답변이 채워진 마지막 문항 다음 단계부터 이어서 시작 (구버전 데이터 대비 기본 계산)
   let resumeStep = 0;
   for (let i = 0; i < sortedQs.length; i++) {
     if (answers[sortedQs[i].id]) resumeStep = i + 1;
   }
+  // 감정강도(29/30단계)까지 진행했던 경우, 기록된 resumeStep을 우선 사용
+  if (typeof entry.resumeStep === 'number') resumeStep = Math.max(resumeStep, entry.resumeStep);
+  const totalSteps = sortedQs.length + 2;
+  resumeStep = Math.min(resumeStep, totalSteps - 1);
   wizard = {
     step: resumeStep,
     title: entry.title || '',
@@ -1100,6 +1104,8 @@ function wizardAutoSave() {
     entry.questionsSnapshot = sortedQs.map(q => ({ id: q.id, category: q.category, order: q.order, text: q.text }));
     entry.answers = sortedQs.map(q => ({ questionId: q.id, answerText: wizard.answers[q.id] || '' }));
   }
+  // 가장 멀리 진행한 단계를 기록 (재진입 시 이 지점부터 이어서 시작 - 질문뿐 아니라 감정강도 단계도 포함)
+  entry.resumeStep = Math.max(entry.resumeStep || 0, wizard.step + 1);
   renderSidebarList();
   queueSync();
 }

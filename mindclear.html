@@ -51,7 +51,7 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
 }
 
 /* ── 버튼 2개 ── */
-.trigger-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 16px 4px; }
+.trigger-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 28px 16px 4px; }
 .trigger-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 18px 12px 16px; border: 1.5px solid; border-radius: var(--radius);
@@ -413,16 +413,23 @@ function goToQ() {
   st.title = document.getElementById('emotion-title').value.trim();
   if (!st.title) return;
 
-  // st 초기화 재확인 (step이 0인지 명시 보장)
+  // st 초기화 재확인
   st.step = 0;
   st.scores = [];
   st.flags = [];
   st.sel = null;
 
+  // 질문 시트 내용 완전 초기화 (이전 결과화면 잔류 방지)
+  document.getElementById('sh-body').innerHTML = '';
+  document.getElementById('sh-footer').innerHTML = `
+    <button class="btn-cancel" onclick="closeAll()">닫기</button>
+    <button class="btn-primary" id="btn-next" disabled onclick="nextStep()">다음</button>
+  `;
+
   // 질문 시트 헤더 세팅
   document.getElementById('q-sheet-title').textContent = st.title;
 
-  // 제목 시트 닫기 (overlayStack에서 제거, history는 replaceState로 유지)
+  // 제목 시트 닫기
   document.getElementById('overlay-title').classList.remove('open');
   const idx = overlayStack.indexOf('overlay-title');
   if (idx !== -1) overlayStack.splice(idx, 1);
@@ -430,7 +437,6 @@ function goToQ() {
   // 질문 시트 열기
   pushOverlay('overlay-q');
 
-  // 항상 최상단으로
   document.getElementById('sh-body').scrollTop = 0;
   renderQ();
 }
@@ -634,6 +640,12 @@ function openDetail(id) {
   `;
   document.getElementById('detail-body').scrollTop = 0;
   pushOverlay('overlay-detail');
+  // 시트 열린 후 스크롤 최상단 재보장
+  requestAnimationFrame(() => {
+    document.getElementById('detail-body').scrollTop = 0;
+    const sheet = document.querySelector('#overlay-detail .sheet');
+    if (sheet) sheet.scrollTop = 0;
+  });
 }
 
 /* ═══════════════════════════════════════

@@ -331,53 +331,57 @@ let records = JSON.parse(localStorage.getItem('maum_v2') || '[]');
 let pendingDeleteId = null;
 
 /* ═══════════════════════════════════════
-   History API 스택
+   History API — 모달 단일 항목 방식
+   규칙:
+   · 모달이 1개라도 열릴 때 → pushState 1번만
+   · 이후 모달 전환은 replaceState (히스토리 추가 없음)
+   · 모달 전체 닫힐 때 → history.back() 1번
+   · 뒤로가기(popstate) → 열린 모달 전체 닫기
 ═══════════════════════════════════════ */
-// overlayStack: 현재 열린 오버레이 id 스택
-let overlayStack = [];
+let overlayStack = [];        // 현재 열린 오버레이 id 목록
+let modalHistoryPushed = false; // 히스토리에 push 됐는지 여부
 
 function pushOverlay(id) {
   document.getElementById(id).classList.add('open');
   overlayStack.push(id);
-  history.pushState({ overlayStack: [...overlayStack] }, '');
-}
-
-function popOverlay() {
-  if (!overlayStack.length) return;
-  const id = overlayStack.pop();
-  document.getElementById(id).classList.remove('open');
+  if (!modalHistoryPushed) {
+    history.pushState({ modal: true }, '');
+    modalHistoryPushed = true;
+  }
+  // 이미 push 됐으면 replaceState로 상태만 갱신 (히스토리 쌓지 않음)
+  else {
+    history.replaceState({ modal: true }, '');
+  }
 }
 
 function closeOverlay(id) {
   document.getElementById(id).classList.remove('open');
   const idx = overlayStack.indexOf(id);
   if (idx !== -1) overlayStack.splice(idx, 1);
-  // history 뒤로 가지 않음 — 직접 닫기는 스택에서만 제거
-  // (뒤로가기로 열린 것과 충돌 방지용: pushState로 맞춤)
-  if (history.state && history.state.overlayStack) {
-    history.replaceState({ overlayStack: [...overlayStack] }, '');
+
+  if (overlayStack.length === 0) {
+    // 모달 전부 닫힘 → 히스토리 1칸 뒤로
+    if (modalHistoryPushed) {
+      modalHistoryPushed = false;
+      history.back();
+    }
   }
 }
 
 function closeAll() {
-  while (overlayStack.length) {
-    const id = overlayStack.pop();
-    document.getElementById(id).classList.remove('open');
-  }
-  if (history.state && history.state.overlayStack !== undefined) {
-    // go back as many times as needed
+  overlayStack.forEach(id => document.getElementById(id).classList.remove('open'));
+  overlayStack = [];
+  if (modalHistoryPushed) {
+    modalHistoryPushed = false;
+    history.back();
   }
 }
 
-window.addEventListener('popstate', e => {
-  const prev = (e.state && e.state.overlayStack) ? e.state.overlayStack : [];
-  // 현재보다 prev가 짧으면 → 뒤로가기 → 가장 위 오버레이 닫기
-  if (prev.length < overlayStack.length) {
-    const id = overlayStack.pop();
-    document.getElementById(id).classList.remove('open');
-  } else if (prev.length > overlayStack.length) {
-    // 앞으로가기 — 무시
-  }
+window.addEventListener('popstate', () => {
+  // 뒤로가기가 눌렸을 때 → 열린 모달 전체 즉시 닫기
+  overlayStack.forEach(id => document.getElementById(id).classList.remove('open'));
+  overlayStack = [];
+  modalHistoryPushed = false;
 });
 
 /* ═══════════════════════════════════════
@@ -429,13 +433,15 @@ function goToQ() {
   // 질문 시트 헤더 세팅
   document.getElementById('q-sheet-title').textContent = st.title;
 
-  // 제목 시트 닫기
+  // 제목 시트 → 질문 시트 전환 (히스토리 추가 없이 replace)
   document.getElementById('overlay-title').classList.remove('open');
   const idx = overlayStack.indexOf('overlay-title');
   if (idx !== -1) overlayStack.splice(idx, 1);
 
-  // 질문 시트 열기
-  pushOverlay('overlay-q');
+  document.getElementById('overlay-q').classList.add('open');
+  overlayStack.push('overlay-q');
+  // 이미 modalHistoryPushed 상태이므로 replaceState만
+  history.replaceState({ modal: true }, '');
 
   document.getElementById('sh-body').scrollTop = 0;
   renderQ();
@@ -662,7 +668,7 @@ function doDelete() {
   records = records.filter(r => r.id !== pendingDeleteId);
   localStorage.setItem('maum_v2', JSON.stringify(records));
   pendingDeleteId = null;
-  closeOverlay('overlay-confirm');
+  closeAll();   // confirm + detail 모두 닫기
   renderLists();
 }
 

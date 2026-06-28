@@ -22,7 +22,7 @@
   --bdr:  #c0e4cf;
   --radius: 14px;
   --shadow: 0 2px 12px rgba(20,80,45,0.08);
-  --header-h: 100px;
+  --header-h: 68px;
 }
 
 html, body { height: 100%; background: var(--surface); font-family: -apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif; color: var(--txt); -webkit-font-smoothing: antialiased; }
@@ -31,7 +31,7 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
 .header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
   background: linear-gradient(160deg,#e2f7ea 0%,#c8efda 100%);
-  padding: 52px 20px 18px;
+  padding: 14px 20px 14px;
   border-bottom: 1px solid var(--bdr);
   max-width: 480px; margin: 0 auto;
 }
@@ -297,8 +297,8 @@ const Q = {
     { q:"지금 당장 현실적으로 할 수 있는 대응 행동이 있는가?",    sub:"항의·대화·법적 대응 등 구체적 행동이 가능한지",          flag:s=>s>=4, flagLabel:"즉각 대응 필요" },
     { q:"이 일이 1년 후에도 나에게 영향을 미칠 것 같은가?",       sub:"시간 원근법 — 지금보다 덜 중요할 수 있습니다",           flag:s=>s>=4, flagLabel:"장기 영향 예상" },
     { q:"상대방이 의도적으로 나를 해쳤다고 확신하는가?",          sub:"실수·오해·무지일 가능성도 생각해보세요",                 flag:s=>s>=4, flagLabel:"의도적 가해 판단" },
-    { q:"이 분노를 계속 품고 있는 것이 나에게 이득이 되는가?",    sub:"분노 유지의 실질적 이점이 있는지 솔직하게",              flag:s=>s<=2, flagLabel:"분노 유지 손실 인식 부족" },
-    { q:"비슷한 상황에서 다른 사람도 동일하게 분노할 것 같은가?", sub:"나만의 과민반응은 아닌지 점검해보세요",                  flag:s=>s<=2, flagLabel:"사회적 타당성 낮음" },
+    { q:"이 분노를 계속 품고 있는 것이 나에게 이득이 되는가?",    sub:"분노 유지의 실질적 이점이 있는지 솔직하게",              flag:s=>s>=4, flagLabel:"분노 유지가 이득이라는 믿음" },
+    { q:"비슷한 상황에서 다른 사람도 동일하게 분노할 것 같은가?", sub:"나만의 과민반응은 아닌지 점검해보세요",                  flag:s=>s<=2, flagLabel:"과민반응 가능성 (타인도 분노 안 할 것 같음)" },
     { q:"분노 대상과의 관계가 앞으로도 계속되는가?",              sub:"지속적 관계라면 감정 처리가 더욱 중요합니다",             flag:s=>s>=4, flagLabel:"지속 관계 → 처리 필요" }
   ],
   anxiety: [
@@ -413,11 +413,21 @@ function goToQ() {
   st.title = document.getElementById('emotion-title').value.trim();
   if (!st.title) return;
 
+  // st 초기화 재확인 (step이 0인지 명시 보장)
+  st.step = 0;
+  st.scores = [];
+  st.flags = [];
+  st.sel = null;
+
   // 질문 시트 헤더 세팅
   document.getElementById('q-sheet-title').textContent = st.title;
 
-  // 제목 시트 닫고 질문 시트 열기
-  closeOverlay('overlay-title');
+  // 제목 시트 닫기 (overlayStack에서 제거, history는 replaceState로 유지)
+  document.getElementById('overlay-title').classList.remove('open');
+  const idx = overlayStack.indexOf('overlay-title');
+  if (idx !== -1) overlayStack.splice(idx, 1);
+
+  // 질문 시트 열기
   pushOverlay('overlay-q');
 
   // 항상 최상단으로
@@ -431,6 +441,8 @@ function goToQ() {
 function renderQ() {
   const qs = Q[st.type];
   const total = qs.length;
+  // 방어: step이 범위 밖이면 0으로 리셋
+  if (st.step < 0 || st.step >= total) { st.step = 0; }
   const i = st.step;
 
   document.getElementById('sh-prog').style.width = Math.round((i/total)*100) + '%';
@@ -467,11 +479,13 @@ function pick(n) {
 
 function nextStep() {
   if (st.sel === null) return;
-  const q = Q[st.type][st.step];
+  const qs = Q[st.type];
+  if (st.step < 0 || st.step >= qs.length) return; // 방어
+  const q = qs[st.step];
   st.scores.push(st.sel);
   if (q.flag(st.sel)) st.flags.push({ label:q.flagLabel, score:st.sel, qIdx:st.step });
   st.step++;
-  if (st.step >= Q[st.type].length) showResult();
+  if (st.step >= qs.length) showResult();
   else renderQ();
 }
 

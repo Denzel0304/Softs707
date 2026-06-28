@@ -265,8 +265,9 @@
   }
   .q-edit-num { font-size: 12px; font-weight: 700; color: var(--text3); min-width: 20px; text-align: center; flex-shrink: 0; }
   .q-edit-row textarea {
-    flex: 1; border: none; background: transparent; font-size: 13px; line-height: 1.5; resize: none; outline: none;
-    min-height: 20px; padding: 2px 0;
+    flex: 1; border: none; background: transparent; font-size: 13px; line-height: 1.5; outline: none;
+    height: 32px; padding: 6px 0;
+    white-space: nowrap; overflow-x: auto; overflow-y: hidden; resize: none;
   }
   .q-mini-btn {
     width: 26px; height: 26px; border: 1px solid var(--border2); background: var(--bg); border-radius: 5px;
@@ -534,59 +535,13 @@ async function pullFromServer() {
       S.questions = Array.isArray(data.questions) ? data.questions : [];
       S.entries   = Array.isArray(data.entries)   ? data.entries   : [];
     }
-    const migrated = migrateMetricIntensity();
     localStorage.setItem(DATA_CACHE, JSON.stringify(S));
     setSyncIndicator('ok', '✓ 동기화됨');
     renderSidebarList();
     renderMain();
-    if (migrated) queueSync(); // 마이그레이션으로 데이터가 바뀌었으면 서버에도 정리된 형태로 반영
   } catch (e) {
     setSyncIndicator('err', '⚠ 네트워크 오류');
   }
-}
-
-/* ============================================================
-   마이그레이션: 구버전(metric:'initial'/'final' 문항 + 텍스트 답변) →
-   신버전(entry.initialIntensity / entry.finalIntensity 독립 필드)
-   - 마스터 문항 목록에서 metric 태그 붙은 문항을 제거
-   - 각 entry에서 해당 문항의 답변 텍스트("8점" 등)를 숫자로 추출해 새 필드로 이전
-   - 이전 후 그 문항/답변은 entry에서도 제거 (질문 목록에 중복으로 안 보이도록)
-   - 이미 마이그레이션된 데이터는 아무 영향 없음(멱등성 보장)
-============================================================ */
-function migrateMetricIntensity() {
-  let changed = false;
-  const metricQIds = new Set(
-    (S.questions || []).filter(q => q.metric === 'initial' || q.metric === 'final').map(q => q.id)
-  );
-  if (metricQIds.size > 0) {
-    S.questions = S.questions.filter(q => !metricQIds.has(q.id));
-    changed = true;
-  }
-
-  (S.entries || []).forEach(entry => {
-    const snapMetricQs = (entry.questionsSnapshot || []).filter(q => q.metric === 'initial' || q.metric === 'final');
-    if (snapMetricQs.length === 0) return;
-
-    snapMetricQs.forEach(q => {
-      if (entry[q.metric === 'initial' ? 'initialIntensity' : 'finalIntensity'] != null) return; // 이미 이전됨
-      const a = (entry.answers || []).find(a => a.questionId === q.id);
-      if (a && a.answerText) {
-        const m = String(a.answerText).match(/\d+/);
-        if (m) {
-          const v = Math.max(1, Math.min(10, parseInt(m[0], 10)));
-          if (q.metric === 'initial') entry.initialIntensity = v;
-          else entry.finalIntensity = v;
-        }
-      }
-    });
-
-    const metricQIdsInEntry = new Set(snapMetricQs.map(q => q.id));
-    entry.questionsSnapshot = (entry.questionsSnapshot || []).filter(q => !metricQIdsInEntry.has(q.id));
-    entry.answers = (entry.answers || []).filter(a => !metricQIdsInEntry.has(a.questionId));
-    changed = true;
-  });
-
-  return changed;
 }
 
 function queueSync() {
@@ -1096,7 +1051,7 @@ function renderSettingsView(el) {
         <div class="q-edit-num">${idx + 1}</div>
         <button class="q-mini-btn" onclick="moveQuestion('${q.id}',-1)" title="위로">▲</button>
         <button class="q-mini-btn" onclick="moveQuestion('${q.id}',1)" title="아래로">▼</button>
-        <textarea rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; updateQuestionText('${q.id}', this.value)">${escapeHtml(q.text)}</textarea>
+        <textarea rows="1" oninput="updateQuestionText('${q.id}', this.value)">${escapeHtml(q.text)}</textarea>
         <button class="q-mini-btn danger" onclick="askDeleteQuestion('${q.id}')" title="삭제">✕</button>
       </div>`;
   });

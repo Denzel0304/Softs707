@@ -203,6 +203,25 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
 .btn-del-cancel { flex:1; padding:13px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
 .btn-del-ok     { flex:1; padding:13px; background:#d04040; color:#fff; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; cursor:pointer; }
 .btn-del-ok:active { background:#a02020; }
+
+/* ── 카테고리 이동 모달 ── */
+#overlay-move { align-items:center; justify-content:center; }
+.move-box { background:#fff; border-radius:var(--radius); padding:24px 20px 20px; width:calc(100% - 48px); max-width:320px; }
+.move-title { font-size:17px; font-weight:700; color:var(--txt); margin-bottom:6px; }
+.move-desc  { font-size:13px; color:var(--txt2); line-height:1.6; margin-bottom:18px; }
+.move-options { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+.btn-move-opt {
+  display:flex; align-items:center; gap:10px;
+  padding:13px 16px; border-radius:var(--radius);
+  border:1.5px solid var(--bdr); background:#fff;
+  font-size:14px; font-weight:600; color:var(--txt); cursor:pointer;
+  transition:background .1s, border-color .1s;
+}
+.btn-move-opt:active { background:var(--g50); }
+.btn-move-opt.current { opacity:.38; cursor:not-allowed; border-style:dashed; }
+.btn-move-opt .opt-badge { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; margin-left:auto; }
+.btn-move-cancel { width:100%; padding:13px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
+.btn-detail-move { padding:14px 18px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; -webkit-appearance:none; }
 </style>
 </head>
 <body>
@@ -271,6 +290,7 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
     <div class="sheet-body" id="detail-body"></div>
     <div class="sheet-footer">
       <button class="btn-cancel" onclick="closeOverlay('overlay-detail')">닫기</button>
+      <button class="btn-detail-move" onclick="openMoveModal()">이동 ↗</button>
     </div>
   </div>
 </div>
@@ -284,6 +304,16 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
       <button class="btn-del-cancel" onclick="closeOverlay('overlay-confirm')">취소</button>
       <button class="btn-del-ok" id="btn-del-ok" onclick="doDelete()">삭제</button>
     </div>
+  </div>
+</div>
+
+<!-- ⑤ 카테고리 이동 -->
+<div class="overlay" id="overlay-move">
+  <div class="move-box">
+    <div class="move-title">카테고리 이동</div>
+    <div class="move-desc" id="move-desc">현재 카테고리에서 다른 곳으로 이동합니다.</div>
+    <div class="move-options" id="move-options"></div>
+    <button class="btn-move-cancel" onclick="closeOverlay('overlay-move')">취소</button>
   </div>
 </div>
 
@@ -598,7 +628,10 @@ function escHtml(s) {
 /* ═══════════════════════════════════════
    상세 보기
 ═══════════════════════════════════════ */
+let currentDetailId = null;
+
 function openDetail(id) {
+  currentDetailId = id;
   const r = records.find(x => x.id === id);
   if (!r) return;
   const info = CAT[r.cat];
@@ -669,6 +702,51 @@ function doDelete() {
   localStorage.setItem('maum_v2', JSON.stringify(records));
   pendingDeleteId = null;
   closeAll();   // confirm + detail 모두 닫기
+  renderLists();
+}
+
+/* ═══════════════════════════════════════
+   카테고리 이동 (기존 로직 미수정)
+═══════════════════════════════════════ */
+let moveTargetId = null;
+
+function openMoveModal() {
+  // 현재 상세 보기 중인 레코드 id 추출
+  const detailBody = document.getElementById('detail-body');
+  // openDetail() 호출 시 저장해둔 전역 변수 활용
+  const r = records.find(x => x.id === currentDetailId);
+  if (!r) return;
+
+  const catOrder = [
+    { key:'done',       label:'처리 완료', emoji:'✅', badgeCls:'badge-done' },
+    { key:'processing', label:'처리 중',   emoji:'⏳', badgeCls:'badge-processing' },
+    { key:'critical',   label:'분석 요망', emoji:'🔍', badgeCls:'badge-critical' }
+  ];
+
+  document.getElementById('move-desc').textContent =
+    `현재: "${CAT[r.cat].label}" → 이동할 카테고리를 선택하세요`;
+
+  document.getElementById('move-options').innerHTML = catOrder.map(c => {
+    const isCurrent = c.key === r.cat;
+    return `
+      <button class="btn-move-opt${isCurrent ? ' current' : ''}"
+        ${isCurrent ? 'disabled' : `onclick="doMove(${r.id},'${c.key}')"`}>
+        <span>${c.emoji}</span>
+        <span>${c.label}</span>
+        <span class="opt-badge ${c.badgeCls}">${isCurrent ? '현재' : '이동'}</span>
+      </button>`;
+  }).join('');
+
+  moveTargetId = r.id;
+  pushOverlay('overlay-move');
+}
+
+function doMove(id, newCat) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  r.cat = newCat;
+  localStorage.setItem('maum_v2', JSON.stringify(records));
+  closeAll();
   renderLists();
 }
 

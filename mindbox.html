@@ -224,6 +224,38 @@
   }
   .wizard-title-input:focus { border-color: var(--accent); }
 
+  /* ===== 감정강도 슬라이더 (항목과 분리된 별도 영역) ===== */
+  .intensity-section {
+    margin-top: 22px; padding: 16px 16px 14px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+  }
+  .intensity-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .intensity-section-sub { font-size: 11.5px; color: var(--text3); margin-bottom: 14px; }
+  .intensity-slider-row { margin-bottom: 16px; }
+  .intensity-slider-row:last-child { margin-bottom: 0; }
+  .intensity-slider-label {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .intensity-slider-label .lbl-text { font-size: 12.5px; color: var(--text2); font-weight: 600; }
+  .intensity-slider-value {
+    font-size: 14px; font-weight: 800; color: #fff; padding: 2px 10px; border-radius: 20px; min-width: 28px; text-align: center;
+  }
+  .intensity-slider {
+    width: 100%; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 4px;
+    background: var(--bg3); outline: none; margin: 0;
+  }
+  .intensity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--accent); cursor: pointer;
+  }
+  .intensity-slider::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--accent); cursor: pointer;
+  }
+  .intensity-scale-ticks {
+    display: flex; justify-content: space-between; font-size: 10px; color: var(--text3); margin-top: 4px; padding: 0 1px;
+  }
+
   /* ===== 설정 (문항 관리) ===== */
   .settings-section { margin-bottom: 26px; }
   .settings-cat-label { font-size: 11.5px; font-weight: 700; color: var(--text3); letter-spacing: .5px; margin: 18px 0 8px; }
@@ -412,13 +444,11 @@ function intensityColor(n) {
   if (v <= 6) return 'var(--int-mid)';
   return 'var(--int-high)';
 }
-function extractMetric(entry, metricName) {
-  const q = (entry.questionsSnapshot || []).find(q => q.metric === metricName);
-  if (!q) return null;
-  const a = (entry.answers || []).find(a => a.questionId === q.id);
-  if (!a || !a.answerText) return null;
-  const m = String(a.answerText).match(/\d+/);
-  return m ? Math.max(1, Math.min(10, parseInt(m[0], 10))) : null;
+/* 감정강도(시작/끝)는 문항과 완전히 분리된 entry.initialIntensity / entry.finalIntensity 필드에 저장된다.
+   문항 순서 변경, 추가, 삭제와 무관하게 항상 안전하다. */
+function getIntensity(entry, which) {
+  const v = entry ? entry[which === 'initial' ? 'initialIntensity' : 'finalIntensity'] : null;
+  return (typeof v === 'number' && v >= 1 && v <= 10) ? v : null;
 }
 
 /* ============================================================
@@ -504,13 +534,59 @@ async function pullFromServer() {
       S.questions = Array.isArray(data.questions) ? data.questions : [];
       S.entries   = Array.isArray(data.entries)   ? data.entries   : [];
     }
+    const migrated = migrateMetricIntensity();
     localStorage.setItem(DATA_CACHE, JSON.stringify(S));
     setSyncIndicator('ok', '✓ 동기화됨');
     renderSidebarList();
     renderMain();
+    if (migrated) queueSync(); // 마이그레이션으로 데이터가 바뀌었으면 서버에도 정리된 형태로 반영
   } catch (e) {
     setSyncIndicator('err', '⚠ 네트워크 오류');
   }
+}
+
+/* ============================================================
+   마이그레이션: 구버전(metric:'initial'/'final' 문항 + 텍스트 답변) →
+   신버전(entry.initialIntensity / entry.finalIntensity 독립 필드)
+   - 마스터 문항 목록에서 metric 태그 붙은 문항을 제거
+   - 각 entry에서 해당 문항의 답변 텍스트("8점" 등)를 숫자로 추출해 새 필드로 이전
+   - 이전 후 그 문항/답변은 entry에서도 제거 (질문 목록에 중복으로 안 보이도록)
+   - 이미 마이그레이션된 데이터는 아무 영향 없음(멱등성 보장)
+============================================================ */
+function migrateMetricIntensity() {
+  let changed = false;
+  const metricQIds = new Set(
+    (S.questions || []).filter(q => q.metric === 'initial' || q.metric === 'final').map(q => q.id)
+  );
+  if (metricQIds.size > 0) {
+    S.questions = S.questions.filter(q => !metricQIds.has(q.id));
+    changed = true;
+  }
+
+  (S.entries || []).forEach(entry => {
+    const snapMetricQs = (entry.questionsSnapshot || []).filter(q => q.metric === 'initial' || q.metric === 'final');
+    if (snapMetricQs.length === 0) return;
+
+    snapMetricQs.forEach(q => {
+      if (entry[q.metric === 'initial' ? 'initialIntensity' : 'finalIntensity'] != null) return; // 이미 이전됨
+      const a = (entry.answers || []).find(a => a.questionId === q.id);
+      if (a && a.answerText) {
+        const m = String(a.answerText).match(/\d+/);
+        if (m) {
+          const v = Math.max(1, Math.min(10, parseInt(m[0], 10)));
+          if (q.metric === 'initial') entry.initialIntensity = v;
+          else entry.finalIntensity = v;
+        }
+      }
+    });
+
+    const metricQIdsInEntry = new Set(snapMetricQs.map(q => q.id));
+    entry.questionsSnapshot = (entry.questionsSnapshot || []).filter(q => !metricQIdsInEntry.has(q.id));
+    entry.answers = (entry.answers || []).filter(a => !metricQIdsInEntry.has(a.questionId));
+    changed = true;
+  });
+
+  return changed;
 }
 
 function queueSync() {
@@ -607,8 +683,8 @@ function renderSidebarList() {
     return;
   }
   wrap.innerHTML = sorted.map(e => {
-    const init = extractMetric(e, 'initial');
-    const fin  = extractMetric(e, 'final');
+    const init = getIntensity(e, 'initial');
+    const fin  = getIntensity(e, 'final');
     const chips = (init !== null || fin !== null) ? `
       <div class="intensity-mini">
         ${init !== null ? `<span class="int-chip" style="background:${intensityColor(init)}">${init}</span>` : '<span class="int-chip" style="background:var(--text3)">-</span>'}
@@ -656,8 +732,8 @@ function openEntry(id) {
 function renderDetailView(el) {
   const entry = S.entries.find(e => e.id === currentEntryId);
   if (!entry) { el.innerHTML = `<div class="empty-state">기록을 찾을 수 없습니다.</div>`; return; }
-  const init = extractMetric(entry, 'initial');
-  const fin  = extractMetric(entry, 'final');
+  const init = getIntensity(entry, 'initial');
+  const fin  = getIntensity(entry, 'final');
 
   const qaHtml = (entry.questionsSnapshot || []).map(q => {
     const a = (entry.answers || []).find(a => a.questionId === q.id);
@@ -679,20 +755,44 @@ function renderDetailView(el) {
       </div>`;
   }).join('');
 
+  const initVal = init !== null ? init : 5;
+  const finVal  = fin  !== null ? fin  : 5;
+
   el.innerHTML = `
     <div class="detail-head">
       <input class="detail-title-input" id="detail-title" value="${escapeHtml(entry.title || '')}" oninput="markDirty()">
     </div>
     <div class="detail-meta">작성일 ${fmtDate(entry.createdAt)}${entry.updatedAt && entry.updatedAt !== entry.createdAt ? ` · 수정됨 ${fmtDate(entry.updatedAt)}` : ''}</div>
-    ${(init !== null || fin !== null) ? `
     <div class="intensity-banner">
       <span class="label">감정강도</span>
       <span class="big-chip" style="background:${init!==null?intensityColor(init):'var(--text3)'}">${init !== null ? init : '-'}</span>
       <span class="arrow-big">→</span>
       <span class="big-chip" style="background:${fin!==null?intensityColor(fin):'var(--text3)'}">${fin !== null ? fin : '-'}</span>
       ${(init !== null && fin !== null) ? `<span class="delta">${fin < init ? `${init - fin}점 감소` : fin > init ? `${fin - init}점 증가` : '변화 없음'}</span>` : ''}
-    </div>` : ''}
+    </div>
     <div id="qa-list">${qaHtml}</div>
+    <div class="intensity-section">
+      <div class="intensity-section-title">감정강도 평가</div>
+      <div class="intensity-section-sub">문항과 별개로 항상 이 위치에 고정됩니다.</div>
+      <div class="intensity-slider-row">
+        <div class="intensity-slider-label">
+          <span class="lbl-text">시작 시점 강도</span>
+          <span class="intensity-slider-value" id="init-val-chip" style="background:${intensityColor(initVal)}">${initVal}</span>
+        </div>
+        <input type="range" min="1" max="10" step="1" class="intensity-slider" id="detail-init-slider"
+          value="${initVal}" oninput="onDetailSliderInput('init', this.value)">
+        <div class="intensity-scale-ticks"><span>1</span><span>5</span><span>10</span></div>
+      </div>
+      <div class="intensity-slider-row">
+        <div class="intensity-slider-label">
+          <span class="lbl-text">종료 시점 강도</span>
+          <span class="intensity-slider-value" id="fin-val-chip" style="background:${intensityColor(finVal)}">${finVal}</span>
+        </div>
+        <input type="range" min="1" max="10" step="1" class="intensity-slider" id="detail-fin-slider"
+          value="${finVal}" oninput="onDetailSliderInput('fin', this.value)">
+        <div class="intensity-scale-ticks"><span>1</span><span>5</span><span>10</span></div>
+      </div>
+    </div>
     <div class="detail-actions">
       <button class="save-btn" id="detail-save-btn" onclick="saveEntryEdits()" disabled>저장됨</button>
     </div>
@@ -718,6 +818,39 @@ function syncTextareasToEntry(entry) {
   });
   const titleInput = document.getElementById('detail-title');
   if (titleInput) entry.title = titleInput.value;
+  const initSlider = document.getElementById('detail-init-slider');
+  const finSlider = document.getElementById('detail-fin-slider');
+  if (initSlider) entry.initialIntensity = parseInt(initSlider.value, 10);
+  if (finSlider) entry.finalIntensity = parseInt(finSlider.value, 10);
+}
+
+/* 상세보기 슬라이더 조작: 칩 색상/숫자 즉시 반영 + 상단 배너도 같이 갱신 + 변경 표시 */
+function onDetailSliderInput(which, value) {
+  const v = parseInt(value, 10);
+  const chip = document.getElementById(which === 'init' ? 'init-val-chip' : 'fin-val-chip');
+  if (chip) { chip.textContent = v; chip.style.background = intensityColor(v); }
+  markDirty();
+  // 상단 배너의 큰 칩도 같이 업데이트 (저장 전 미리보기)
+  const entry = S.entries.find(e => e.id === currentEntryId);
+  if (!entry) return;
+  const initSlider = document.getElementById('detail-init-slider');
+  const finSlider = document.getElementById('detail-fin-slider');
+  const initVal = initSlider ? parseInt(initSlider.value, 10) : null;
+  const finVal = finSlider ? parseInt(finSlider.value, 10) : null;
+  const banner = document.querySelector('.intensity-banner');
+  if (banner) {
+    const chips = banner.querySelectorAll('.big-chip');
+    if (chips[0]) { chips[0].textContent = initVal; chips[0].style.background = intensityColor(initVal); }
+    if (chips[1]) { chips[1].textContent = finVal; chips[1].style.background = intensityColor(finVal); }
+    let deltaEl = banner.querySelector('.delta');
+    const deltaText = finVal < initVal ? `${initVal - finVal}점 감소` : finVal > initVal ? `${finVal - initVal}점 증가` : '변화 없음';
+    if (!deltaEl) {
+      deltaEl = document.createElement('span');
+      deltaEl.className = 'delta';
+      banner.appendChild(deltaEl);
+    }
+    deltaEl.textContent = deltaText;
+  }
 }
 
 function markDirty() {
@@ -760,7 +893,7 @@ function confirmDeleteEntry() {
 function startWizard() {
   const sortedQs = [...S.questions].sort((a,b) => a.order - b.order);
   if (sortedQs.length === 0) { alert('등록된 문항이 없습니다. 먼저 설정에서 문항을 추가해주세요.'); return; }
-  wizard = { step: -1, title: '', answers: {} }; // step -1 = 제목 입력 단계
+  wizard = { step: -1, title: '', answers: {}, initialIntensity: 5, finalIntensity: 5 }; // step -1 = 제목 입력 단계
   view = 'wizard';
   currentEntryId = null;
   showMain();
@@ -771,6 +904,7 @@ function startWizard() {
 function renderWizardView(el) {
   const sortedQs = [...S.questions].sort((a,b) => a.order - b.order);
   const total = sortedQs.length;
+  const totalSteps = total + 2; // 문항들 + 시작강도 + 끝강도
 
   if (wizard.step === -1) {
     el.innerHTML = `
@@ -786,21 +920,59 @@ function renderWizardView(el) {
     return;
   }
 
-  const q = sortedQs[wizard.step];
-  const pct = Math.round(((wizard.step + 1) / total) * 100);
+  // 문항 단계 (0 ~ total-1)
+  if (wizard.step < total) {
+    const q = sortedQs[wizard.step];
+    const pct = Math.round(((wizard.step + 1) / totalSteps) * 100);
+    el.innerHTML = `
+      <div class="wizard-step-meta">
+        <span>${wizard.step + 1} / ${totalSteps}</span>
+      </div>
+      <div class="wizard-progress-track"><div class="wizard-progress-fill" style="width:${pct}%"></div></div>
+      <div class="wizard-q">${escapeHtml(q.text)}</div>
+      <textarea class="wizard-textarea" id="wiz-answer" placeholder="자유롭게 적어보세요...">${escapeHtml(wizard.answers[q.id] || '')}</textarea>
+      <div class="wizard-nav">
+        <button class="nav-btn" onclick="wizardPrev()">이전</button>
+        <button class="nav-btn primary" onclick="wizardNext()">다음</button>
+      </div>
+    `;
+    setTimeout(() => { const ta = document.getElementById('wiz-answer'); if (ta) ta.focus(); }, 0);
+    return;
+  }
+
+  // 감정강도 단계 (total = 시작강도, total+1 = 끝강도)
+  const isInitial = (wizard.step === total);
+  const pct = Math.round(((wizard.step + 1) / totalSteps) * 100);
+  const fieldKey = isInitial ? 'initialIntensity' : 'finalIntensity';
+  const val = wizard[fieldKey];
   el.innerHTML = `
     <div class="wizard-step-meta">
-      <span>${wizard.step + 1} / ${total}</span>
+      <span>${wizard.step + 1} / ${totalSteps}</span>
     </div>
     <div class="wizard-progress-track"><div class="wizard-progress-fill" style="width:${pct}%"></div></div>
-    <div class="wizard-q">${escapeHtml(q.text)}</div>
-    <textarea class="wizard-textarea" id="wiz-answer" placeholder="자유롭게 적어보세요...">${escapeHtml(wizard.answers[q.id] || '')}</textarea>
+    <div class="wizard-q">${isInitial ? '이 일을 떠올렸을 때, 지금 느끼는 감정의 강도는?' : '여기까지 돌아본 지금, 감정의 강도는 몇 점인가요?'}</div>
+    <div class="intensity-section">
+      <div class="intensity-slider-row">
+        <div class="intensity-slider-label">
+          <span class="lbl-text">${isInitial ? '시작 시점 강도' : '종료 시점 강도'}</span>
+          <span class="intensity-slider-value" id="wiz-int-chip" style="background:${intensityColor(val)}">${val}</span>
+        </div>
+        <input type="range" min="1" max="10" step="1" class="intensity-slider" id="wiz-int-slider"
+          value="${val}" oninput="onWizardSliderInput(this.value)">
+        <div class="intensity-scale-ticks"><span>편안 1</span><span>5</span><span>고통 10</span></div>
+      </div>
+    </div>
     <div class="wizard-nav">
       <button class="nav-btn" onclick="wizardPrev()">이전</button>
-      <button class="nav-btn primary" onclick="wizardNext()">${wizard.step === total - 1 ? '저장' : '다음'}</button>
+      <button class="nav-btn primary" onclick="wizardNext()">${wizard.step === totalSteps - 1 ? '저장' : '다음'}</button>
     </div>
   `;
-  setTimeout(() => { const ta = document.getElementById('wiz-answer'); if (ta) ta.focus(); }, 0);
+}
+
+function onWizardSliderInput(value) {
+  const v = parseInt(value, 10);
+  const chip = document.getElementById('wiz-int-chip');
+  if (chip) { chip.textContent = v; chip.style.background = intensityColor(v); }
 }
 
 function clearWizTitleErr() {
@@ -833,16 +1005,28 @@ function wizardStartQuestions() {
 
 function wizardCaptureCurrent() {
   const sortedQs = [...S.questions].sort((a,b) => a.order - b.order);
-  if (wizard.step < 0 || wizard.step >= sortedQs.length) return;
-  const q = sortedQs[wizard.step];
-  const ta = document.getElementById('wiz-answer');
-  if (ta) wizard.answers[q.id] = ta.value;
+  const total = sortedQs.length;
+  if (wizard.step < 0) return;
+  if (wizard.step < total) {
+    const q = sortedQs[wizard.step];
+    const ta = document.getElementById('wiz-answer');
+    if (ta) wizard.answers[q.id] = ta.value;
+    return;
+  }
+  // 감정강도 단계
+  const slider = document.getElementById('wiz-int-slider');
+  if (slider) {
+    const v = parseInt(slider.value, 10);
+    if (wizard.step === total) wizard.initialIntensity = v;
+    else wizard.finalIntensity = v;
+  }
 }
 
 function wizardNext() {
   const sortedQs = [...S.questions].sort((a,b) => a.order - b.order);
+  const totalSteps = sortedQs.length + 2;
   wizardCaptureCurrent();
-  if (wizard.step === sortedQs.length - 1) {
+  if (wizard.step === totalSteps - 1) {
     finishWizard(sortedQs);
     return;
   }
@@ -874,7 +1058,9 @@ function finishWizard(sortedQs) {
     title: wizard.title,
     createdAt: now,
     updatedAt: now,
-    questionsSnapshot: sortedQs.map(q => ({ id: q.id, category: q.category, order: q.order, text: q.text, metric: q.metric || null })),
+    initialIntensity: wizard.initialIntensity,
+    finalIntensity: wizard.finalIntensity,
+    questionsSnapshot: sortedQs.map(q => ({ id: q.id, category: q.category, order: q.order, text: q.text })),
     answers: sortedQs.map(q => ({ questionId: q.id, answerText: wizard.answers[q.id] || '' }))
   };
   S.entries.push(entry);

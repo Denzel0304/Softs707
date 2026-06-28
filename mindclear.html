@@ -222,9 +222,75 @@ html, body { height: 100%; background: var(--surface); font-family: -apple-syste
 .btn-move-opt .opt-badge { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; margin-left:auto; }
 .btn-move-cancel { width:100%; padding:13px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
 .btn-detail-move { padding:14px 18px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; -webkit-appearance:none; }
+
+/* ── 진입 게이트(응급 상황) ── */
+.gate-overlay {
+  position:fixed; inset:0; z-index:9999; background:var(--surface);
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  padding:24px; text-align:center;
+}
+.gate-title { font-size:20px; font-weight:800; color:var(--txt); margin-bottom:10px; }
+.gate-desc { font-size:14px; color:var(--txt2); line-height:1.6; margin-bottom:32px; max-width:300px; }
+.gate-btn-row { display:flex; gap:12px; width:100%; max-width:320px; }
+.gate-btn {
+  flex:1; padding:20px 10px; border-radius:var(--radius); border:1.5px solid;
+  font-size:15px; font-weight:700; cursor:pointer; background:#fff;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  transition: transform .12s, box-shadow .12s; box-shadow: var(--shadow);
+}
+.gate-btn:active { transform:scale(.96); box-shadow:none; }
+.gate-btn .emoji { font-size:30px; }
+.gate-btn-emg  { color:#a02020; border-color:#f0a0a0; }
+.gate-btn-emg:hover  { background:#fff5f5; border-color:#e87a7a; }
+.gate-btn-home { color:var(--g700); border-color:var(--g300); }
+.gate-btn-home:hover { background:var(--g50); border-color:var(--g500); }
+
+.gate-breathe-wrap { display:none; flex-direction:column; align-items:center; }
+.gate-breathe-wrap.show { display:flex; }
+.gate-breathe-desc { font-size:13px; color:var(--txt3); margin-top:22px; line-height:1.6; max-width:260px; }
+.gate-ring-box { position:relative; width:200px; height:200px; }
+.gate-ring-box svg { width:200px; height:200px; }
+.gate-breath-dot {
+  position:absolute; top:50%; left:50%; width:158px; height:158px; border-radius:50%;
+  background:#d04040; opacity:.28; margin:-79px 0 0 -79px;
+  animation: gateBreathe 12s ease-in-out infinite;
+}
+@keyframes gateBreathe {
+  0%   { transform: scale(.02); animation-timing-function: ease-in; }
+  33.333% { transform: scale(1); animation-timing-function: ease-out; }
+  100% { transform: scale(.02); }
+}
+.gate-skip { margin-top:26px; font-size:12px; color:var(--txt3); background:none; border:none; text-decoration:underline; cursor:pointer; padding:8px; }
 </style>
 </head>
 <body>
+
+<!-- ── 진입 게이트(응급 상황 / 홈으로) ── -->
+<div class="gate-overlay" id="gate-overlay">
+
+  <div id="gate-choice">
+    <div class="gate-title">지금 어떤 상태이신가요?</div>
+    <div class="gate-desc">화가 많이 나거나 흥분된 상태라면, 잠시 호흡을 가다듬는 시간을 가져보세요.</div>
+    <div class="gate-btn-row">
+      <button class="gate-btn gate-btn-emg" onclick="gateChooseEmergency()"><span class="emoji">🚨</span>응급 상황</button>
+      <button class="gate-btn gate-btn-home" onclick="gateGoHome()"><span class="emoji">🏠</span>홈으로</button>
+    </div>
+  </div>
+
+  <div class="gate-breathe-wrap" id="gate-breathe-wrap">
+    <div class="gate-ring-box">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="86" fill="none" stroke="var(--bdr)" stroke-width="14"/>
+        <circle id="gate-ring-fg" cx="100" cy="100" r="86" fill="none" stroke="#d04040" stroke-width="14"
+          stroke-linecap="round" transform="rotate(-90 100 100)"/>
+      </svg>
+      <div class="gate-breath-dot" id="gate-breath-dot"></div>
+    </div>
+    <div class="gate-breathe-desc">천천히 숨을 들이쉬고 내쉬며,<br>그래프가 모두 줄어들 때까지 기다려주세요.</div>
+    <button class="gate-skip" onclick="gateSkip()">건너뛰기</button>
+  </div>
+
+</div>
 
 <!-- ── 고정 헤더 ── -->
 <div class="header">
@@ -748,6 +814,83 @@ function doMove(id, newCat) {
   localStorage.setItem('maum_v2', JSON.stringify(records));
   closeAll();
   renderLists();
+}
+
+/* ═══════════════════════════════════════
+   진입 게이트(응급 상황 호흡)
+═══════════════════════════════════════ */
+const GATE_RING_R = 86;
+const GATE_RING_CIRC = 2 * Math.PI * GATE_RING_R;
+const GATE_COUNT_MS = 5 * 60 * 1000;   // 5분
+const GATE_FILL_MS  = 5 * 1000;        // 5초
+
+let gateRAF = null;
+let gatePhase = null;       // 'counting' | 'filling'
+let gatePhaseStart = null;
+
+const GATE_COLOR_FROM = [208, 64, 64];   // #d04040
+const GATE_COLOR_TO   = [58, 127, 208];  // #3a7fd0
+
+function gateLerpColor(t) {
+  const r = Math.round(GATE_COLOR_FROM[0] + (GATE_COLOR_TO[0] - GATE_COLOR_FROM[0]) * t);
+  const g = Math.round(GATE_COLOR_FROM[1] + (GATE_COLOR_TO[1] - GATE_COLOR_FROM[1]) * t);
+  const b = Math.round(GATE_COLOR_FROM[2] + (GATE_COLOR_TO[2] - GATE_COLOR_FROM[2]) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function gateChooseEmergency() {
+  document.getElementById('gate-choice').style.display = 'none';
+  const wrap = document.getElementById('gate-breathe-wrap');
+  wrap.classList.add('show');
+
+  const ring = document.getElementById('gate-ring-fg');
+  ring.style.strokeDasharray = GATE_RING_CIRC;
+  ring.style.strokeDashoffset = 0;
+
+  gatePhase = 'counting';
+  gatePhaseStart = performance.now();
+  gateTick();
+}
+
+function gateTick() {
+  const now = performance.now();
+  const elapsed = now - gatePhaseStart;
+  const ring = document.getElementById('gate-ring-fg');
+  const dot  = document.getElementById('gate-breath-dot');
+
+  if (gatePhase === 'counting') {
+    const ratio = Math.min(elapsed / GATE_COUNT_MS, 1);
+    ring.style.strokeDashoffset = GATE_RING_CIRC * ratio;   // 가득 찬 링이 점점 줄어듦
+    const color = gateLerpColor(ratio);                      // 5분에 걸쳐 빨강 → 파랑
+    ring.style.stroke = color;
+    dot.style.background = color;
+    if (ratio >= 1) {
+      gatePhase = 'filling';
+      gatePhaseStart = now;
+    }
+  } else if (gatePhase === 'filling') {
+    const ratio = Math.min(elapsed / GATE_FILL_MS, 1);
+    ring.style.strokeDashoffset = GATE_RING_CIRC * (1 - ratio);  // 파란색이 차오름
+    if (ratio >= 1) {
+      gateFinish();
+      return;
+    }
+  }
+  gateRAF = requestAnimationFrame(gateTick);
+}
+
+function gateFinish() {
+  if (gateRAF) cancelAnimationFrame(gateRAF);
+  document.getElementById('gate-overlay').style.display = 'none';
+}
+
+function gateSkip() {
+  if (gateRAF) cancelAnimationFrame(gateRAF);
+  document.getElementById('gate-overlay').style.display = 'none';
+}
+
+function gateGoHome() {
+  document.getElementById('gate-overlay').style.display = 'none';
 }
 
 /* ═══════════════════════════════════════

@@ -14,66 +14,56 @@
   --g300: #6ec493;
   --g500: #2f9e5a;
   --g700: #1a6e3c;
-  --g900: #0d3d20;
   --surface: #f4fbf6;
   --card: #ffffff;
-  --txt: #16312a;
+  --txt:  #16312a;
   --txt2: #3d6657;
   --txt3: #7aab91;
-  --bdr: #c0e4cf;
+  --bdr:  #c0e4cf;
   --radius: 14px;
   --shadow: 0 2px 12px rgba(20,80,45,0.08);
+  --header-h: 100px;
 }
 
-html, body {
-  height: 100%;
-  background: var(--surface);
-  font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  color: var(--txt);
-  -webkit-font-smoothing: antialiased;
-}
+html, body { height: 100%; background: var(--surface); font-family: -apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif; color: var(--txt); -webkit-font-smoothing: antialiased; }
 
-/* ── 앱 래퍼 ── */
-#app {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  padding-bottom: env(safe-area-inset-bottom, 16px);
-}
-
-/* ── 헤더 ── */
+/* ── 헤더 고정 ── */
 .header {
-  background: linear-gradient(160deg, #e2f7ea 0%, #c8efda 100%);
-  padding: 52px 20px 22px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: linear-gradient(160deg,#e2f7ea 0%,#c8efda 100%);
+  padding: 52px 20px 18px;
   border-bottom: 1px solid var(--bdr);
+  max-width: 480px; margin: 0 auto;
+}
+/* 헤더가 fixed라 left/right가 viewport 기준 — 중앙 정렬 트릭 */
+@media (min-width: 480px) {
+  .header { left: 50%; right: auto; transform: translateX(-50%); width: 480px; }
 }
 .header h1 { font-size: 24px; font-weight: 700; color: var(--g700); letter-spacing: -0.5px; }
-.header p  { font-size: 13px; color: var(--txt2); margin-top: 5px; line-height: 1.5; }
+.header p  { font-size: 13px; color: var(--txt2); margin-top: 4px; }
+
+/* ── 본문 스크롤 영역 ── */
+#app {
+  max-width: 480px; margin: 0 auto;
+  padding-top: var(--header-h);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  min-height: 100dvh;
+}
 
 /* ── 버튼 2개 ── */
-.trigger-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 20px 16px 4px;
-}
+.trigger-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 16px 4px; }
 .trigger-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 18px 12px 16px;
-  border: 1.5px solid;
-  border-radius: var(--radius);
-  background: var(--card);
-  cursor: pointer;
-  font-size: 15px; font-weight: 700;
-  transition: transform 0.12s, box-shadow 0.12s;
-  box-shadow: var(--shadow);
+  padding: 18px 12px 16px; border: 1.5px solid; border-radius: var(--radius);
+  background: var(--card); cursor: pointer; font-size: 15px; font-weight: 700;
+  transition: transform .12s, box-shadow .12s; box-shadow: var(--shadow);
 }
-.trigger-btn:active { transform: scale(0.96); box-shadow: none; }
+.trigger-btn:active { transform: scale(.96); box-shadow: none; }
 .trigger-btn .emoji { font-size: 28px; }
-.btn-anger  { color: #a04800; border-color: #f0b880; }
-.btn-anger:hover  { background: #fff8f2; border-color: #e8903a; }
-.btn-anxiety { color: #264e8a; border-color: #9fbce8; }
-.btn-anxiety:hover { background: #f2f6ff; border-color: #5588d0; }
+.btn-anger   { color:#a04800; border-color:#f0b880; }
+.btn-anger:hover   { background:#fff8f2; border-color:#e8903a; }
+.btn-anxiety { color:#264e8a; border-color:#9fbce8; }
+.btn-anxiety:hover { background:#f2f6ff; border-color:#5588d0; }
 
 /* ── 섹션 ── */
 .section-head {
@@ -82,538 +72,440 @@ html, body {
   font-size: 12px; font-weight: 700; color: var(--txt3);
   text-transform: uppercase; letter-spacing: 1px;
 }
-.section-count {
-  background: var(--g100); color: var(--g700);
-  font-size: 11px; font-weight: 700;
-  padding: 2px 7px; border-radius: 20px;
-}
+.section-count { background:var(--g100); color:var(--g700); font-size:11px; font-weight:700; padding:2px 7px; border-radius:20px; }
 .card-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
-
-.empty-box {
-  text-align: center; padding: 18px;
-  font-size: 13px; color: var(--txt3);
-  background: var(--card);
-  border: 1px dashed var(--bdr);
-  border-radius: var(--radius);
-}
+.empty-box { text-align:center; padding:18px; font-size:13px; color:var(--txt3); background:var(--card); border:1px dashed var(--bdr); border-radius:var(--radius); }
 
 /* ── 기록 카드 ── */
 .record-card {
-  background: var(--card);
-  border: 1px solid var(--bdr);
-  border-radius: var(--radius);
-  padding: 14px 14px 14px 14px;
-  display: flex; align-items: center; gap: 12px;
-  box-shadow: var(--shadow);
+  background: var(--card); border: 1px solid var(--bdr); border-radius: var(--radius);
+  padding: 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow);
+  cursor: pointer; transition: background .1s;
 }
-.rec-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-}
-.rec-icon.anger   { background: #fff0e0; }
-.rec-icon.anxiety { background: #eaf0ff; }
-.rec-info { flex: 1; min-width: 0; }
-.rec-title { font-size: 14px; font-weight: 600; color: var(--txt); }
-.rec-meta  { font-size: 12px; color: var(--txt3); margin-top: 3px; }
-.badge {
-  font-size: 11px; font-weight: 700;
-  padding: 4px 9px; border-radius: 20px;
-  white-space: nowrap; flex-shrink: 0;
-}
-.badge-done       { background: #d8f4e4; color: #1a6e3c; }
-.badge-processing { background: #fff2d6; color: #7a5200; }
-.badge-critical   { background: #ffe4e4; color: #8a1a1a; }
+.record-card:active { background: var(--g50); }
+.rec-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.rec-icon.anger   { background:#fff0e0; }
+.rec-icon.anxiety { background:#eaf0ff; }
+.rec-info { flex:1; min-width:0; }
+.rec-title { font-size:14px; font-weight:600; color:var(--txt); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rec-meta  { font-size:12px; color:var(--txt3); margin-top:3px; }
+.badge { font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+.badge-done       { background:#d8f4e4; color:#1a6e3c; }
+.badge-processing { background:#fff2d6; color:#7a5200; }
+.badge-critical   { background:#ffe4e4; color:#8a1a1a; }
 
-/* ── 모달 오버레이 ── */
+/* 삭제 버튼 */
+.rec-del { width:30px; height:30px; border-radius:50%; border:1px solid var(--bdr); background:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex-shrink:0; color:#c05050; }
+.rec-del:active { background:#ffe4e4; }
+
+/* ── 오버레이 공통 ── */
 .overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(10,30,20,0.40);
-  z-index: 200;
-  align-items: flex-end; justify-content: center;
+  display:none; position:fixed; inset:0;
+  background:rgba(10,30,20,.40); z-index:200;
+  align-items:flex-end; justify-content:center;
 }
-.overlay.open { display: flex; }
+.overlay.open { display:flex; }
 
-/* ── 모달 시트 ── */
+/* ── 시트 공통 ── */
 .sheet {
-  background: #fff;
-  border-radius: 22px 22px 0 0;
-  width: 100%; max-width: 480px;
-  max-height: 90dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  padding-bottom: env(safe-area-inset-bottom, 20px);
+  background:#fff; border-radius:22px 22px 0 0;
+  width:100%; max-width:480px;
+  max-height:90dvh; display:flex; flex-direction:column;
+  padding-bottom: env(safe-area-inset-bottom,20px);
 }
-.sheet-handle {
-  width: 40px; height: 4px;
-  background: #d0d8d4;
-  border-radius: 2px;
-  margin: 14px auto 0;
-}
-.sheet-header {
-  padding: 16px 20px 14px;
-  border-bottom: 1px solid var(--bdr);
-  position: sticky; top: 0; background: #fff; z-index: 1;
-}
-.sheet-header h2 { font-size: 19px; font-weight: 700; color: var(--txt); }
-.progress-bar {
-  height: 5px; background: #e0e8e4;
-  border-radius: 3px; margin-top: 12px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; background: var(--g300);
-  border-radius: 3px; transition: width 0.35s ease;
-}
-.progress-text { font-size: 12px; color: var(--txt3); margin-top: 6px; }
+.sheet-handle { width:40px; height:4px; background:#d0d8d4; border-radius:2px; margin:14px auto 0; flex-shrink:0; }
 
-.sheet-body { padding: 22px 20px 8px; }
+/* ── 입력(제목) 시트 ── */
+#overlay-title .sheet-body { padding:24px 20px; flex:1; }
+.field-label { font-size:13px; font-weight:600; color:var(--txt2); margin-bottom:8px; }
+.field-input {
+  width:100%; padding:14px 16px; font-size:16px; color:var(--txt);
+  border:1.5px solid var(--bdr); border-radius:var(--radius);
+  background:#fff; outline:none; font-family:inherit;
+  transition: border-color .15s;
+}
+.field-input:focus { border-color:var(--g300); }
+.field-hint { font-size:12px; color:var(--txt3); margin-top:8px; }
+.type-tag { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; padding:8px 14px; border-radius:30px; margin-bottom:18px; }
+.type-tag.anger   { background:#fff0e0; color:#a04800; }
+.type-tag.anxiety { background:#eaf0ff; color:#264e8a; }
 
-/* ── 질문 ── */
-.q-text {
-  font-size: 17px; font-weight: 600;
-  line-height: 1.55; color: var(--txt);
-  margin-bottom: 8px;
+/* ── 질문 시트 ── */
+#overlay-q .sheet-header {
+  padding:16px 20px 14px; border-bottom:1px solid var(--bdr);
+  flex-shrink:0; background:#fff; border-radius:22px 22px 0 0;
 }
-.q-sub {
-  font-size: 13px; color: var(--txt2);
-  line-height: 1.55; display: block;
-  margin-bottom: 26px;
-}
+#overlay-q .sheet-header h2 { font-size:19px; font-weight:700; color:var(--txt); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.progress-bar { height:5px; background:#e0e8e4; border-radius:3px; margin-top:12px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--g300); border-radius:3px; transition:width .35s ease; }
+.progress-text { font-size:12px; color:var(--txt3); margin-top:6px; }
 
-/* ── 점수 척도 ── */
-.scale-labels {
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: var(--txt3);
-  margin-bottom: 8px; padding: 0 2px;
-}
-.scale-row {
-  display: flex; gap: 8px;
-  justify-content: center;
-  margin-bottom: 10px;
-}
+#overlay-q .sheet-body { padding:22px 20px 8px; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+
+.q-text { font-size:17px; font-weight:600; line-height:1.55; color:var(--txt); margin-bottom:8px; }
+.q-sub  { font-size:13px; color:var(--txt2); line-height:1.55; display:block; margin-bottom:26px; }
+.scale-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--txt3); margin-bottom:8px; padding:0 2px; }
+.scale-row { display:flex; gap:8px; justify-content:center; margin-bottom:10px; }
 .scale-btn {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  border: 1.5px solid var(--bdr);
-  background: #fff;
-  font-size: 17px; font-weight: 700;
-  color: var(--txt2);
-  cursor: pointer;
-  transition: all 0.12s;
-  -webkit-appearance: none;
+  width:52px; height:52px; border-radius:50%;
+  border:1.5px solid var(--bdr); background:#fff;
+  font-size:17px; font-weight:700; color:var(--txt2);
+  cursor:pointer; transition:all .12s; -webkit-appearance:none;
 }
-.scale-btn:hover  { border-color: var(--g300); background: var(--g50); }
-.scale-btn.sel    { background: var(--g500); border-color: var(--g500); color: #fff; }
-.scale-hint {
-  text-align: center; font-size: 12px; color: var(--txt3);
-  min-height: 18px; margin-bottom: 18px; transition: opacity 0.2s;
-}
-
-/* ── 모달 하단 버튼 ── */
-.sheet-footer {
-  display: flex; gap: 10px;
-  padding: 12px 20px 8px;
-  position: sticky; bottom: 0; background: #fff;
-  border-top: 1px solid var(--bdr);
-}
-.btn-close-m {
-  padding: 14px 18px;
-  background: #fff; color: var(--txt2);
-  border: 1px solid var(--bdr);
-  border-radius: var(--radius);
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  -webkit-appearance: none;
-}
-.btn-next-m {
-  flex: 1; padding: 14px;
-  background: var(--g500); color: #fff;
-  border: none; border-radius: var(--radius);
-  font-size: 15px; font-weight: 700; cursor: pointer;
-  transition: background 0.15s;
-  -webkit-appearance: none;
-}
-.btn-next-m:disabled { background: #b0d4be; cursor: not-allowed; }
-.btn-next-m:not(:disabled):active { background: var(--g700); }
+.scale-btn:hover { border-color:var(--g300); background:var(--g50); }
+.scale-btn.sel   { background:var(--g500); border-color:var(--g500); color:#fff; }
+.scale-hint { text-align:center; font-size:12px; color:var(--txt3); min-height:18px; margin-bottom:18px; }
 
 /* ── 결과 화면 ── */
-.result-wrap { text-align: center; padding: 16px 20px 20px; }
-.result-emoji { font-size: 56px; margin: 8px 0 12px; }
-.result-cat   { font-size: 22px; font-weight: 800; margin-bottom: 10px; color: var(--txt); }
-.result-badge-lg {
-  display: inline-block;
-  font-size: 14px; font-weight: 700;
-  padding: 6px 18px; border-radius: 30px;
-  margin-bottom: 16px;
-}
-.result-desc {
-  font-size: 14px; color: var(--txt2);
-  line-height: 1.7; margin-bottom: 22px;
-  text-align: left;
-}
-.flag-box {
-  background: var(--g50); border: 1px solid var(--bdr);
-  border-radius: var(--radius); padding: 14px 16px;
-  text-align: left; margin-bottom: 22px;
-}
-.flag-box-title {
-  font-size: 12px; font-weight: 700; color: var(--txt3);
-  text-transform: uppercase; letter-spacing: 0.8px;
-  margin-bottom: 10px;
-}
-.flag-item {
-  display: flex; align-items: flex-start; gap: 9px;
-  font-size: 13px; color: var(--txt2);
-  padding: 4px 0; line-height: 1.5;
-}
-.flag-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  flex-shrink: 0; margin-top: 4px;
-}
-.dot-ok      { background: var(--g300); }
-.dot-warn    { background: #e8a030; }
-.dot-danger  { background: #d04040; }
-.btn-confirm {
-  width: 100%; padding: 16px;
-  background: var(--g500); color: #fff;
-  border: none; border-radius: var(--radius);
-  font-size: 16px; font-weight: 700;
-  cursor: pointer; -webkit-appearance: none;
-}
-.btn-confirm:active { background: var(--g700); }
+.result-wrap { text-align:center; padding:16px 20px 20px; }
+.result-emoji { font-size:52px; margin:8px 0 10px; }
+.result-cat   { font-size:22px; font-weight:800; margin-bottom:10px; color:var(--txt); }
+.result-badge-lg { display:inline-block; font-size:14px; font-weight:700; padding:6px 18px; border-radius:30px; margin-bottom:16px; }
+.result-desc { font-size:14px; color:var(--txt2); line-height:1.7; margin-bottom:22px; text-align:left; }
+.flag-box { background:var(--g50); border:1px solid var(--bdr); border-radius:var(--radius); padding:14px 16px; text-align:left; margin-bottom:22px; }
+.flag-box-title { font-size:12px; font-weight:700; color:var(--txt3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+.flag-item { display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--txt2); padding:4px 0; line-height:1.5; }
+.flag-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.dot-ok     { background:var(--g300); }
+.dot-warn   { background:#e8a030; }
+.dot-danger { background:#d04040; }
+.btn-confirm { width:100%; padding:16px; background:var(--g500); color:#fff; border:none; border-radius:var(--radius); font-size:16px; font-weight:700; cursor:pointer; -webkit-appearance:none; }
+.btn-confirm:active { background:var(--g700); }
+
+/* ── 시트 푸터 ── */
+.sheet-footer { display:flex; gap:10px; padding:12px 20px 8px; border-top:1px solid var(--bdr); flex-shrink:0; }
+.btn-cancel { padding:14px 18px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; -webkit-appearance:none; }
+.btn-primary { flex:1; padding:14px; background:var(--g500); color:#fff; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; cursor:pointer; -webkit-appearance:none; }
+.btn-primary:disabled { background:#b0d4be; cursor:not-allowed; }
+.btn-primary:not(:disabled):active { background:var(--g700); }
+
+/* ── 상세 시트 ── */
+#overlay-detail .sheet-body { padding:20px; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.detail-type-tag { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; padding:5px 12px; border-radius:30px; margin-bottom:12px; }
+.detail-title { font-size:20px; font-weight:800; color:var(--txt); margin-bottom:4px; }
+.detail-date  { font-size:12px; color:var(--txt3); margin-bottom:20px; }
+.detail-badge-wrap { margin-bottom:20px; }
+.score-list { display:flex; flex-direction:column; gap:10px; }
+.score-item { background:var(--g50); border:1px solid var(--bdr); border-radius:var(--radius); padding:12px 14px; }
+.score-item-q { font-size:13px; font-weight:600; color:var(--txt); margin-bottom:6px; line-height:1.4; }
+.score-bar-wrap { display:flex; align-items:center; gap:8px; }
+.score-bar-bg { flex:1; height:6px; background:#e0e8e4; border-radius:3px; overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:3px; }
+.score-num { font-size:13px; font-weight:700; color:var(--txt2); min-width:24px; text-align:right; }
+.score-flag-tag { display:inline-block; font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:6px; background:#ffe4e4; color:#8a1a1a; }
+
+/* ── 삭제 확인 모달 ── */
+#overlay-confirm { align-items:center; justify-content:center; }
+.confirm-box { background:#fff; border-radius:var(--radius); padding:24px 20px 20px; width:calc(100% - 48px); max-width:320px; text-align:center; }
+.confirm-title { font-size:17px; font-weight:700; color:var(--txt); margin-bottom:10px; }
+.confirm-desc  { font-size:13px; color:var(--txt2); line-height:1.6; margin-bottom:22px; }
+.confirm-btns  { display:flex; gap:10px; }
+.btn-del-cancel { flex:1; padding:13px; background:#fff; color:var(--txt2); border:1px solid var(--bdr); border-radius:var(--radius); font-size:15px; font-weight:600; cursor:pointer; }
+.btn-del-ok     { flex:1; padding:13px; background:#d04040; color:#fff; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; cursor:pointer; }
+.btn-del-ok:active { background:#a02020; }
 </style>
 </head>
 <body>
+
+<!-- ── 고정 헤더 ── -->
+<div class="header">
+  <h1>마음 정리</h1>
+  <p>감정을 직면하고, 뇌에게 종료 신호를 보내세요</p>
+</div>
+
+<!-- ── 본문 ── -->
 <div id="app">
-
-  <!-- 헤더 -->
-  <div class="header">
-    <h1>마음 정리</h1>
-    <p>감정을 직면하고, 뇌에게 종료 신호를 보내세요</p>
-  </div>
-
-  <!-- 버튼 2개 -->
   <div class="trigger-row">
-    <button class="trigger-btn btn-anger" onclick="openModal('anger')">
-      <span class="emoji">🔥</span>
-      분노 처리
-    </button>
-    <button class="trigger-btn btn-anxiety" onclick="openModal('anxiety')">
-      <span class="emoji">🌀</span>
-      불안 처리
-    </button>
+    <button class="trigger-btn btn-anger"   onclick="startFlow('anger')"><span class="emoji">🔥</span>분노 처리</button>
+    <button class="trigger-btn btn-anxiety" onclick="startFlow('anxiety')"><span class="emoji">🌀</span>불안 처리</button>
   </div>
 
-  <!-- 처리 완료 -->
-  <div class="section-head">
-    처리 완료
-    <span class="section-count" id="cnt-done">0</span>
-  </div>
-  <div class="card-list" id="list-done">
-    <div class="empty-box">아직 없음</div>
-  </div>
+  <div class="section-head">처리 완료 <span class="section-count" id="cnt-done">0</span></div>
+  <div class="card-list" id="list-done"><div class="empty-box">아직 없음</div></div>
 
-  <!-- 처리 중 -->
-  <div class="section-head">
-    처리 중
-    <span class="section-count" id="cnt-processing">0</span>
-  </div>
-  <div class="card-list" id="list-processing">
-    <div class="empty-box">아직 없음</div>
-  </div>
+  <div class="section-head">처리 중 <span class="section-count" id="cnt-processing">0</span></div>
+  <div class="card-list" id="list-processing"><div class="empty-box">아직 없음</div></div>
 
-  <!-- 분석 요망 -->
-  <div class="section-head">
-    분석 요망
-    <span class="section-count" id="cnt-critical">0</span>
-  </div>
-  <div class="card-list" id="list-critical">
-    <div class="empty-box">아직 없음</div>
-  </div>
+  <div class="section-head">분석 요망 <span class="section-count" id="cnt-critical">0</span></div>
+  <div class="card-list" id="list-critical"><div class="empty-box">아직 없음</div></div>
+</div>
 
-</div><!-- /app -->
-
-<!-- 모달 오버레이 -->
-<div class="overlay" id="overlay" onclick="overlayClick(event)">
-  <div class="sheet" id="sheet">
+<!-- ① 제목 입력 시트 -->
+<div class="overlay" id="overlay-title">
+  <div class="sheet">
     <div class="sheet-handle"></div>
+    <div class="sheet-body" style="padding:24px 20px; flex:1;">
+      <div id="title-type-tag" class="type-tag anger">🔥 분노 처리</div>
+      <div class="field-label">이 감정의 사안을 간단히 적어주세요</div>
+      <input class="field-input" id="emotion-title" type="text" placeholder="예) 동료의 무시하는 말투" maxlength="40" oninput="checkTitle()" onkeydown="titleEnter(event)">
+      <div class="field-hint">나중에 목록에서 이 제목으로 표시됩니다</div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeAll()">취소</button>
+      <button class="btn-primary" id="btn-title-next" disabled onclick="goToQ()">다음 →</button>
+    </div>
+  </div>
+</div>
 
-    <div class="sheet-header">
-      <h2 id="sh-title">분노 처리</h2>
-      <div class="progress-bar">
-        <div class="progress-fill" id="sh-prog" style="width:0%"></div>
-      </div>
+<!-- ② 질문 시트 -->
+<div class="overlay" id="overlay-q">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header" id="q-header">
+      <h2 id="q-sheet-title">분노 처리</h2>
+      <div class="progress-bar"><div class="progress-fill" id="sh-prog" style="width:0%"></div></div>
       <div class="progress-text" id="sh-step">질문 1 / 7</div>
     </div>
-
     <div class="sheet-body" id="sh-body"></div>
-
     <div class="sheet-footer" id="sh-footer">
-      <button class="btn-close-m" onclick="closeModal()">닫기</button>
-      <button class="btn-next-m" id="btn-next" disabled onclick="nextStep()">다음</button>
+      <button class="btn-cancel" onclick="closeAll()">닫기</button>
+      <button class="btn-primary" id="btn-next" disabled onclick="nextStep()">다음</button>
+    </div>
+  </div>
+</div>
+
+<!-- ③ 상세 보기 시트 -->
+<div class="overlay" id="overlay-detail">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-body" id="detail-body"></div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeOverlay('overlay-detail')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ④ 삭제 확인 -->
+<div class="overlay" id="overlay-confirm">
+  <div class="confirm-box">
+    <div class="confirm-title">삭제하시겠어요?</div>
+    <div class="confirm-desc">이 기록을 삭제하면<br>복구할 수 없습니다.</div>
+    <div class="confirm-btns">
+      <button class="btn-del-cancel" onclick="closeOverlay('overlay-confirm')">취소</button>
+      <button class="btn-del-ok" id="btn-del-ok" onclick="doDelete()">삭제</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ───────────────────────────────
+/* ═══════════════════════════════════════
    문항 데이터
-─────────────────────────────── */
+═══════════════════════════════════════ */
 const Q = {
   anger: [
-    {
-      q: "분노의 대상이 나에게 실질적인 피해를 입혔는가?",
-      sub: "물리적·경제적·관계적 피해를 모두 포함합니다",
-      flag: s => s >= 4, flagLabel: "실질 피해 확인됨"
-    },
-    {
-      q: "지금 당장 현실적으로 할 수 있는 대응 행동이 있는가?",
-      sub: "항의·대화·법적 대응 등 구체적 행동이 가능한지",
-      flag: s => s >= 4, flagLabel: "즉각 대응 필요"
-    },
-    {
-      q: "이 일이 1년 후에도 나에게 영향을 미칠 것 같은가?",
-      sub: "시간 원근법 — 지금 느껴지는 것보다 작을 수 있습니다",
-      flag: s => s >= 4, flagLabel: "장기 영향 예상"
-    },
-    {
-      q: "상대방이 의도적으로 나를 해쳤다고 확신하는가?",
-      sub: "실수·오해·무지일 가능성도 생각해보세요",
-      flag: s => s >= 4, flagLabel: "의도적 가해 판단"
-    },
-    {
-      q: "이 분노를 계속 품고 있는 것이 나에게 이득이 되는가?",
-      sub: "분노 유지의 실질적 이점이 있는지 솔직하게",
-      flag: s => s <= 2, flagLabel: "분노 유지 손실 인식 부족"
-    },
-    {
-      q: "비슷한 상황에서 다른 사람도 동일하게 분노할 것 같은가?",
-      sub: "나만의 과민반응은 아닌지 점검해보세요",
-      flag: s => s <= 2, flagLabel: "사회적 타당성 낮음"
-    },
-    {
-      q: "분노 대상과의 관계가 앞으로도 계속되는가?",
-      sub: "지속적 관계라면 감정 처리가 더욱 중요합니다",
-      flag: s => s >= 4, flagLabel: "지속 관계 → 처리 필요"
-    }
+    { q:"분노의 대상이 나에게 실질적인 피해를 입혔는가?",         sub:"물리적·경제적·관계적 피해를 모두 포함합니다",           flag:s=>s>=4, flagLabel:"실질 피해 확인됨" },
+    { q:"지금 당장 현실적으로 할 수 있는 대응 행동이 있는가?",    sub:"항의·대화·법적 대응 등 구체적 행동이 가능한지",          flag:s=>s>=4, flagLabel:"즉각 대응 필요" },
+    { q:"이 일이 1년 후에도 나에게 영향을 미칠 것 같은가?",       sub:"시간 원근법 — 지금보다 덜 중요할 수 있습니다",           flag:s=>s>=4, flagLabel:"장기 영향 예상" },
+    { q:"상대방이 의도적으로 나를 해쳤다고 확신하는가?",          sub:"실수·오해·무지일 가능성도 생각해보세요",                 flag:s=>s>=4, flagLabel:"의도적 가해 판단" },
+    { q:"이 분노를 계속 품고 있는 것이 나에게 이득이 되는가?",    sub:"분노 유지의 실질적 이점이 있는지 솔직하게",              flag:s=>s<=2, flagLabel:"분노 유지 손실 인식 부족" },
+    { q:"비슷한 상황에서 다른 사람도 동일하게 분노할 것 같은가?", sub:"나만의 과민반응은 아닌지 점검해보세요",                  flag:s=>s<=2, flagLabel:"사회적 타당성 낮음" },
+    { q:"분노 대상과의 관계가 앞으로도 계속되는가?",              sub:"지속적 관계라면 감정 처리가 더욱 중요합니다",             flag:s=>s>=4, flagLabel:"지속 관계 → 처리 필요" }
   ],
   anxiety: [
-    {
-      q: "불안해하는 일이 실제로 일어날 가능성이 높은가?",
-      sub: "가능성을 최대한 객관적으로 평가해보세요",
-      flag: s => s >= 4, flagLabel: "높은 발생 가능성"
-    },
-    {
-      q: "그 일이 일어나지 않도록 내가 할 수 있는 구체적 행동이 있는가?",
-      sub: "통제 가능한 요소가 지금 있는지 생각해보세요",
-      flag: s => s >= 4, flagLabel: "즉각 행동 필요"
-    },
-    {
-      q: "만약 그 일이 일어난다면, 나는 어떻게든 버텨낼 수 있을 것 같은가?",
-      sub: "나의 회복력과 대처 능력을 떠올려보세요",
-      flag: s => s <= 2, flagLabel: "자기효능감 낮음"
-    },
-    {
-      q: "이 불안이 같은 주제로 반복해서 떠오르는가?",
-      sub: "반복 소환 여부는 신경망 고착화의 중요한 신호입니다",
-      flag: s => s >= 4, flagLabel: "반추 패턴 감지"
-    },
-    {
-      q: "불안의 원인이 내가 통제할 수 없는 외부 요인인가?",
-      sub: "통제 불가능한 것에 에너지를 쏟고 있지 않은지",
-      flag: s => s >= 4, flagLabel: "통제 불가 외부 요인"
-    },
-    {
-      q: "지금 이 불안이 신체 증상으로 나타나고 있는가?",
-      sub: "긴장, 불면, 심장 두근거림, 소화불량 등",
-      flag: s => s >= 4, flagLabel: "신체화 증상 존재"
-    },
-    {
-      q: "비슷한 걱정을 예전에도 했고, 결국 별일 없이 지나간 적이 있는가?",
-      sub: "과거의 증거가 지금의 불안을 교정합니다",
-      flag: s => s <= 2, flagLabel: "과거 회복 경험 인식 부족"
-    }
+    { q:"불안해하는 일이 실제로 일어날 가능성이 높은가?",             sub:"가능성을 최대한 객관적으로 평가해보세요",              flag:s=>s>=4, flagLabel:"높은 발생 가능성" },
+    { q:"그 일이 일어나지 않도록 내가 할 수 있는 구체적 행동이 있는가?", sub:"통제 가능한 요소가 지금 있는지 생각해보세요",       flag:s=>s>=4, flagLabel:"즉각 행동 필요" },
+    { q:"만약 그 일이 일어난다면, 나는 어떻게든 버텨낼 수 있을 것 같은가?", sub:"나의 회복력과 대처 능력을 떠올려보세요",       flag:s=>s<=2, flagLabel:"자기효능감 낮음" },
+    { q:"이 불안이 같은 주제로 반복해서 떠오르는가?",                sub:"반복 소환 여부는 신경망 고착화의 중요한 신호입니다",    flag:s=>s>=4, flagLabel:"반추 패턴 감지" },
+    { q:"불안의 원인이 내가 통제할 수 없는 외부 요인인가?",           sub:"통제 불가능한 것에 에너지를 쏟고 있지 않은지",        flag:s=>s>=4, flagLabel:"통제 불가 외부 요인" },
+    { q:"지금 이 불안이 신체 증상으로 나타나고 있는가?",              sub:"긴장, 불면, 심장 두근거림, 소화불량 등",              flag:s=>s>=4, flagLabel:"신체화 증상 존재" },
+    { q:"비슷한 걱정을 예전에도 했고, 결국 별일 없이 지나간 적이 있는가?", sub:"과거의 증거가 지금의 불안을 교정합니다",        flag:s=>s<=2, flagLabel:"과거 회복 경험 인식 부족" }
   ]
 };
 
-/* ───────────────────────────────
-   카테고리 정의
-─────────────────────────────── */
 const CAT = {
-  done: {
-    label: '처리 완료',
-    emoji: '✅',
-    desc: '질문들을 통해 이 감정은 충분히 검토되었습니다.\n뇌에게 종료 신호를 보내세요.\n다음에 이 생각이 떠오르면, 스스로에게 말하세요 — "이건 이미 처리했어."',
-    badgeCls: 'badge-done',
-    bigBadgeCls: 'bg-done',
-    bigColor: '#1a6e3c',
-    bigBg: '#d8f4e4'
-  },
-  processing: {
-    label: '처리 중',
-    emoji: '⏳',
-    desc: '아직 정리가 더 필요한 부분이 있어요.\n지금 당장 결론 내리지 않아도 됩니다.\n며칠 후 다시 돌아보며 상황이 어떻게 달라졌는지 확인해보세요.',
-    badgeCls: 'badge-processing',
-    bigColor: '#7a5200',
-    bigBg: '#fff2d6'
-  },
-  critical: {
-    label: '분석 요망',
-    emoji: '🔍',
-    desc: '이 감정에는 더 깊은 분석이 필요합니다.\n혼자 안고 있기보다, 신뢰할 수 있는 사람과 나누거나 전문적 도움을 고려해보세요.\n문제를 직시하는 것이 이미 용기 있는 첫 걸음입니다.',
-    badgeCls: 'badge-critical',
-    bigColor: '#8a1a1a',
-    bigBg: '#ffe4e4'
-  }
+  done:       { label:'처리 완료', emoji:'✅', badgeCls:'badge-done',       bg:'#d8f4e4', color:'#1a6e3c',
+    desc:'질문들을 통해 이 감정은 충분히 검토되었습니다.\n다음에 이 생각이 떠오르면 스스로에게 말하세요 — "이건 이미 처리했어."' },
+  processing: { label:'처리 중',  emoji:'⏳', badgeCls:'badge-processing',  bg:'#fff2d6', color:'#7a5200',
+    desc:'아직 정리가 더 필요한 부분이 있어요.\n며칠 후 다시 돌아보며 상황이 어떻게 달라졌는지 확인해보세요.' },
+  critical:   { label:'분석 요망',emoji:'🔍', badgeCls:'badge-critical',    bg:'#ffe4e4', color:'#8a1a1a',
+    desc:'이 감정에는 더 깊은 분석이 필요합니다.\n신뢰할 수 있는 사람과 나누거나 전문적 도움을 고려해보세요.' }
 };
 
-/* ───────────────────────────────
+const HINTS = ['','전혀 아니다','아닌 편이다','보통이다','그런 편이다','매우 그렇다'];
+
+/* ═══════════════════════════════════════
    상태
-─────────────────────────────── */
-let state = {
-  type: 'anger',
-  step: 0,
-  scores: [],
-  flags: [],
-  selected: null
-};
+═══════════════════════════════════════ */
+let st = { type:'anger', title:'', step:0, scores:[], flags:[], sel:null };
+let records = JSON.parse(localStorage.getItem('maum_v2') || '[]');
+let pendingDeleteId = null;
 
-let records = JSON.parse(localStorage.getItem('maum_records') || '[]');
+/* ═══════════════════════════════════════
+   History API 스택
+═══════════════════════════════════════ */
+// overlayStack: 현재 열린 오버레이 id 스택
+let overlayStack = [];
 
-/* ───────────────────────────────
-   History API 모달 관리
-─────────────────────────────── */
-let modalOpen = false;
-
-function openModal(type) {
-  state = { type, step: 0, scores: [], flags: [], selected: null };
-  const info = type === 'anger' ? '🔥 분노 처리' : '🌀 불안 처리';
-  document.getElementById('sh-title').textContent = info;
-  document.getElementById('overlay').classList.add('open');
-  modalOpen = true;
-  if (window.history.state?.modal !== true) {
-    window.history.pushState({ modal: true }, '');
-  }
-  renderQ();
+function pushOverlay(id) {
+  document.getElementById(id).classList.add('open');
+  overlayStack.push(id);
+  history.pushState({ overlayStack: [...overlayStack] }, '');
 }
 
-function closeModal() {
-  document.getElementById('overlay').classList.remove('open');
-  modalOpen = false;
-  if (window.history.state?.modal === true) {
-    window.history.back();
+function popOverlay() {
+  if (!overlayStack.length) return;
+  const id = overlayStack.pop();
+  document.getElementById(id).classList.remove('open');
+}
+
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('open');
+  const idx = overlayStack.indexOf(id);
+  if (idx !== -1) overlayStack.splice(idx, 1);
+  // history 뒤로 가지 않음 — 직접 닫기는 스택에서만 제거
+  // (뒤로가기로 열린 것과 충돌 방지용: pushState로 맞춤)
+  if (history.state && history.state.overlayStack) {
+    history.replaceState({ overlayStack: [...overlayStack] }, '');
   }
 }
 
-window.addEventListener('popstate', () => {
-  if (modalOpen) {
-    document.getElementById('overlay').classList.remove('open');
-    modalOpen = false;
+function closeAll() {
+  while (overlayStack.length) {
+    const id = overlayStack.pop();
+    document.getElementById(id).classList.remove('open');
+  }
+  if (history.state && history.state.overlayStack !== undefined) {
+    // go back as many times as needed
+  }
+}
+
+window.addEventListener('popstate', e => {
+  const prev = (e.state && e.state.overlayStack) ? e.state.overlayStack : [];
+  // 현재보다 prev가 짧으면 → 뒤로가기 → 가장 위 오버레이 닫기
+  if (prev.length < overlayStack.length) {
+    const id = overlayStack.pop();
+    document.getElementById(id).classList.remove('open');
+  } else if (prev.length > overlayStack.length) {
+    // 앞으로가기 — 무시
   }
 });
 
-function overlayClick(e) {
-  if (e.target === document.getElementById('overlay')) closeModal();
+/* ═══════════════════════════════════════
+   흐름 시작
+═══════════════════════════════════════ */
+function startFlow(type) {
+  // 상태 완전 초기화
+  st = { type, title:'', step:0, scores:[], flags:[], sel:null };
+
+  // 제목 입력 UI 초기화
+  const tag = document.getElementById('title-type-tag');
+  tag.className = 'type-tag ' + type;
+  tag.textContent = type === 'anger' ? '🔥 분노 처리' : '🌀 불안 처리';
+  const inp = document.getElementById('emotion-title');
+  inp.value = '';
+  document.getElementById('btn-title-next').disabled = true;
+
+  pushOverlay('overlay-title');
+  // 키보드 포커스
+  setTimeout(() => inp.focus(), 300);
 }
 
-/* ───────────────────────────────
+function checkTitle() {
+  const v = document.getElementById('emotion-title').value.trim();
+  document.getElementById('btn-title-next').disabled = v.length === 0;
+}
+
+function titleEnter(e) {
+  if (e.key === 'Enter' && document.getElementById('emotion-title').value.trim()) goToQ();
+}
+
+function goToQ() {
+  st.title = document.getElementById('emotion-title').value.trim();
+  if (!st.title) return;
+
+  // 질문 시트 헤더 세팅
+  document.getElementById('q-sheet-title').textContent = st.title;
+
+  // 제목 시트 닫고 질문 시트 열기
+  closeOverlay('overlay-title');
+  pushOverlay('overlay-q');
+
+  // 항상 최상단으로
+  document.getElementById('sh-body').scrollTop = 0;
+  renderQ();
+}
+
+/* ═══════════════════════════════════════
    질문 렌더
-─────────────────────────────── */
-const HINTS = ['', '전혀 아니다', '아닌 편이다', '보통이다', '그런 편이다', '매우 그렇다'];
-
+═══════════════════════════════════════ */
 function renderQ() {
-  const qs = Q[state.type];
+  const qs = Q[st.type];
   const total = qs.length;
-  const i = state.step;
+  const i = st.step;
 
-  const pct = Math.round((i / total) * 100);
-  document.getElementById('sh-prog').style.width = pct + '%';
-  document.getElementById('sh-step').textContent = `질문 ${i + 1} / ${total}`;
+  document.getElementById('sh-prog').style.width = Math.round((i/total)*100) + '%';
+  document.getElementById('sh-step').textContent = `질문 ${i+1} / ${total}`;
 
-  state.selected = null;
+  st.sel = null;
   document.getElementById('btn-next').disabled = true;
 
   const q = qs[i];
   document.getElementById('sh-body').innerHTML = `
     <div class="q-text">${q.q}</div>
     <span class="q-sub">${q.sub}</span>
-    <div class="scale-labels">
-      <span>전혀 아니다</span>
-      <span>매우 그렇다</span>
-    </div>
+    <div class="scale-labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
     <div class="scale-row">
-      ${[1,2,3,4,5].map(n => `<button class="scale-btn" id="sb${n}" onclick="pick(${n})">${n}</button>`).join('')}
+      ${[1,2,3,4,5].map(n=>`<button class="scale-btn" id="sb${n}" onclick="pick(${n})">${n}</button>`).join('')}
     </div>
     <div class="scale-hint" id="hint"></div>
   `;
-
   document.getElementById('sh-footer').innerHTML = `
-    <button class="btn-close-m" onclick="closeModal()">닫기</button>
-    <button class="btn-next-m" id="btn-next" disabled onclick="nextStep()">다음</button>
+    <button class="btn-cancel" onclick="closeAll()">닫기</button>
+    <button class="btn-primary" id="btn-next" disabled onclick="nextStep()">다음</button>
   `;
+  // 질문 바뀔 때마다 최상단
+  document.getElementById('sh-body').scrollTop = 0;
 }
 
 function pick(n) {
-  state.selected = n;
-  [1,2,3,4,5].forEach(i => {
-    document.getElementById('sb'+i).classList.toggle('sel', i === n);
-  });
-  const hint = document.getElementById('hint');
-  if (hint) hint.textContent = HINTS[n];
+  st.sel = n;
+  [1,2,3,4,5].forEach(i => document.getElementById('sb'+i).classList.toggle('sel', i===n));
+  const h = document.getElementById('hint');
+  if (h) h.textContent = HINTS[n];
   document.getElementById('btn-next').disabled = false;
 }
 
 function nextStep() {
-  if (state.selected === null) return;
-  const q = Q[state.type][state.step];
-  state.scores.push(state.selected);
-  if (q.flag(state.selected)) {
-    state.flags.push({ label: q.flagLabel, score: state.selected });
-  }
-  state.step++;
-  if (state.step >= Q[state.type].length) {
-    showResult();
-  } else {
-    renderQ();
-  }
+  if (st.sel === null) return;
+  const q = Q[st.type][st.step];
+  st.scores.push(st.sel);
+  if (q.flag(st.sel)) st.flags.push({ label:q.flagLabel, score:st.sel, qIdx:st.step });
+  st.step++;
+  if (st.step >= Q[st.type].length) showResult();
+  else renderQ();
 }
 
-/* ───────────────────────────────
-   분류 로직 (플래그 기반)
-─────────────────────────────── */
+/* ═══════════════════════════════════════
+   분류
+═══════════════════════════════════════ */
 function classify() {
-  const n = state.flags.length;
-  if (n >= 3) return 'critical';
-  if (n >= 1) return 'processing';
-  return 'done';
+  const n = st.flags.length;
+  return n >= 3 ? 'critical' : n >= 1 ? 'processing' : 'done';
 }
 
-/* ───────────────────────────────
+/* ═══════════════════════════════════════
    결과 화면
-─────────────────────────────── */
+═══════════════════════════════════════ */
 function showResult() {
   const cat = classify();
   const info = CAT[cat];
-
   document.getElementById('sh-prog').style.width = '100%';
   document.getElementById('sh-step').textContent = '분석 완료';
 
-  const flagHTML = state.flags.length > 0
-    ? state.flags.map((f, idx) => {
-        const cls = cat === 'critical' && idx === 0 ? 'dot-danger' : 'dot-warn';
+  const flagHTML = st.flags.length > 0
+    ? st.flags.map((f,idx) => {
+        const cls = cat==='critical' && idx===0 ? 'dot-danger' : 'dot-warn';
         return `<div class="flag-item"><span class="flag-dot ${cls}"></span><span>${f.label} <span style="color:var(--txt3)">(${f.score}점)</span></span></div>`;
       }).join('')
     : `<div class="flag-item"><span class="flag-dot dot-ok"></span><span>특별한 위험 신호 없음</span></div>`;
 
-  const descLines = info.desc.split('\n').map(l => `<p style="margin-bottom:6px">${l}</p>`).join('');
+  const descLines = info.desc.split('\n').map(l=>`<p style="margin-bottom:6px">${l}</p>`).join('');
 
   document.getElementById('sh-body').innerHTML = `
     <div class="result-wrap">
       <div class="result-emoji">${info.emoji}</div>
       <div class="result-cat">${info.label}</div>
-      <span class="result-badge-lg ${info.badgeCls}" style="background:${info.bigBg};color:${info.bigColor}">
-        ${info.label}로 분류됨
-      </span>
+      <span class="result-badge-lg" style="background:${info.bg};color:${info.color}">${info.label}로 분류됨</span>
       <div class="result-desc">${descLines}</div>
       <div class="flag-box">
         <div class="flag-box-title">감지된 항목</div>
@@ -622,62 +514,135 @@ function showResult() {
       <button class="btn-confirm" onclick="confirmResult('${cat}')">기록하고 닫기</button>
     </div>
   `;
-
   document.getElementById('sh-footer').innerHTML = '';
+  document.getElementById('sh-body').scrollTop = 0;
 }
 
-/* ───────────────────────────────
-   기록 저장 & 목록 렌더
-─────────────────────────────── */
+/* ═══════════════════════════════════════
+   저장
+═══════════════════════════════════════ */
 function confirmResult(cat) {
-  const typeLabel = state.type === 'anger' ? '분노' : '불안';
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   const dateStr = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   const rec = {
     id: Date.now(),
-    type: state.type,
+    type: st.type,
     cat,
-    typeLabel,
+    title: st.title,
     dateStr,
-    flagCount: state.flags.length,
-    flagLabels: state.flags.map(f => f.label)
+    scores: [...st.scores],
+    flags: [...st.flags],
+    flagCount: st.flags.length
   };
-
   records.unshift(rec);
-  localStorage.setItem('maum_records', JSON.stringify(records));
-  closeModal();
+  localStorage.setItem('maum_v2', JSON.stringify(records));
+  closeAll();
   renderLists();
 }
 
+/* ═══════════════════════════════════════
+   목록 렌더
+═══════════════════════════════════════ */
 function renderLists() {
-  const cats = ['done', 'processing', 'critical'];
-  cats.forEach(cat => {
+  ['done','processing','critical'].forEach(cat => {
     const items = records.filter(r => r.cat === cat);
-    const listEl = document.getElementById('list-' + cat);
-    const cntEl  = document.getElementById('cnt-' + cat);
-    cntEl.textContent = items.length;
-
-    if (items.length === 0) {
-      listEl.innerHTML = '<div class="empty-box">아직 없음</div>';
-      return;
-    }
-
-    listEl.innerHTML = items.map(r => `
-      <div class="record-card">
-        <div class="rec-icon ${r.type}">${r.type === 'anger' ? '🔥' : '🌀'}</div>
+    document.getElementById('cnt-'+cat).textContent = items.length;
+    const el = document.getElementById('list-'+cat);
+    if (!items.length) { el.innerHTML = '<div class="empty-box">아직 없음</div>'; return; }
+    el.innerHTML = items.map(r => `
+      <div class="record-card" onclick="openDetail(${r.id})">
+        <div class="rec-icon ${r.type}">${r.type==='anger'?'🔥':'🌀'}</div>
         <div class="rec-info">
-          <div class="rec-title">${r.typeLabel} 감정 처리</div>
+          <div class="rec-title">${escHtml(r.title)}</div>
           <div class="rec-meta">${r.dateStr} · 플래그 ${r.flagCount}개</div>
         </div>
         <span class="badge ${CAT[r.cat].badgeCls}">${CAT[r.cat].label}</span>
+        <button class="rec-del" onclick="askDelete(event,${r.id})">✕</button>
       </div>
     `).join('');
   });
 }
 
-/* ── 초기화 ── */
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════
+   상세 보기
+═══════════════════════════════════════ */
+function openDetail(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  const info = CAT[r.cat];
+  const qs = Q[r.type];
+  const typeName = r.type === 'anger' ? '분노' : '불안';
+  const typeColor = r.type === 'anger' ? '#a04800' : '#264e8a';
+  const typeBg    = r.type === 'anger' ? '#fff0e0' : '#eaf0ff';
+
+  const scoreItems = qs.map((q, i) => {
+    const score = r.scores[i] ?? 0;
+    const isFlagged = r.flags.some(f => f.qIdx === i);
+    const barColor = isFlagged
+      ? (r.cat === 'critical' ? '#d04040' : '#e8a030')
+      : 'var(--g300)';
+    const barW = Math.round(score / 5 * 100);
+    return `
+      <div class="score-item">
+        <div class="score-item-q">${q.q}</div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="score-num">${score}점</div>
+        </div>
+        ${isFlagged ? `<span class="score-flag-tag">${r.flags.find(f=>f.qIdx===i).label}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('detail-body').innerHTML = `
+    <span class="detail-type-tag" style="background:${typeBg};color:${typeColor}">${r.type==='anger'?'🔥':'🌀'} ${typeName} 처리</span>
+    <div class="detail-title">${escHtml(r.title)}</div>
+    <div class="detail-date">${r.dateStr}</div>
+    <div class="detail-badge-wrap">
+      <span class="badge ${info.badgeCls}" style="font-size:13px;padding:5px 12px">${info.label}</span>
+    </div>
+    <div class="flag-box" style="margin-bottom:20px">
+      <div class="flag-box-title">감지된 항목 (${r.flagCount}개)</div>
+      ${r.flags.length
+        ? r.flags.map((f,i)=>`<div class="flag-item"><span class="flag-dot ${r.cat==='critical'&&i===0?'dot-danger':'dot-warn'}"></span><span>${f.label} (${f.score}점)</span></div>`).join('')
+        : `<div class="flag-item"><span class="flag-dot dot-ok"></span><span>특별한 위험 신호 없음</span></div>`
+      }
+    </div>
+    <div class="flag-box-title" style="padding:0 0 10px">문항별 점수</div>
+    <div class="score-list">${scoreItems}</div>
+    <div style="height:16px"></div>
+  `;
+  document.getElementById('detail-body').scrollTop = 0;
+  pushOverlay('overlay-detail');
+}
+
+/* ═══════════════════════════════════════
+   삭제
+═══════════════════════════════════════ */
+function askDelete(e, id) {
+  e.stopPropagation();
+  pendingDeleteId = id;
+  pushOverlay('overlay-confirm');
+}
+
+function doDelete() {
+  if (!pendingDeleteId) return;
+  records = records.filter(r => r.id !== pendingDeleteId);
+  localStorage.setItem('maum_v2', JSON.stringify(records));
+  pendingDeleteId = null;
+  closeOverlay('overlay-confirm');
+  renderLists();
+}
+
+/* ═══════════════════════════════════════
+   초기화
+═══════════════════════════════════════ */
 renderLists();
 </script>
 </body>

@@ -73,7 +73,10 @@
   /* ===== 레이아웃 ===== */
   #app { display: none; height: 100vh; }
   #app.active { display: flex; }
-  .app-shell { display: flex; width: 100%; height: 100%; }
+  .app-shell {
+    display: flex; width: 100%; height: 100%;
+    max-width: 1080px; margin: 0 auto;
+  }
 
   .sidebar {
     width: 380px; flex-shrink: 0; background: var(--bg);
@@ -82,10 +85,12 @@
   }
   .sidebar-head {
     padding: 18px 18px 14px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    display: grid; grid-template-columns: 32px 1fr 32px; align-items: center; gap: 8px;
   }
-  .brand { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-  .head-btns { display: flex; gap: 6px; }
+  .brand { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .brand-icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .head-btns { display: flex; gap: 6px; justify-content: flex-end; }
   .icon-btn {
     width: 32px; height: 32px; border-radius: var(--radius);
     border: 1px solid var(--border2); background: var(--bg);
@@ -167,9 +172,9 @@
   .qa-head { padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
   .qa-head:hover { background: var(--bg3); }
   .qa-num { font-size: 11px; font-weight: 700; color: var(--text3); padding-top: 2px; min-width: 22px; }
-  .qa-q { flex: 1; font-size: 13.5px; line-height: 1.5; }
-  .qa-preview { font-size: 12px; color: var(--text3); margin-top: 4px; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; }
+  .qa-q { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.5; word-break: break-word; overflow-wrap: anywhere; white-space: normal; }
+  .qa-preview { font-size: 12px; color: var(--text3); margin-top: 4px; overflow: hidden; word-break: break-word; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-overflow: ellipsis; white-space: normal; }
   .qa-chevron { color: var(--text3); font-size: 11px; padding-top: 3px; transition: transform .15s; }
   .qa-item.open .qa-chevron { transform: rotate(90deg); }
   .qa-body { display: none; padding: 0 14px 14px; }
@@ -195,7 +200,7 @@
   /* ===== 새 기록 (wizard) ===== */
   .wizard-progress-track { height: 5px; background: var(--bg3); border-radius: 3px; margin-bottom: 22px; overflow: hidden; }
   .wizard-progress-fill { height: 100%; background: var(--accent-bg); transition: width .2s; }
-  .wizard-step-meta { font-size: 12px; color: var(--text3); margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .wizard-step-meta { font-size: 12px; color: var(--text3); margin-bottom: 10px; display: flex; justify-content: flex-end; }
   .wizard-q { font-size: 19px; font-weight: 700; line-height: 1.5; margin-bottom: 18px; letter-spacing: -0.2px; }
   .wizard-textarea {
     width: 100%; min-height: 220px; border: 1px solid var(--border2); border-radius: var(--radius-lg);
@@ -226,6 +231,7 @@
     display: flex; align-items: center; gap: 8px; padding: 9px 10px; background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px;
   }
+  .q-edit-num { font-size: 12px; font-weight: 700; color: var(--text3); min-width: 20px; text-align: center; flex-shrink: 0; }
   .q-edit-row textarea {
     flex: 1; border: none; background: transparent; font-size: 13px; line-height: 1.5; resize: none; outline: none;
     min-height: 20px; padding: 2px 0;
@@ -297,7 +303,13 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
-        <div class="brand">심리 상자</div>
+        <span></span>
+        <div class="brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 20.5s-7.5-4.6-10.2-9.6C0.2 7.8 1.6 4.6 4.6 3.6c2.2-0.7 4.4 0.1 5.7 1.9C10.9 7 11.4 8 12 8c0.6 0 1.1-1 1.7-2.5 1.3-1.8 3.5-2.6 5.7-1.9 3 1 4.4 4.2 2.8 7.3C19.5 15.9 12 20.5 12 20.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="rgba(0,0,0,0.04)"/>
+          </svg>
+          심리 상자
+        </div>
         <div class="head-btns">
           <button class="icon-btn" title="문항 관리" onclick="openSettings()">⚙</button>
         </div>
@@ -556,8 +568,33 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 /* ============================================================
    화면 전환 (PC: 사이드바+메인 동시 / 모바일: 풀스크린 전환)
 ============================================================ */
-function showMain() { document.body.classList.add('show-main'); }
-function backToList() { document.body.classList.remove('show-main'); view = 'list'; openQaId = null; renderMain(); renderSidebarList(); }
+function showMain() {
+  document.body.classList.add('show-main');
+  if (!history.state || history.state.mbView !== 'main') {
+    history.pushState({ mbView: 'main' }, '');
+  }
+}
+function backToList() {
+  if (history.state && history.state.mbView === 'main') {
+    history.back();
+  } else {
+    exitToListNow();
+  }
+}
+function exitToListNow() {
+  document.body.classList.remove('show-main');
+  view = 'list';
+  openQaId = null;
+  renderMain();
+  renderSidebarList();
+}
+
+window.addEventListener('popstate', (e) => {
+  // 뒤로가기로 'main' 화면에서 빠져나오는 경우: 페이지 이탈 없이 목록 화면으로 전환
+  if (document.body.classList.contains('show-main')) {
+    exitToListNow();
+  }
+});
 
 /* ============================================================
    사이드바: 기록 리스트
@@ -631,7 +668,7 @@ function renderDetailView(el) {
         <div class="qa-head" onclick="toggleQa('${q.id}')">
           <div class="qa-num">${q.order}</div>
           <div class="qa-q">
-            <span class="cat-badge">${q.category}</span>${escapeHtml(q.text)}
+            ${escapeHtml(q.text)}
             ${!isOpen ? `<div class="qa-preview">${text ? escapeHtml(text) : '응답 없음'}</div>` : ''}
           </div>
           <div class="qa-chevron">▶</div>
@@ -704,11 +741,16 @@ let pendingDeleteEntryId = null;
 function askDeleteEntry(id) { pendingDeleteEntryId = id; openModal('modal-del-entry'); }
 function confirmDeleteEntry() {
   S.entries = S.entries.filter(e => e.id !== pendingDeleteEntryId);
-  if (currentEntryId === pendingDeleteEntryId) { currentEntryId = null; view = 'list'; document.body.classList.remove('show-main'); }
+  const wasShowingThis = (currentEntryId === pendingDeleteEntryId);
+  if (wasShowingThis) { currentEntryId = null; view = 'list'; }
   pendingDeleteEntryId = null;
   closeModal('modal-del-entry');
   renderSidebarList();
   renderMain();
+  if (wasShowingThis && document.body.classList.contains('show-main')) {
+    document.body.classList.remove('show-main');
+    if (history.state && history.state.mbView === 'main') history.back();
+  }
   queueSync();
 }
 
@@ -734,7 +776,7 @@ function renderWizardView(el) {
     el.innerHTML = `
       <div class="wizard-title-row">
         <label>이번 기록의 제목을 입력하세요</label>
-        <input class="wizard-title-input" id="wiz-title" placeholder="예: 팀장님과의 갈등" value="${escapeHtml(wizard.title)}" autofocus>
+        <input class="wizard-title-input" id="wiz-title" placeholder="예: 팀장님과의 갈등" value="${escapeHtml(wizard.title)}" autofocus oninput="clearWizTitleErr()">
       </div>
       <div class="wizard-nav">
         <button class="nav-btn" onclick="cancelWizard()">취소</button>
@@ -748,7 +790,6 @@ function renderWizardView(el) {
   const pct = Math.round(((wizard.step + 1) / total) * 100);
   el.innerHTML = `
     <div class="wizard-step-meta">
-      <span><span class="cat-badge">${q.category}</span>${CATEGORY_LABEL[q.category] || ''}</span>
       <span>${wizard.step + 1} / ${total}</span>
     </div>
     <div class="wizard-progress-track"><div class="wizard-progress-fill" style="width:${pct}%"></div></div>
@@ -762,9 +803,30 @@ function renderWizardView(el) {
   setTimeout(() => { const ta = document.getElementById('wiz-answer'); if (ta) ta.focus(); }, 0);
 }
 
+function clearWizTitleErr() {
+  const titleInput = document.getElementById('wiz-title');
+  if (titleInput) titleInput.style.borderColor = '';
+  const errEl = document.getElementById('wiz-title-err');
+  if (errEl) errEl.remove();
+}
+
 function wizardStartQuestions() {
-  wizard.title = document.getElementById('wiz-title').value.trim();
-  if (!wizard.title) { wizard.title = '제목 없음'; }
+  const titleInput = document.getElementById('wiz-title');
+  const title = titleInput.value.trim();
+  if (!title) {
+    titleInput.style.borderColor = 'var(--error-text)';
+    let errEl = document.getElementById('wiz-title-err');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = 'wiz-title-err';
+      errEl.style.cssText = 'color:var(--error-text);font-size:12px;margin-top:6px;';
+      titleInput.insertAdjacentElement('afterend', errEl);
+    }
+    errEl.textContent = '제목을 입력해주세요.';
+    titleInput.focus();
+    return;
+  }
+  wizard.title = title;
   wizard.step = 0;
   renderWizardView(document.getElementById('panel-inner'));
 }
@@ -798,9 +860,11 @@ function wizardPrev() {
 function cancelWizard() {
   wizard = null;
   view = 'list';
+  const wasShowingMain = document.body.classList.contains('show-main');
   document.body.classList.remove('show-main');
   renderMain();
   renderSidebarList();
+  if (wasShowingMain && history.state && history.state.mbView === 'main') history.back();
 }
 
 function finishWizard(sortedQs) {
@@ -835,26 +899,22 @@ function openSettings() {
 }
 
 function renderSettingsView(el) {
-  const cats = ['A','B','C','D','E','F'];
   const sorted = [...S.questions].sort((a,b) => a.order - b.order);
   let html = `<div class="detail-head"><div style="font-size:21px;font-weight:700;letter-spacing:-0.3px;">문항 관리</div></div>
     <div class="detail-meta">문항을 수정해도 이미 작성된 과거 기록은 그대로 보존됩니다.</div>`;
 
-  cats.forEach(cat => {
-    const qs = sorted.filter(q => q.category === cat);
-    if (qs.length === 0) return;
-    html += `<div class="settings-section"><div class="settings-cat-label">${cat} · ${CATEGORY_LABEL[cat]}</div>`;
-    qs.forEach((q, idx) => {
-      html += `
-        <div class="q-edit-row">
-          <button class="q-mini-btn" onclick="moveQuestion('${q.id}',-1)" title="위로">▲</button>
-          <button class="q-mini-btn" onclick="moveQuestion('${q.id}',1)" title="아래로">▼</button>
-          <textarea rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; updateQuestionText('${q.id}', this.value)">${escapeHtml(q.text)}</textarea>
-          <button class="q-mini-btn danger" onclick="askDeleteQuestion('${q.id}')" title="삭제">✕</button>
-        </div>`;
-    });
-    html += `<button class="add-q-btn" onclick="addQuestion('${cat}')">+ ${cat} 섹션에 문항 추가</button></div>`;
+  html += `<div class="settings-section">`;
+  sorted.forEach((q, idx) => {
+    html += `
+      <div class="q-edit-row">
+        <div class="q-edit-num">${idx + 1}</div>
+        <button class="q-mini-btn" onclick="moveQuestion('${q.id}',-1)" title="위로">▲</button>
+        <button class="q-mini-btn" onclick="moveQuestion('${q.id}',1)" title="아래로">▼</button>
+        <textarea rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; updateQuestionText('${q.id}', this.value)">${escapeHtml(q.text)}</textarea>
+        <button class="q-mini-btn danger" onclick="askDeleteQuestion('${q.id}')" title="삭제">✕</button>
+      </div>`;
   });
+  html += `<button class="add-q-btn" onclick="addQuestion()">+ 문항 추가</button></div>`;
 
   el.innerHTML = html;
 }
@@ -865,20 +925,19 @@ function updateQuestionText(qid, text) {
 }
 
 function moveQuestion(qid, dir) {
-  const sameCat = S.questions.filter(q => q.category === S.questions.find(x => x.id === qid).category).sort((a,b) => a.order - b.order);
-  const idx = sameCat.findIndex(q => q.id === qid);
+  const all = [...S.questions].sort((a,b) => a.order - b.order);
+  const idx = all.findIndex(q => q.id === qid);
   const swapIdx = idx + dir;
-  if (swapIdx < 0 || swapIdx >= sameCat.length) return;
-  const a = sameCat[idx], b = sameCat[swapIdx];
+  if (swapIdx < 0 || swapIdx >= all.length) return;
+  const a = all[idx], b = all[swapIdx];
   const tmp = a.order; a.order = b.order; b.order = tmp;
   renderSettingsView(document.getElementById('panel-inner'));
   queueSync();
 }
 
-function addQuestion(cat) {
-  const catQs = S.questions.filter(q => q.category === cat);
+function addQuestion() {
   const maxOrder = S.questions.length ? Math.max(...S.questions.map(q => q.order)) : 0;
-  S.questions.push({ id: uid(), category: cat, order: maxOrder + 1, text: '새 문항을 입력하세요' });
+  S.questions.push({ id: uid(), category: 'A', order: maxOrder + 1, text: '새 문항을 입력하세요' });
   renderSettingsView(document.getElementById('panel-inner'));
   queueSync();
 }

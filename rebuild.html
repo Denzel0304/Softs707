@@ -533,22 +533,25 @@
   /* Category tabs */
   .cat-tabs {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     margin-bottom: 20px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .cat-tab {
-    padding: 7px 14px;
+    flex: 1;
+    padding: 7px 6px;
     border-radius: 20px;
     border: 1.5px solid var(--border);
     background: transparent;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
     transition: all var(--transition);
     font-weight: 400;
+    text-align: center;
+    white-space: nowrap;
   }
   .cat-tab.selected {
     border-color: var(--green-1);

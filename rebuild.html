@@ -826,7 +826,7 @@
     <div class="modal-body">
       <label class="input-label">카테고리</label>
       <div class="cat-tabs" id="cat-tabs">
-        <button class="cat-tab selected" data-cat="morning">출근전</button>
+        <button class="cat-tab selected" data-cat="morning">출근 전</button>
         <button class="cat-tab" data-cat="work">근무중</button>
         <button class="cat-tab" data-cat="night">밤</button>
         <button class="cat-tab" data-cat="always">휴일</button>
@@ -895,7 +895,7 @@ function genId() {
 }
 
 const CATEGORIES = [
-  { key: 'morning',   label: '출근전', cls: 'cat-morning' },
+  { key: 'morning',   label: '출근 전', cls: 'cat-morning' },
   { key: 'work',      label: '근무중', cls: 'cat-work' },
   { key: 'night',     label: '밤',   cls: 'cat-night' },
   { key: 'always',    label: '휴일', cls: 'cat-always' },
@@ -904,13 +904,13 @@ const CATEGORIES = [
 
 function getTimeCat(date) {
   const h = date.getHours();
-  if (h >= 7 && h < 15) return 'morning';   // 출근전 07:00~14:59
+  if (h >= 7 && h < 15) return 'morning';   // 출근 전 07:00~14:59
   if (h >= 15 && h < 22) return 'work';     // 근무중 15:00~21:59
   return 'night'; // 밤 22:00~06:59
 }
 
 function getTimeCatLabel(cat) {
-  const map = { morning: '출근전', work: '근무중', night: '밤', always: '휴일', emergency: '응급' };
+  const map = { morning: '출근 전', work: '근무중', night: '밤', always: '휴일', emergency: '응급' };
   return map[cat] || '';
 }
 
@@ -923,18 +923,6 @@ function isWeekend() {
 }
 
 let phrases = loadPhrases();
-
-// 마이그레이션: 구버전 카테고리(오후/저녁)를 새 '근무중(work)' 카테고리로 1회 통합
-(function migrateLegacyCategories() {
-  let changed = false;
-  phrases.forEach(p => {
-    if (p.cat === 'afternoon' || p.cat === 'evening') {
-      p.cat = 'work';
-      changed = true;
-    }
-  });
-  if (changed) savePhrases(phrases);
-})();
 
 let currentScreen = 'main'; // 'main' | 'settings'
 let isAlwaysMode = isWeekend(); // 주말이면 휴일모드 ON, 평일이면 OFF
@@ -1117,12 +1105,12 @@ function renderDots(total, current) {
 function updateTimeLabel() {
   const el = document.getElementById('time-label');
   if (isEmergencyMode) {
-    el.textContent = '응급 모드';
+    el.textContent = '응급';
   } else if (isAlwaysMode) {
-    el.textContent = '휴일 모드';
+    el.textContent = '휴일';
   } else {
     const cat = getTimeCat(new Date());
-    el.textContent = getTimeCatLabel(cat) + ' 문구';
+    el.textContent = getTimeCatLabel(cat);
   }
 }
 

@@ -302,24 +302,13 @@
   .bottom-controls {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 16px;
     padding: 18px 28px 22px;
     padding-bottom: max(22px, env(safe-area-inset-bottom));
     position: relative;
     z-index: 1;
     flex-shrink: 0;
-  }
-
-  .time-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    background: var(--surface);
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1px solid var(--border-light);
   }
 
   .toggles-group {
@@ -786,7 +775,6 @@
     </div>
 
     <div class="bottom-controls">
-      <span class="time-label" id="time-label">—</span>
       <div class="toggles-group">
         <label class="toggle-wrap">
           <span class="toggle-label">휴일</span>
@@ -1100,20 +1088,6 @@ function renderDots(total, current) {
 }
 
 // ══════════════════════════════════════════════
-// TIME LABEL
-// ══════════════════════════════════════════════
-function updateTimeLabel() {
-  const el = document.getElementById('time-label');
-  if (isEmergencyMode) {
-    el.textContent = '응급';
-  } else if (isAlwaysMode) {
-    el.textContent = '휴일';
-  } else {
-    const cat = getTimeCat(new Date());
-    el.textContent = getTimeCatLabel(cat);
-  }
-}
-
 // ══════════════════════════════════════════════
 // SCREEN NAVIGATION
 // ══════════════════════════════════════════════
@@ -1143,7 +1117,6 @@ function showMain() {
   document.getElementById('btn-export').addEventListener('click', onExportClick);
   document.getElementById('btn-add').style.display = '';
   document.getElementById('btn-settings').style.display = '';
-  updateTimeLabel();
   startPlayback();
 }
 
@@ -1542,14 +1515,12 @@ document.getElementById('import-file').addEventListener('change', (e) => {
 // Toggle "휴일"
 document.getElementById('toggle-always').addEventListener('change', (e) => {
   isAlwaysMode = e.target.checked;
-  updateTimeLabel();
   startPlayback();
 });
 
 // Toggle "응급" — 시간/요일과 무관, 토글로만 켜고 끄는 응급 모드
 document.getElementById('toggle-emergency').addEventListener('change', (e) => {
   isEmergencyMode = e.target.checked;
-  updateTimeLabel();
   startPlayback();
 });
 

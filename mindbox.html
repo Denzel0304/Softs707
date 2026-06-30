@@ -4,18 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>심리 분석</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
   :root {
-    --bg: #ffffff;
-    --bg2: #f7f6f3;
-    --bg3: #f0efe9;
-    --text: #1a1917;
-    --text2: #6b6a65;
-    --text3: #a8a7a2;
-    --border: rgba(0,0,0,0.10);
-    --border2: rgba(0,0,0,0.18);
-    --accent: #1a1917;
-    --accent-bg: #1a1917;
+    --bg: #fffdfb;
+    --bg2: #f9f4ee;
+    --bg3: #f3ebe1;
+    --text: #211c17;
+    --text2: #756a5f;
+    --text3: #aea092;
+    --border: rgba(120,72,30,0.12);
+    --border2: rgba(120,72,30,0.20);
+    --accent: #d97a3f;
+    --accent-bg: #d97a3f;
     --accent-text: #ffffff;
     --radius: 8px;
     --radius-lg: 12px;
@@ -23,8 +24,8 @@
     --success-text: #27500a;
     --error-bg: #fcebeb;
     --error-text: #791f1f;
-    --tag-bg: #efefeb;
-    --tag-text: #5f5e5a;
+    --tag-bg: #f1e7da;
+    --tag-text: #6b5a4a;
     /* 감정강도 스케일: 초록(편안) -> 주황 -> 빨강(고통) */
     --int-low: #4f8a3d;
     --int-mid: #c8862b;
@@ -33,7 +34,7 @@
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; height: 100%;
-    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', Arial, sans-serif;
     background: var(--bg2); color: var(--text);
     -webkit-font-smoothing: antialiased;
   }
@@ -87,9 +88,9 @@
     padding: 18px 18px 14px; border-bottom: 1px solid var(--border);
     display: grid; grid-template-columns: 32px 1fr 32px; align-items: center; gap: 8px;
   }
-  .brand { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; text-align: center;
+  .brand { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 6px; }
-  .brand-icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .brand-icon { width: 20px; height: 20px; flex-shrink: 0; color: var(--accent); }
   .head-btns { display: flex; gap: 6px; justify-content: flex-end; }
   .icon-btn {
     width: 32px; height: 32px; border-radius: var(--radius);
@@ -345,13 +346,24 @@
       <div class="sidebar-head">
         <span></span>
         <div class="brand">
-          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 20.5s-7.5-4.6-10.2-9.6C0.2 7.8 1.6 4.6 4.6 3.6c2.2-0.7 4.4 0.1 5.7 1.9C10.9 7 11.4 8 12 8c0.6 0 1.1-1 1.7-2.5 1.3-1.8 3.5-2.6 5.7-1.9 3 1 4.4 4.2 2.8 7.3C19.5 15.9 12 20.5 12 20.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="rgba(0,0,0,0.04)"/>
+          <svg class="brand-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="heartGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f0a35f"/>
+                <stop offset="100%" stop-color="#d9703a"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 21s-1-0.6-2.6-1.7C5.4 16.6 2 13.7 2 9.8 2 6.9 4.2 4.6 7 4.6c1.7 0 3.3 0.9 4.2 2.3 0.3 0.4 0.5 0.9 0.8 1.4 0.3-0.5 0.5-1 0.8-1.4C13.7 5.5 15.3 4.6 17 4.6c2.8 0 5 2.3 5 5.2 0 3.9-3.4 6.8-7.4 9.5C13 20.4 12 21 12 21Z" fill="url(#heartGrad)"/>
           </svg>
           심리 분석
         </div>
         <div class="head-btns">
-          <button class="icon-btn" title="문항 관리" onclick="openSettings()">⚙</button>
+          <button class="icon-btn" title="문항 관리" onclick="openSettings()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M19.4 13.5c.04-.33.06-.66.06-1s-.02-.67-.06-1l2.1-1.64a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.48 1a7.4 7.4 0 0 0-1.7-1l-.38-2.65a.5.5 0 0 0-.5-.43h-4a.5.5 0 0 0-.5.43l-.38 2.65c-.63.25-1.2.59-1.7 1l-2.48-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.1 1.64c-.04.33-.06.66-.06 1s.02.67.06 1l-2.1 1.64a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.48-1c.5.41 1.07.75 1.7 1l.38 2.65a.5.5 0 0 0 .5.43h4a.5.5 0 0 0 .5-.43l.38-2.65c.63-.25 1.2-.59 1.7-1l2.48 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64L19.4 13.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
       <div class="new-entry-bar">

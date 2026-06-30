@@ -236,7 +236,7 @@
     margin-top: 22px; padding: 16px 16px 14px; background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--radius-lg);
   }
-  .intensity-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .intensity-section-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
   .intensity-section-sub { font-size: 11.5px; color: var(--text3); margin-bottom: 14px; }
   .intensity-slider-row { margin-bottom: 16px; }
   .intensity-slider-row:last-child { margin-bottom: 0; }
@@ -755,14 +755,14 @@ function renderDetailView(el) {
   const init = getIntensity(entry, 'initial');
   const fin  = getIntensity(entry, 'final');
 
-  const qaHtml = (entry.questionsSnapshot || []).map(q => {
+  const qaHtml = (entry.questionsSnapshot || []).map((q, qIdx) => {
     const a = (entry.answers || []).find(a => a.questionId === q.id);
     const text = a ? a.answerText : '';
     const isOpen = openQaId === q.id;
     return `
       <div class="qa-item ${isOpen ? 'open' : ''}" id="qa-${q.id}">
         <div class="qa-head" onclick="toggleQa('${q.id}')">
-          <div class="qa-num">${q.order}</div>
+          <div class="qa-num">${qIdx + 1}</div>
           <div class="qa-q">
             ${escapeHtml(q.text)}
             ${!isOpen ? `<div class="qa-preview">${text ? escapeHtml(text) : '응답 없음'}</div>` : ''}
@@ -793,7 +793,6 @@ function renderDetailView(el) {
     <div id="qa-list">${qaHtml}</div>
     <div class="intensity-section">
       <div class="intensity-section-title">감정강도 평가</div>
-      <div class="intensity-section-sub">문항과 별개로 항상 이 위치에 고정됩니다.</div>
       <div class="intensity-slider-row">
         <div class="intensity-slider-label">
           <span class="lbl-text">시작 시점 강도</span>

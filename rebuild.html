@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Rebuild</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
@@ -1546,14 +1549,24 @@ document.getElementById('toggle-always').addEventListener('change', (e) => {
 });
 
 // Toggle "분노" — 시간/요일과 무관, 토글로만 켜고 끄는 분노 모드
+// '분노'와 '불안'은 동시에 의미가 없으므로 서로 배타적으로 동작 (하나를 켜면 다른 하나는 꺼짐)
 document.getElementById('toggle-emergency').addEventListener('change', (e) => {
   isEmergencyMode = e.target.checked;
+  if (isEmergencyMode && isAnxietyMode) {
+    isAnxietyMode = false;
+    document.getElementById('toggle-anxiety').checked = false;
+  }
   startPlayback();
 });
 
 // Toggle "불안" — 시간/요일과 무관, 토글로만 켜고 끄는 불안 모드
+// '분노'와 '불안'은 동시에 의미가 없으므로 서로 배타적으로 동작 (하나를 켜면 다른 하나는 꺼짐)
 document.getElementById('toggle-anxiety').addEventListener('change', (e) => {
   isAnxietyMode = e.target.checked;
+  if (isAnxietyMode && isEmergencyMode) {
+    isEmergencyMode = false;
+    document.getElementById('toggle-emergency').checked = false;
+  }
   startPlayback();
 });
 

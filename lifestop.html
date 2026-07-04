@@ -379,10 +379,110 @@
   .form-input:focus, .form-textarea:focus { border-color: var(--orange-2); }
   .form-textarea { resize: none; height: 80px; line-height: 1.6; }
 
-  input[type="date"].form-input::-webkit-calendar-picker-indicator {
-    opacity: 0.5;
+  /* ─── 커스텀 날짜 피커 ─────────────────────────────── */
+  .date-display {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--orange-4);
+    background: white;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    color: var(--text-dark);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
   }
+  .date-display:hover, .date-display.open { border-color: var(--orange-2); }
+  .date-display .date-icon { font-size: 16px; }
+
+  .date-picker-panel {
+    display: none;
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--orange-4);
+    overflow: hidden;
+    margin-top: 6px;
+    box-shadow: 0 4px 20px rgba(232,101,10,0.12);
+  }
+  .date-picker-panel.open { display: block; }
+
+  .dp-header {
+    display: flex;
+    align-items: center;
+    background: var(--orange-light);
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .dp-select {
+    flex: 1;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--orange-3);
+    background: white;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: var(--text-dark);
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    text-align: center;
+  }
+  .dp-select-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .dp-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--orange-2);
+    pointer-events: none;
+  }
+
+  .dp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    padding: 8px;
+  }
+  .dp-dow {
+    text-align: center;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 10px;
+    color: var(--text-light);
+    padding: 4px 0;
+    font-weight: 500;
+  }
+  .dp-dow.sun { color: #E05050; }
+  .dp-dow.sat { color: #4A7AE8; }
+
+  .dp-day {
+    text-align: center;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 7px 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-dark);
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dp-day:hover { background: var(--orange-light); }
+  .dp-day.today { font-weight: 700; color: var(--orange-1); }
+  .dp-day.selected { background: var(--orange-1); color: white; border-radius: 50%; }
+  .dp-day.selected:hover { background: var(--orange-2); }
+  .dp-day.empty { cursor: default; }
+  .dp-day.empty:hover { background: none; }
+  .dp-day.sun { color: #E05050; }
+  .dp-day.sat { color: #4A7AE8; }
+  .dp-day.selected.sun, .dp-day.selected.sat { color: white; }
+  .dp-day.other-month { color: var(--gray-4); }
 
   .form-hint {
     font-family: 'Noto Sans KR', sans-serif;
@@ -528,7 +628,28 @@
       </div>
       <div class="form-group">
         <label class="form-label">날짜</label>
-        <input type="date" class="form-input" id="fDate">
+        <div class="date-display" id="dateDisplay" onclick="toggleDatePicker()">
+          <span id="dateDisplayText">날짜 선택</span>
+          <span class="date-icon">📅</span>
+        </div>
+        <div class="date-picker-panel" id="datePickerPanel">
+          <div class="dp-header">
+            <div class="dp-select-wrap">
+              <select class="dp-select" id="dpYear" onchange="dpRender()"></select>
+            </div>
+            <div class="dp-select-wrap">
+              <select class="dp-select" id="dpMonth" onchange="dpRender()">
+                <option value="0">1월</option><option value="1">2월</option>
+                <option value="2">3월</option><option value="3">4월</option>
+                <option value="4">5월</option><option value="5">6월</option>
+                <option value="6">7월</option><option value="7">8월</option>
+                <option value="8">9월</option><option value="9">10월</option>
+                <option value="10">11월</option><option value="11">12월</option>
+              </select>
+            </div>
+          </div>
+          <div class="dp-grid" id="dpGrid"></div>
+        </div>
         <div class="form-hint">오늘 이전이면 과거, 이후면 미래로 분류돼요</div>
       </div>
       <div class="form-group">
@@ -687,9 +808,10 @@ function render() {
   tl.innerHTML = '';
 
   const today = todayStr();
+  // 미래가 위(내림차순): 날짜 큰 게 먼저
   const sorted = [...items].sort((a, b) => {
-    if (a.date < b.date) return -1;
-    if (a.date > b.date) return 1;
+    if (a.date > b.date) return -1;
+    if (a.date < b.date) return 1;
     return 0;
   });
 
@@ -713,8 +835,8 @@ function render() {
     const isPast = days <= 0;
     const isFuture = days > 0;
 
-    // 오늘 기준선 삽입
-    if (!todayInserted && isFuture) {
+    // 내림차순(미래→과거): 과거 첫 항목 직전에 오늘 기준선 삽입
+    if (!todayInserted && isPast) {
       tl.appendChild(makeTodayMarker());
       todayInserted = true;
     }
@@ -724,6 +846,7 @@ function render() {
     cardIndex++;
   }
 
+  // 미래 항목만 있는 경우: 맨 아래에 오늘 삽입
   if (!todayInserted) {
     tl.appendChild(makeTodayMarker());
   }
@@ -798,13 +921,116 @@ function escHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ─── 커스텀 날짜 피커 ────────────────────────────────────
+let dpSelectedDate = ''; // 'YYYY-MM-DD'
+let dpViewYear = 0;
+let dpViewMonth = 0;
+
+function dpInit(dateStr) {
+  const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+  dpViewYear = d.getFullYear();
+  dpViewMonth = d.getMonth();
+  dpSelectedDate = dateStr || todayStr();
+
+  // 연도 옵션 채우기 (1950 ~ 오늘+10년)
+  const yrSel = document.getElementById('dpYear');
+  yrSel.innerHTML = '';
+  const nowY = new Date().getFullYear();
+  for (let y = nowY + 10; y >= 1950; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y + '년';
+    if (y === dpViewYear) opt.selected = true;
+    yrSel.appendChild(opt);
+  }
+  document.getElementById('dpMonth').value = dpViewMonth;
+  dpRender();
+  dpUpdateDisplay();
+}
+
+function dpRender() {
+  dpViewYear = parseInt(document.getElementById('dpYear').value);
+  dpViewMonth = parseInt(document.getElementById('dpMonth').value);
+
+  const grid = document.getElementById('dpGrid');
+  grid.innerHTML = '';
+
+  // 요일 헤더
+  ['일','월','화','수','목','금','토'].forEach((d, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'dp-dow' + (i===0?' sun':i===6?' sat':'');
+    cell.textContent = d;
+    grid.appendChild(cell);
+  });
+
+  const firstDay = new Date(dpViewYear, dpViewMonth, 1).getDay();
+  const daysInMonth = new Date(dpViewYear, dpViewMonth + 1, 0).getDate();
+  const todayFull = todayStr();
+
+  // 앞 빈칸
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'dp-day empty';
+    grid.appendChild(cell);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${dpViewYear}-${String(dpViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cell = document.createElement('div');
+    const dow = (firstDay + d - 1) % 7;
+    let cls = 'dp-day';
+    if (dateStr === todayFull) cls += ' today';
+    if (dateStr === dpSelectedDate) cls += ' selected';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    cell.className = cls;
+    cell.textContent = d;
+    cell.onclick = () => dpSelectDate(dateStr);
+    grid.appendChild(cell);
+  }
+}
+
+function dpSelectDate(dateStr) {
+  dpSelectedDate = dateStr;
+  dpUpdateDisplay();
+  closeDatePicker();
+}
+
+function dpUpdateDisplay() {
+  const [y, m, d] = dpSelectedDate.split('-');
+  document.getElementById('dateDisplayText').textContent =
+    `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+}
+
+function toggleDatePicker() {
+  const panel = document.getElementById('datePickerPanel');
+  const display = document.getElementById('dateDisplay');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    display.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    display.classList.add('open');
+    // 현재 선택값으로 다시 렌더
+    document.getElementById('dpYear').value = dpViewYear;
+    document.getElementById('dpMonth').value = dpViewMonth;
+    dpRender();
+  }
+}
+
+function closeDatePicker() {
+  document.getElementById('datePickerPanel').classList.remove('open');
+  document.getElementById('dateDisplay').classList.remove('open');
+}
+
 // ─── MODAL ───────────────────────────────────────────────
 function openModal() {
   editingId = null;
   document.getElementById('modalTitleText').textContent = '새 정거장 등록';
   document.getElementById('fTitle').value = '';
-  document.getElementById('fDate').value = todayStr();
   document.getElementById('fMemo').value = '';
+  dpInit(todayStr());
+  closeDatePicker();
   showModal();
 }
 
@@ -814,8 +1040,9 @@ function openEditModal(id) {
   editingId = id;
   document.getElementById('modalTitleText').textContent = '정거장 수정';
   document.getElementById('fTitle').value = item.title;
-  document.getElementById('fDate').value = item.date;
   document.getElementById('fMemo').value = item.memo || '';
+  dpInit(item.date);
+  closeDatePicker();
   showModal();
 }
 
@@ -829,8 +1056,8 @@ function showModal() {
 function closeModal() {
   const overlay = document.getElementById('modalOverlay');
   overlay.classList.remove('active');
+  closeDatePicker();
   modalOpen = false;
-  // history 정리 (팝스테이트가 아닌 직접 닫기)
   if (history.state && history.state.modal) {
     history.back();
   }
@@ -838,7 +1065,7 @@ function closeModal() {
 
 function saveItem() {
   const title = document.getElementById('fTitle').value.trim();
-  const date = document.getElementById('fDate').value;
+  const date = dpSelectedDate;
   const memo = document.getElementById('fMemo').value.trim();
 
   if (!title) {

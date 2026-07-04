@@ -304,7 +304,7 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 18px 28px 22px;
+    padding: 18px 16px 22px;
     padding-bottom: max(22px, env(safe-area-inset-bottom));
     position: relative;
     z-index: 1;
@@ -315,32 +315,35 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 10px;
+    flex-wrap: nowrap;
   }
 
   .toggle-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .toggle-label {
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--text-secondary);
     font-weight: 400;
+    white-space: nowrap;
   }
 
   .toggle {
     position: relative;
-    width: 46px; height: 26px;
+    width: 40px; height: 23px;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .toggle input { display: none; }
   .toggle-track {
     position: absolute;
     inset: 0;
-    border-radius: 13px;
+    border-radius: 12px;
     background: var(--border);
     transition: background var(--transition);
   }
@@ -348,13 +351,13 @@
   .toggle-thumb {
     position: absolute;
     top: 3px; left: 3px;
-    width: 20px; height: 20px;
+    width: 17px; height: 17px;
     border-radius: 50%;
     background: white;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
     transition: transform var(--transition);
   }
-  .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(17px); }
 
   /* 분노 모드 토글: 평소 분홍, ON 시 빨강 (시간/요일과 무관, 수동 토글 전용) */
   .toggle-emergency .toggle-track { background: #f4a7c1; }

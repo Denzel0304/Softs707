@@ -60,23 +60,20 @@
   .header-left {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   .header-btn {
     display: flex;
     align-items: center;
-    gap: 3px;
-    background: rgba(255,255,255,0.8);
+    justify-content: center;
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.85);
     border: 1px solid var(--orange-3);
-    border-radius: 20px;
-    padding: 5px 10px;
-    font-size: 11px;
-    font-family: 'Noto Sans KR', sans-serif;
-    color: var(--text-mid);
+    border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
+    flex-shrink: 0;
   }
   .header-btn:hover { background: var(--orange-light); }
   .header-btn svg { flex-shrink: 0; }
@@ -127,8 +124,8 @@
     margin: 0 auto;
   }
 
-  /* 세로 중심선 */
-  .timeline::before {
+  /* 세로 중심선 - 항목 있을 때만 */
+  .timeline.has-items::before {
     content: '';
     position: absolute;
     top: 0; bottom: 0;
@@ -490,13 +487,11 @@
 <!-- HEADER -->
 <header>
   <div class="header-left">
-    <button class="header-btn" onclick="exportData()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      내보내기
+    <button class="header-btn" onclick="exportData()" title="내보내기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8650A" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     </button>
-    <button class="header-btn" onclick="document.getElementById('fileImport').click()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      가져오기
+    <button class="header-btn" onclick="document.getElementById('fileImport').click()" title="가져오기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8650A" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     </button>
     <input type="file" id="fileImport" accept=".json" onchange="importData(event)">
   </div>
@@ -699,14 +694,15 @@ function render() {
   });
 
   if (sorted.length === 0) {
+    tl.classList.remove('has-items');
     tl.innerHTML = `
-      <div class="today-marker"><div class="today-badge">✦ 오늘 ✦</div></div>
       <div class="empty-state">
         <div class="empty-icon">🚏</div>
         <p>아직 등록된 정거장이 없어요.<br>오른쪽 <strong>＋</strong> 버튼을 눌러<br>첫 정거장을 만들어보세요.</p>
       </div>`;
     return;
   }
+  tl.classList.add('has-items');
 
   let todayInserted = false;
   let cardIndex = 0;

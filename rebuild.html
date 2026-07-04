@@ -314,13 +314,15 @@
   .toggles-group {
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   .toggle-wrap {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .toggle-label {
@@ -354,9 +356,13 @@
   }
   .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
 
-  /* 응급 모드 토글: 평소 분홍, ON 시 빨강 (시간/요일과 무관, 수동 토글 전용) */
+  /* 분노 모드 토글: 평소 분홍, ON 시 빨강 (시간/요일과 무관, 수동 토글 전용) */
   .toggle-emergency .toggle-track { background: #f4a7c1; }
   .toggle-emergency input:checked ~ .toggle-track { background: #e0314f; }
+
+  /* 불안 모드 토글: 평소 연한 파랑, ON 시 진한 파랑 (시간/요일과 무관, 수동 토글 전용) */
+  .toggle-anxiety .toggle-track { background: #aac3f0; }
+  .toggle-anxiety input:checked ~ .toggle-track { background: #3a5fcd; }
 
   /* Quote fade animation */
   .quote-fade-out { opacity: 0; transform: translateY(-8px); }
@@ -404,6 +410,7 @@
   .cat-night .category-dot { background: #7c6bae; }
   .cat-always .category-dot { background: var(--green-1); }
   .cat-emergency .category-dot { background: #e0314f; }
+  .cat-anxiety .category-dot { background: #3a5fcd; }
 
   .category-name {
     font-size: 13px;
@@ -533,18 +540,19 @@
   /* Category tabs */
   .cat-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 5px;
     margin-bottom: 20px;
-    flex-wrap: nowrap;
   }
 
   .cat-tab {
-    flex: 1;
-    padding: 7px 6px;
-    border-radius: 20px;
+    flex: 1 1 30%;
+    min-width: 60px;
+    padding: 6px 4px;
+    border-radius: 16px;
     border: 1.5px solid var(--border);
     background: transparent;
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--text-secondary);
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
@@ -788,9 +796,17 @@
           </label>
         </label>
         <label class="toggle-wrap">
-          <span class="toggle-label">응급</span>
+          <span class="toggle-label">분노</span>
           <label class="toggle toggle-emergency">
             <input type="checkbox" id="toggle-emergency">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </label>
+        <label class="toggle-wrap">
+          <span class="toggle-label">불안</span>
+          <label class="toggle toggle-anxiety">
+            <input type="checkbox" id="toggle-anxiety">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -821,7 +837,8 @@
         <button class="cat-tab" data-cat="work">근무중</button>
         <button class="cat-tab" data-cat="night">밤</button>
         <button class="cat-tab" data-cat="always">휴일</button>
-        <button class="cat-tab" data-cat="emergency">응급</button>
+        <button class="cat-tab" data-cat="emergency">분노</button>
+        <button class="cat-tab" data-cat="anxiety">불안</button>
       </div>
       <div class="input-label-row">
         <label class="input-label" for="phrase-input">문구</label>
@@ -890,7 +907,8 @@ const CATEGORIES = [
   { key: 'work',      label: '근무중', cls: 'cat-work' },
   { key: 'night',     label: '밤',   cls: 'cat-night' },
   { key: 'always',    label: '휴일', cls: 'cat-always' },
-  { key: 'emergency', label: '응급', cls: 'cat-emergency' },
+  { key: 'emergency', label: '분노', cls: 'cat-emergency' },
+  { key: 'anxiety',   label: '불안', cls: 'cat-anxiety' },
 ];
 
 function getTimeCat(date) {
@@ -901,7 +919,7 @@ function getTimeCat(date) {
 }
 
 function getTimeCatLabel(cat) {
-  const map = { morning: '출근 전', work: '근무중', night: '밤', always: '휴일', emergency: '응급' };
+  const map = { morning: '출근 전', work: '근무중', night: '밤', always: '휴일', emergency: '분노', anxiety: '불안' };
   return map[cat] || '';
 }
 
@@ -917,7 +935,8 @@ let phrases = loadPhrases();
 
 let currentScreen = 'main'; // 'main' | 'settings'
 let isAlwaysMode = isWeekend(); // 주말이면 휴일모드 ON, 평일이면 OFF
-let isEmergencyMode = false; // 응급 모드: 시간/요일과 무관, 항상 OFF로 시작 (수동 토글만으로 작동)
+let isEmergencyMode = false; // 분노 모드: 시간/요일과 무관, 항상 OFF로 시작 (수동 토글만으로 작동)
+let isAnxietyMode = false; // 불안 모드: 시간/요일과 무관, 항상 OFF로 시작 (수동 토글만으로 작동)
 
 // Playback
 let shuffleQueue = [];
@@ -949,6 +968,8 @@ function buildQueue() {
   let cat;
   if (isEmergencyMode) {
     cat = 'emergency';
+  } else if (isAnxietyMode) {
+    cat = 'anxiety';
   } else if (isAlwaysMode) {
     cat = 'always';
   } else {
@@ -1230,8 +1251,8 @@ function openAddModal(id = null) {
     // Add mode
     title.textContent = '새 문구 추가';
     textarea.value = '';
-    // Default to current mode's cat (응급 > 휴일 > 시간대), or morning
-    const defaultCat = isEmergencyMode ? 'emergency' : (isAlwaysMode ? 'always' : getTimeCat(new Date()));
+    // Default to current mode's cat (분노 > 불안 > 휴일 > 시간대), or morning
+    const defaultCat = isEmergencyMode ? 'emergency' : (isAnxietyMode ? 'anxiety' : (isAlwaysMode ? 'always' : getTimeCat(new Date())));
     tabs.forEach(t => {
       t.classList.toggle('selected', t.dataset.cat === defaultCat);
     });
@@ -1399,7 +1420,7 @@ function handleImportFile(file) {
       return;
     }
     // Sanitise the incoming phrases.
-    const validCats = ['morning', 'work', 'night', 'always', 'emergency'];
+    const validCats = ['morning', 'work', 'night', 'always', 'emergency', 'anxiety'];
     const legacyCatMap = { afternoon: 'work', evening: 'work' }; // 구버전 백업 파일 호환
     const imported = [];
     data.phrases.forEach(p => {
@@ -1521,9 +1542,15 @@ document.getElementById('toggle-always').addEventListener('change', (e) => {
   startPlayback();
 });
 
-// Toggle "응급" — 시간/요일과 무관, 토글로만 켜고 끄는 응급 모드
+// Toggle "분노" — 시간/요일과 무관, 토글로만 켜고 끄는 분노 모드
 document.getElementById('toggle-emergency').addEventListener('change', (e) => {
   isEmergencyMode = e.target.checked;
+  startPlayback();
+});
+
+// Toggle "불안" — 시간/요일과 무관, 토글로만 켜고 끄는 불안 모드
+document.getElementById('toggle-anxiety').addEventListener('change', (e) => {
+  isAnxietyMode = e.target.checked;
   startPlayback();
 });
 
@@ -1550,6 +1577,7 @@ history.replaceState({ rebuildBase: true }, '');
 // 주말이면 토글 체크박스를 ON으로 초기화
 document.getElementById('toggle-always').checked = isAlwaysMode;
 document.getElementById('toggle-emergency').checked = isEmergencyMode;
+document.getElementById('toggle-anxiety').checked = isAnxietyMode;
 showMain();
 
 </script>

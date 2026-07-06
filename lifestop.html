@@ -869,7 +869,7 @@ function makeCard(item, days, isPast, isFuture, side) {
     cardClass = 'card future';
     dotColor = '#4CAF8A';
     style = '';
-    badgeText = '다가올 일';
+    badgeText = elapsedLabel(days);
     badgeBg = '#B2DFD0';
     badgeColor = '#1E5C44';
   } else if (item.type === 'good') {

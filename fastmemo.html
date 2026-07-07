@@ -720,7 +720,7 @@ async function doLogin() {
   }
   btn.disabled = true; msg.className = 'login-msg'; msg.textContent = '확인 중...';
   try {
-    const r = await rpc('FM34_login', { p_pin: pin });
+    const r = await rpc('fm34_login', { p_pin: pin });
     if (!r.ok) { msg.className = 'login-msg err'; msg.textContent = '서버 오류 (' + r.status + ')'; btn.disabled = false; return; }
     const data = await r.json();
     if (data.ok) {
@@ -752,7 +752,7 @@ async function afterLogin() {
 async function doLogout() {
   closeAllModals();
   const key = getAK();
-  if (key) { try { await rpc('FM34_logout', { p_key: key }); } catch (e) {} }
+  if (key) { try { await rpc('fm34_logout', { p_key: key }); } catch (e) {} }
   Object.keys(localStorage).forEach(k => { if (k.startsWith('FM34_')) localStorage.removeItem(k); });
   memos = [];
   render();
@@ -769,7 +769,7 @@ async function pullFromServer() {
   if (!key) return;
   setSyncBar('↓ 불러오는 중...');
   try {
-    const r = await rpc('FM34_pull', { p_key: key });
+    const r = await rpc('fm34_pull', { p_key: key });
     if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
     if (!r.ok) {
       const t = await r.text();
@@ -806,7 +806,7 @@ async function pushToServer() {
   syncing = true;
   setSyncBar('↑ 저장 중...');
   try {
-    const r = await rpc('FM34_push', { p_key: key, p_data: memos });
+    const r = await rpc('fm34_push', { p_key: key, p_data: memos });
     if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
     if (!r.ok) {
       const t = await r.text();

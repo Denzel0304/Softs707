@@ -999,6 +999,15 @@ function render() {
   const list = document.getElementById('list');
   const q = currentSearch.trim().toLowerCase();
 
+  // 카테고리별 카운트 업데이트
+  const counts = { todo: 0, idea: 0, basic: 0 };
+  memos.forEach(m => { if (counts[m.cat] !== undefined) counts[m.cat]++; });
+  document.querySelectorAll('.filter-chip[data-cat]').forEach(btn => {
+    const cat = btn.dataset.cat;
+    const label = CAT_LABEL[cat];
+    btn.textContent = `${label}(${counts[cat]})`;
+  });
+
   let filtered = memos.slice();
   if (currentFilter !== 'all') {
     filtered = filtered.filter(m => m.cat === currentFilter);

@@ -245,6 +245,31 @@
   .fab:active { transform: scale(0.92); }
   .fab svg { width: 26px; height: 26px; }
 
+  /* === PC Layout (768px+) === */
+  @media (min-width: 768px) {
+    :root { --pc-w: 520px; --pc-left: calc(50% - 260px); }
+
+    .header {
+      left: var(--pc-left);
+      right: auto;
+      width: var(--pc-w);
+      border-radius: 0 0 14px 14px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    .list-container {
+      left: var(--pc-left);
+      right: auto;
+      width: var(--pc-w);
+    }
+
+    .fab {
+      right: auto;
+      left: calc(var(--pc-left) + var(--pc-w) - 76px);
+    }
+  }
+
   /* === Modal === */
   .modal-overlay {
     position: fixed;

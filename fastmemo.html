@@ -369,8 +369,8 @@
   }
   .cat-option {
     flex: 1;
-    min-width: calc(50% - 3px);
-    padding: 11px 12px;
+    min-width: calc(33.333% - 4px);
+    padding: 11px 8px;
     border-radius: 10px;
     background: var(--surface);
     border: 1.5px solid var(--border);
@@ -602,8 +602,7 @@
     <button class="filter-chip active" data-filter="all">전체</button>
     <button class="filter-chip" data-filter="basic" data-cat="basic">기본</button>
     <button class="filter-chip" data-filter="idea" data-cat="idea">글감</button>
-    <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
-    <button class="filter-chip" data-filter="buy" data-cat="buy">살 것</button>
+    <button class="filter-chip" data-filter="todo" data-cat="todo">투자</button>
   </div>
   <div class="sync-bar" id="sync-bar"></div>
 </header>
@@ -659,8 +658,7 @@
     <div class="cat-select" id="catSelect">
       <button class="cat-option" data-cat="basic"><span class="dot"></span>기본</button>
       <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
-      <button class="cat-option" data-cat="todo"><span class="dot"></span>할 일</button>
-      <button class="cat-option" data-cat="buy"><span class="dot"></span>살 것</button>
+      <button class="cat-option" data-cat="todo"><span class="dot"></span>투자</button>
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
     <div class="editor-actions" id="editorActions" style="display:none;">
@@ -695,8 +693,8 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const FM34_AK    = 'FM34_ak';
 const FM34_CACHE = 'FM34_data';
 
-const CATS = ['todo', 'idea', 'basic', 'buy'];
-const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본', buy: '살 것' };
+const CATS = ['todo', 'idea', 'basic'];
+const CAT_LABEL = { todo: '투자', idea: '글감', basic: '기본' };
 
 /* ---------- State ---------- */
 let memos = [];

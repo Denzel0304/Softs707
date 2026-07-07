@@ -488,9 +488,58 @@
     border-radius: 2px;
     padding: 0 1px;
   }
+
+  /* === Login overlay === */
+  .login-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: none; align-items: center; justify-content: center; z-index: 500;
+  }
+  .login-overlay.active { display: flex; }
+  .login-box {
+    width: 280px; padding: 32px 28px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+  .login-sub { font-size: 12.5px; color: var(--text-soft); margin-bottom: 22px; }
+  .pin-input {
+    width: 100%; padding: 12px; font-size: 22px; text-align: center;
+    letter-spacing: 10px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); margin-bottom: 14px; outline: none;
+    color: var(--text);
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+    background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    cursor: pointer;
+  }
+  .login-btn:active { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-msg { font-size: 12px; margin-top: 12px; min-height: 14px; color: var(--text-soft); }
+  .login-msg.err { color: #c0392b; }
+  .login-msg.ok  { color: #2e7d32; }
+
+  /* === Sync indicator === */
+  .sync-bar {
+    font-size: 10.5px; color: var(--text-mute);
+    text-align: center; padding: 3px 0 0;
+    letter-spacing: 0.01em;
+  }
 </style>
 </head>
 <body>
+
+<!-- ===== 로그인 오버레이 ===== -->
+<div id="login-overlay" class="login-overlay active">
+  <div class="login-box">
+    <div class="login-title">빠른 메모</div>
+    <div class="login-sub">PIN 4자리를 입력하세요</div>
+    <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    <button id="login-btn" class="login-btn" onclick="doLogin()">로그인</button>
+    <div id="login-msg" class="login-msg"></div>
+  </div>
+</div>
 
 <header class="header" id="header">
   <div class="header-top">
@@ -531,6 +580,7 @@
     <button class="filter-chip" data-filter="todo" data-cat="todo">할 일</button>
     <button class="filter-chip" data-filter="buy" data-cat="buy">살 것</button>
   </div>
+  <div class="sync-bar" id="sync-bar"></div>
 </header>
 
 <div class="list-container">
@@ -561,6 +611,15 @@
         <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
       가져오기 (JSON)
+    </button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" id="menuLogout" style="color:#c0392b;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      로그아웃
     </button>
   </div>
 </div>
@@ -603,10 +662,14 @@
 
 <script>
 /* =========================================================
-   빠른 메모 — single-file app
+   빠른 메모 — single-file app + Supabase 동기화
    ========================================================= */
 
-const STORAGE_KEY = 'quick-memo:v1';
+const SB_URL  = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+const FM34_AK    = 'FM34_ak';
+const FM34_CACHE = 'FM34_data';
+
 const CATS = ['todo', 'idea', 'basic', 'buy'];
 const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본', buy: '살 것' };
 
@@ -614,24 +677,159 @@ const CAT_LABEL = { todo: '할 일', idea: '글감', basic: '기본', buy: '살 
 let memos = [];
 let currentFilter = 'all';
 let currentSearch = '';
-let editingId = null;       // null = new memo
+let editingId = null;
 let editingCat = null;
 let pendingDeleteId = null;
+let syncTimer = null, syncing = false;
+let authFailCount = 0;
+const AUTH_FAIL_MAX = 3;
 
-/* ---------- Storage ---------- */
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    memos = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(memos)) memos = [];
-  } catch { memos = []; }
-}
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
-}
+/* ---------- 기본 유틸 ---------- */
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+function getAK() { return localStorage.getItem(FM34_AK); }
+function setAK(k) { localStorage.setItem(FM34_AK, k); }
+function clearAK() { localStorage.removeItem(FM34_AK); }
+function setSyncBar(text) {
+  const el = document.getElementById('sync-bar');
+  if (el) el.textContent = text;
+}
+
+/* =========================================================
+   Supabase RPC / 로그인 / 동기화
+   ========================================================= */
+async function rpc(fn, args) {
+  return fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_ANON,
+      'Authorization': 'Bearer ' + SB_ANON,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args)
+  });
+}
+
+async function doLogin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  const msg = document.getElementById('login-msg');
+  const btn = document.getElementById('login-btn');
+  if (!/^\d{4}$/.test(pin)) {
+    msg.className = 'login-msg err'; msg.textContent = 'PIN 4자리 숫자를 입력하세요'; return;
+  }
+  btn.disabled = true; msg.className = 'login-msg'; msg.textContent = '확인 중...';
+  try {
+    const r = await rpc('FM34_login', { p_pin: pin });
+    if (!r.ok) { msg.className = 'login-msg err'; msg.textContent = '서버 오류 (' + r.status + ')'; btn.disabled = false; return; }
+    const data = await r.json();
+    if (data.ok) {
+      setAK(data.key);
+      document.getElementById('pin-input').value = '';
+      msg.className = 'login-msg ok'; msg.textContent = '로그인 성공';
+      await afterLogin();
+    } else if (data.reason === 'wrong_pin') {
+      msg.className = 'login-msg err'; msg.textContent = `PIN 불일치 (남은 시도: ${data.remaining}회)`;
+      document.getElementById('pin-input').value = ''; btn.disabled = false;
+    } else if (data.reason === 'locked') {
+      const until = new Date(data.until).toLocaleTimeString('ko-KR');
+      msg.className = 'login-msg err'; msg.textContent = `잠금 상태 (${until}까지)`; btn.disabled = false;
+    } else if (data.reason === 'no_pin') {
+      msg.className = 'login-msg err'; msg.textContent = 'PIN이 등록되지 않았습니다'; btn.disabled = false;
+    } else {
+      msg.className = 'login-msg err'; msg.textContent = '로그인 실패'; btn.disabled = false;
+    }
+  } catch (e) {
+    msg.className = 'login-msg err'; msg.textContent = '네트워크 오류'; btn.disabled = false;
+  }
+}
+
+async function afterLogin() {
+  document.getElementById('login-overlay').classList.remove('active');
+  await pullFromServer();
+}
+
+async function doLogout() {
+  closeAllModals();
+  const key = getAK();
+  if (key) { try { await rpc('FM34_logout', { p_key: key }); } catch (e) {} }
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('FM34_')) localStorage.removeItem(k); });
+  memos = [];
+  render();
+  document.getElementById('login-overlay').classList.add('active');
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-msg').textContent = '';
+  authFailCount = 0;
+  setSyncBar('');
+  setTimeout(() => document.getElementById('pin-input').focus(), 50);
+}
+
+async function pullFromServer() {
+  const key = getAK();
+  if (!key) return;
+  setSyncBar('↓ 불러오는 중...');
+  try {
+    const r = await rpc('FM34_pull', { p_key: key });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) { registerAuthFail(); return; }
+      setSyncBar('⚠ 불러오기 실패'); return;
+    }
+    authFailCount = 0;
+    const data = await r.json();
+    memos = Array.isArray(data) ? data : [];
+    localStorage.setItem(FM34_CACHE, JSON.stringify(memos));
+    setSyncBar('✓ 동기화됨');
+    render();
+  } catch (e) {
+    setSyncBar('⚠ 네트워크 오류');
+    // 캐시로 폴백
+    try {
+      const cached = localStorage.getItem(FM34_CACHE);
+      if (cached) { memos = JSON.parse(cached); render(); }
+    } catch (_) {}
+  }
+}
+
+function queueSync() {
+  if (!getAK()) return;
+  setSyncBar('● 변경됨');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToServer, 1200);
+}
+
+async function pushToServer() {
+  const key = getAK();
+  if (!key) return;
+  if (syncing) { syncTimer = setTimeout(pushToServer, 800); return; }
+  syncing = true;
+  setSyncBar('↑ 저장 중...');
+  try {
+    const r = await rpc('FM34_push', { p_key: key, p_data: memos });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) { registerAuthFail(); return; }
+      setSyncBar('⚠ 저장 실패'); return;
+    }
+    authFailCount = 0;
+    localStorage.setItem(FM34_CACHE, JSON.stringify(memos));
+    setSyncBar('✓ 저장됨');
+  } catch (e) {
+    setSyncBar('⚠ 네트워크 오류');
+  } finally {
+    syncing = false;
+  }
+}
+
+function registerAuthFail() {
+  authFailCount++;
+  setSyncBar(`⚠ 인증 오류 (${authFailCount}/${AUTH_FAIL_MAX})`);
+  if (authFailCount >= AUTH_FAIL_MAX) doLogout();
+}
+
+/* ---------- Storage (로컬 캐시만) ---------- */
 
 /* =========================================================
    MODAL SYSTEM — 단순화된 단일 책임 시스템
@@ -845,7 +1043,7 @@ function trySave() {
       updatedAt: now
     });
   }
-  save();
+  queueSync();
   render();
   closeModal();
 }
@@ -859,7 +1057,7 @@ function doDelete() {
   const id = pendingDeleteId;
   if (!id) { closeModal(); return; }
   memos = memos.filter(m => m.id !== id);
-  save();
+  queueSync();
   render();
   // 열려있는 모든 모달을 즉시 닫는다 (confirmModal + editorModal 등)
   const count = modalStack.length;
@@ -924,7 +1122,7 @@ function importJson(file) {
         existingIds.add(id);
         added++;
       });
-      save();
+      queueSync();
       render();
       closeModal();
       toast(`${added}개 가져왔습니다`);
@@ -942,6 +1140,7 @@ function bindEvents() {
 
   // Menu items
   document.getElementById('menuExport').addEventListener('click', exportJson);
+  document.getElementById('menuLogout').addEventListener('click', doLogout);
   document.getElementById('menuImport').addEventListener('click', () => {
     document.getElementById('fileInput').click();
   });
@@ -1151,10 +1350,27 @@ function syncHeaderHeight() {
 }
 
 /* ---------- Init ---------- */
-load();
 bindEvents();
-render();
 syncHeaderHeight();
+
+// PIN 입력: 4자리 자동 로그인 / Enter
+const pinEl = document.getElementById('pin-input');
+pinEl.addEventListener('input', (e) => { if (e.target.value.length === 4) doLogin(); });
+pinEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+setTimeout(() => pinEl.focus(), 50);
+
+// 캐시 데이터 우선 렌더 (오프라인 대비)
+try {
+  const cached = localStorage.getItem(FM34_CACHE);
+  if (cached) { memos = JSON.parse(cached); }
+} catch (_) {}
+
+// 저장된 토큰 있으면 자동 로그인
+if (getAK()) {
+  document.getElementById('login-overlay').classList.remove('active');
+  render();
+  pullFromServer();
+}
 
 // 폰트 로딩, 회전, safe-area 변화 등에 대응
 window.addEventListener('resize', syncHeaderHeight);

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한자 암기 — 급수별 학습</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hanzi-writer/3.5.1/hanzi-writer.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root {
+    --ink: #1a1208;
+    --paper: #faf7f0;
+    --paper2: #f0ebe0;
+    --accent: #8b4513;
+    --accent2: #c8860a;
+    --dim: #8a7d6a;
+    --border: #d4c9b0;
+    --green: #3a7d44;
+    --red: #c0392b;
+    --blue: #1a5276;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .logo span { color: var(--accent2); }
+
+  /* ── GRADE TABS ── */
+  .grade-bar {
+    background: var(--paper2);
+    border-bottom: 2px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .grade-bar::-webkit-scrollbar { display: none; }
+  .grade-btn {
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--dim);
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .2s, border-color .2s;
+  }
+  .grade-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+  }
+  .grade-btn:hover:not(.active) { color: var(--ink); }
+
+  /* ── MODE TABS ── */
+  .mode-bar {
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mode-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .82rem;
+    cursor: pointer;
+    color: var(--dim);
+    transition: all .2s;
+  }
+  .mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 700;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+  /* ── GRID (목록) ── */
+  .hanja-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .hanja-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: box-shadow .2s, transform .15s;
+    position: relative;
+  }
+  .hanja-card:hover { box-shadow: 0 4px 16px #0001; transform: translateY(-2px); }
+  .hanja-card.memorized {
+    border-color: var(--green);
+    background: #f0faf2;
+  }
+  .hanja-char {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 2.2rem;
+    line-height: 1.1;
+    color: var(--ink);
+    display: block;
+  }
+  .hanja-hoon { font-size: .78rem; color: var(--dim); margin-top: 4px; }
+  .hanja-um { font-size: .9rem; font-weight: 700; color: var(--accent); }
+  .mem-badge {
+    position: absolute;
+    top: 6px; right: 8px;
+    font-size: .7rem;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .grade-badge {
+    position: absolute;
+    top: 6px; left: 8px;
+    font-size: .62rem;
+    color: var(--dim);
+    background: var(--paper2);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+
+  /* ── FLASHCARD ── */
+  .flash-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+  }
+  .flash-progress {
+    font-size: .82rem;
+    color: var(--dim);
+    align-self: flex-end;
+  }
+  .flashcard {
+    width: min(340px, 100%);
+    height: 240px;
+    perspective: 900px;
+    cursor: pointer;
+  }
+  .flashcard-inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform .45s cubic-bezier(.4,0,.2,1);
+  }
+  .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flash-face {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 24px #0002;
+    border: 2px solid var(--border);
+  }
+  .flash-front { background: white; }
+  .flash-back { background: var(--ink); color: var(--paper); transform: rotateY(180deg); }
+  .flash-hanja {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 5rem;
+    line-height: 1;
+  }
+  .flash-hint { font-size: .8rem; color: var(--dim); margin-top: 8px; }
+  .flash-hoon { font-size: 1.1rem; color: var(--accent2); }
+  .flash-um { font-size: 2rem; font-weight: 700; margin-top: 4px; }
+  .flash-grade-info { font-size: .8rem; color: var(--dim); margin-top: 8px; }
+
+  .flash-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .flash-nav button {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: .9rem;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background .15s;
+  }
+  .flash-nav button:hover { background: var(--paper2); }
+  .flash-nav .mem-btn {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+  }
+  .flash-nav .mem-btn.off {
+    background: white;
+    color: var(--green);
+  }
+
+  /* ── WRITER ── */
+  .writer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 0;
+  }
+  .writer-info { text-align: center; }
+  .writer-hanja {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 2rem;
+    color: var(--ink);
+  }
+  .writer-sub { font-size: .9rem; color: var(--dim); margin-top: 4px; }
+  #writer-container {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: white;
+    overflow: hidden;
+  }
+  .writer-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .writer-controls button {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .85rem;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .writer-controls button:hover { background: var(--paper2); }
+  .writer-controls .primary-btn {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .writer-controls .primary-btn:hover { background: #6b3510; }
+  .writer-nav { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--dim); }
+  .writer-nav button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .writer-nav button:hover { background: var(--paper2); }
+
+  /* ── QUIZ ── */
+  .quiz-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 0;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .quiz-question {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 30px 24px;
+    text-align: center;
+    width: 100%;
+  }
+  .quiz-q-label { font-size: .8rem; color: var(--dim); margin-bottom: 10px; }
+  .quiz-q-hanja {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 4.5rem;
+    line-height: 1;
+    display: block;
+  }
+  .quiz-q-text { font-size: 1.3rem; font-weight: 700; color: var(--ink); }
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .quiz-opt {
+    padding: 14px 10px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: white;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .95rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: #fdf6ed; }
+  .quiz-opt.correct { border-color: var(--green); background: #edfaf1; color: var(--green); font-weight: 700; }
+  .quiz-opt.wrong { border-color: var(--red); background: #fdecea; color: var(--red); }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-score { font-size: .9rem; color: var(--dim); }
+  .quiz-result {
+    text-align: center;
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    width: 100%;
+  }
+  .quiz-result .big { font-size: 2.5rem; font-weight: 700; color: var(--accent); font-family: 'Noto Serif KR', serif; }
+  .quiz-restart {
+    padding: 12px 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--paper2);
+    border-bottom: 1px solid var(--border);
+    font-size: .8rem;
+    color: var(--dim);
+    flex-wrap: wrap;
+  }
+  .stats-bar strong { color: var(--ink); }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--dim); }
+  .empty .big-char { font-family: 'Noto Serif KR', serif; font-size: 4rem; color: var(--border); display: block; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    header { padding: 12px 16px; }
+    .logo { font-size: 1.2rem; }
+
+    .grade-bar { padding: 0 8px; }
+    .grade-btn { padding: 8px 10px; font-size: .78rem; }
+
+    .mode-bar { padding: 10px 12px; gap: 6px; }
+    .mode-btn { padding: 7px 12px; font-size: .78rem; }
+
+    .main { padding: 12px; }
+
+    /* 목록 — 모바일은 3열로 */
+    .hanja-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .hanja-card { padding: 10px 6px; }
+    .hanja-char { font-size: 1.8rem; }
+    .hanja-hoon { font-size: .7rem; }
+    .hanja-um { font-size: .82rem; }
+    .grade-badge { font-size: .58rem; }
+
+    /* 플래시카드 */
+    .flashcard { height: 200px; }
+    .flash-hanja { font-size: 4rem; }
+    .flash-nav { flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .flash-nav button { padding: 9px 14px; font-size: .82rem; }
+
+    /* 퀴즈 */
+    .quiz-question { padding: 20px 14px; }
+    .quiz-q-hanja { font-size: 3.5rem; }
+    .quiz-q-text { font-size: 1.1rem; }
+    .quiz-options { gap: 8px; }
+    .quiz-opt { padding: 12px 8px; font-size: .88rem; }
+
+    /* 획순 */
+    #writer-container { width: 100%; display: flex; justify-content: center; }
+    .writer-hanja { font-size: 1.6rem; }
+    .writer-controls { gap: 6px; }
+    .writer-controls button { padding: 8px 12px; font-size: .8rem; }
+    .writer-nav button { padding: 7px 12px; }
+
+    /* 통계바 */
+    .stats-bar { gap: 10px; font-size: .75rem; padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">漢字 <span>암기</span></div>
+  <div style="font-size:.8rem;color:#aaa;">한국어문회 급수별 · 8급~5급</div>
+</header>
+
+<div class="grade-bar" id="gradeTabs"></div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="mode-bar">
+  <button class="mode-btn active" onclick="setMode('list')">📋 목록</button>
+  <button class="mode-btn" onclick="setMode('flash')">🃏 플래시카드</button>
+  <button class="mode-btn" onclick="setMode('quiz')">✏️ 퀴즈</button>
+  <button class="mode-btn" onclick="setMode('writer')">🖌️ 획순</button>
+</div>
+
+<div class="main" id="mainContent"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// 한자 데이터 — 8급(50) 준7급(50) 7급(50) 준6급(75) 6급(75) 준5급(100) 5급(100) = 500자
+// 형식: [한자, 훈, 음]
+// ═══════════════════════════════════════════════
+const HANJA_DATA = {
+  '8급': [
+    ['一','한','일'],['二','두','이'],['三','석','삼'],['四','넉','사'],['五','다섯','오'],
+    ['六','여섯','육'],['七','일곱','칠'],['八','여덟','팔'],['九','아홉','구'],['十','열','십'],
+    ['百','일백','백'],['千','일천','천'],['萬','일만','만'],['大','큰','대'],['小','작을','소'],
+    ['中','가운데','중'],['上','위','상'],['下','아래','하'],['人','사람','인'],['父','아버지','부'],
+    ['母','어머니','모'],['兄','형','형'],['弟','아우','제'],['子','아들','자'],['女','계집','녀'],
+    ['王','임금','왕'],['山','뫼','산'],['水','물','수'],['火','불','화'],['木','나무','목'],
+    ['金','쇠','금'],['土','흙','토'],['日','날','일'],['月','달','월'],['年','해','년'],
+    ['韓','나라','한'],['國','나라','국'],['民','백성','민'],['學','배울','학'],['校','학교','교'],
+    ['敎','가르칠','교'],['生','날','생'],['先','먼저','선'],['室','집','실'],['門','문','문'],
+    ['東','동녘','동'],['西','서녘','서'],['南','남녘','남'],['北','북녘','북'],['外','바깥','외'],
+  ],
+  '준7급': [
+    ['天','하늘','천'],['地','땅','지'],['白','흰','백'],['靑','푸를','청'],['長','길','장'],
+    ['老','늙을','로'],['心','마음','심'],['手','손','수'],['足','발','족'],['口','입','구'],
+    ['耳','귀','이'],['目','눈','목'],['力','힘','력'],['文','글','문'],['字','글자','자'],
+    ['語','말씀','어'],['言','말씀','언'],['話','말씀','화'],['名','이름','명'],['自','스스로','자'],
+    ['立','설','립'],['出','날','출'],['入','들','입'],['正','바를','정'],['直','곧을','직'],
+    ['友','벗','우'],['愛','사랑','애'],['孝','효도','효'],['仁','어질','인'],['信','믿을','신'],
+    ['平','평평할','평'],['和','화할','화'],['安','편안','안'],['樂','즐길','락'],['幸','다행','행'],
+    ['光','빛','광'],['色','빛','색'],['花','꽃','화'],['草','풀','초'],['林','수풀','림'],
+    ['海','바다','해'],['江','강','강'],['川','내','천'],['石','돌','석'],['氣','기운','기'],
+    ['風','바람','풍'],['雨','비','우'],['雪','눈','설'],['雲','구름','운'],['電','번개','전'],
+  ],
+  '7급': [
+    ['家','집','가'],['室','집','실'],['里','마을','리'],['村','마을','촌'],['都','도읍','도'],
+    ['市','저자','시'],['道','길','도'],['路','길','로'],['前','앞','전'],['後','뒤','후'],
+    ['左','왼','좌'],['右','오른','우'],['間','사이','간'],['內','안','내'],['高','높을','고'],
+    ['低','낮을','저'],['多','많을','다'],['少','적을','소'],['新','새','신'],['舊','옛','구'],
+    ['男','사내','남'],['祖','할아버지','조'],['孫','손자','손'],['夫','지아비','부'],['妻','아내','처'],
+    ['同','한가지','동'],['共','한가지','공'],['合','합할','합'],['分','나눌','분'],['半','반','반'],
+    ['萬','일만','만'],['億','억','억'],['數','셀','수'],['算','셈','산'],['計','셀','계'],
+    ['時','때','시'],['分','나눌','분'],['秒','초','초'],['今','이제','금'],['古','옛','고'],
+    ['春','봄','춘'],['夏','여름','하'],['秋','가을','추'],['冬','겨울','동'],['朝','아침','조'],
+    ['夕','저녁','석'],['夜','밤','야'],['午','낮','오'],['週','주','주'],['月','달','월'],
+  ],
+  '준6급': [
+    ['工','장인','공'],['農','농사','농'],['商','장사','상'],['業','업','업'],['事','일','사'],
+    ['用','쓸','용'],['利','이로울','이'],['益','더할','익'],['重','무거울','중'],['輕','가벼울','경'],
+    ['强','강할','강'],['弱','약할','약'],['善','착할','선'],['惡','악할','악'],['美','아름다울','미'],
+    ['醜','추할','추'],['淸','맑을','청'],['濁','흐릴','탁'],['溫','따뜻할','온'],['冷','찰','냉'],
+    ['明','밝을','명'],['暗','어두울','암'],['近','가까울','근'],['遠','멀','원'],['廣','넓을','광'],
+    ['狹','좁을','협'],['深','깊을','심'],['淺','얕을','천'],['厚','두터울','후'],['薄','얇을','박'],
+    ['感','느낄','감'],['情','뜻','정'],['意','뜻','의'],['思','생각','사'],['念','생각','념'],
+    ['知','알','지'],['識','알','식'],['見','볼','견'],['聞','들을','문'],['問','물을','문'],
+    ['答','대답','답'],['報','알릴','보'],['記','기록할','기'],['書','글','서'],['讀','읽을','독'],
+    ['習','익힐','습'],['練','익힐','련'],['功','공','공'],['勞','수고로울','로'],['苦','쓸','고'],
+    ['樂','즐길','락'],['休','쉴','휴'],['息','쉴','식'],['眠','잠잘','면'],['食','먹을','식'],
+    ['飮','마실','음'],['衣','옷','의'],['服','옷','복'],['住','살','주'],['居','살','거'],
+    ['行','갈','행'],['往','갈','왕'],['來','올','래'],['去','갈','거'],['歸','돌아올','귀'],
+    ['出','날','출'],['入','들','입'],['開','열','개'],['閉','닫을','폐'],['始','비롯할','시'],
+    ['終','마칠','종'],['成','이룰','성'],['敗','패할','패'],['勝','이길','승'],['進','나아갈','진'],
+    ['退','물러날','퇴'],['起','일어날','기'],['落','떨어질','락'],['昇','오를','승'],['降','내릴','강'],
+  ],
+  '6급': [
+    ['政','정사','정'],['治','다스릴','치'],['法','법','법'],['律','법칙','률'],['制','지을','제'],
+    ['度','법도','도'],['權','권세','권'],['義','옳을','의'],['理','다스릴','리'],['論','의논할','론'],
+    ['科','과목','과'],['技','재주','기'],['術','재주','술'],['藝','재주','예'],['才','재주','재'],
+    ['能','능할','능'],['格','격식','격'],['品','물건','품'],['質','바탕','질'],['量','헤아릴','량'],
+    ['價','값','가'],['貨','재물','화'],['財','재물','재'],['富','부유할','부'],['貧','가난할','빈'],
+    ['族','겨레','족'],['姓','성씨','성'],['班','나눌','반'],['隊','무리','대'],['群','무리','군'],
+    ['都','도읍','도'],['鄕','시골','향'],['境','지경','경'],['域','지경','역'],['野','들','야'],
+    ['田','밭','전'],['林','수풀','림'],['原','근원','원'],['湖','호수','호'],['池','못','지'],
+    ['島','섬','도'],['峯','봉우리','봉'],['谷','골','곡'],['坡','고개','파'],['平','평평할','평'],
+    ['健','건강할','건'],['康','편안할','강'],['病','병','병'],['藥','약','약'],['醫','의원','의'],
+    ['治','다스릴','치'],['愈','나을','유'],['痛','아플','통'],['苦','쓸','고'],['患','근심','환'],
+    ['死','죽을','사'],['生','날','생'],['命','목숨','명'],['魂','넋','혼'],['體','몸','체'],
+    ['血','피','혈'],['骨','뼈','골'],['肉','고기','육'],['膚','살갗','부'],['面','낯','면'],
+    ['眼','눈','안'],['鼻','코','비'],['齒','이','치'],['髮','터럭','발'],['頭','머리','두'],
+    ['胸','가슴','흉'],['背','등','배'],['腹','배','복'],['腰','허리','요'],['膝','무릎','슬'],
+  ],
+  '준5급': [
+    ['思','생각','사'],['考','생각할','고'],['想','생각할','상'],['慮','생각할','려'],['憶','생각','억'],
+    ['忘','잊을','망'],['悟','깨달을','오'],['覺','깨달을','각'],['智','지혜','지'],['慧','슬기로울','혜'],
+    ['勇','용감할','용'],['猛','사나울','맹'],['勤','부지런할','근'],['怠','게으를','태'],['忍','참을','인'],
+    ['耐','견딜','내'],['慈','사랑','자'],['悲','슬플','비'],['喜','기쁠','희'],['怒','성낼','노'],
+    ['哀','슬플','애'],['懼','두려울','구'],['憂','근심','우'],['恐','두려울','공'],['恥','부끄러울','치'],
+    ['廉','청렴할','렴'],['誠','정성','성'],['忠','충성','충'],['節','마디','절'],['義','옳을','의'],
+    ['禮','예도','례'],['智','지혜','지'],['仁','어질','인'],['敬','공경','경'],['謙','겸손','겸'],
+    ['進','나아갈','진'],['就','나아갈','취'],['達','통달할','달'],['成','이룰','성'],['長','길','장'],
+    ['發','필','발'],['展','펼','전'],['延','늘일','연'],['伸','펼','신'],['縮','오그라들','축'],
+    ['增','더할','증'],['減','덜','감'],['加','더할','가'],['除','덜','제'],['倍','배','배'],
+    ['等','같을','등'],['差','다를','차'],['比','비교할','비'],['率','비율','률'],['例','법식','례'],
+    ['類','무리','류'],['種','씨','종'],['式','법','식'],['型','모양','형'],['形','모양','형'],
+    ['圖','그림','도'],['表','겉','표'],['圖','그림','도'],['板','판','판'],['面','낯','면'],
+    ['線','줄','선'],['點','점','점'],['角','뿔','각'],['圓','둥글','원'],['方','모','방'],
+    ['球','공','구'],['柱','기둥','주'],['面','낯','면'],['積','쌓을','적'],['體','몸','체'],
+    ['化','될','화'],['物','물건','물'],['質','바탕','질'],['素','흴','소'],['元','으뜸','원'],
+    ['子','아들','자'],['原','근원','원'],['子','아들','자'],['核','씨','핵'],['力','힘','력'],
+    ['熱','더울','열'],['光','빛','광'],['聲','소리','성'],['波','물결','파'],['流','흐를','류'],
+    ['電','번개','전'],['磁','자석','자'],['壓','누를','압'],['溫','따뜻할','온'],['度','법도','도'],
+  ],
+  '5급': [
+    ['政','정사','정'],['府','마을','부'],['議','의논할','의'],['院','집','원'],['廳','관청','청'],
+    ['部','떼','부'],['省','살필','성'],['局','판','국'],['課','과목','과'],['係','묶을','계'],
+    ['組','짤','조'],['團','둥글','단'],['社','모일','사'],['會','모일','회'],['黨','무리','당'],
+    ['派','물갈래','파'],['系','맬','계'],['統','거느릴','통'],['領','거느릴','령'],['率','거느릴','솔'],
+    ['師','스승','사'],['傅','스승','부'],['弟','아우','제'],['徒','무리','도'],['童','아이','동'],
+    ['幼','어릴','유'],['少','젊을','소'],['靑','푸를','청'],['壯','씩씩할','장'],['老','늙을','로'],
+    ['長','어른','장'],['翁','늙은이','옹'],['嫗','할머니','구'],['婦','지어미','부'],['姑','시어머니','고'],
+    ['舅','시아버지','구'],['叔','아재비','숙'],['姨','이모','이'],['侄','조카','질'],['媳','며느리','식'],
+    ['婚','혼인할','혼'],['姻','혼인','인'],['嫁','시집갈','가'],['娶','장가들','취'],['離','떠날','리'],
+    ['別','나눌','별'],['合','합할','합'],['歡','기쁠','환'],['喜','기쁠','희'],['悅','기쁠','열'],
+    ['笑','웃을','소'],['哭','울','곡'],['泣','울','읍'],['嘆','탄식할','탄'],['呼','부를','호'],
+    ['叫','부를','규'],['喚','부를','환'],['聽','들을','청'],['覽','볼','람'],['觀','볼','관'],
+    ['視','볼','시'],['察','살필','찰'],['監','볼','감'],['督','살필','독'],['管','대롱','관'],
+    ['轄','다스릴','할'],['統','거느릴','통'],['御','거느릴','어'],['制','지을','제'],['控','당길','공'],
+    ['操','잡을','조'],['持','가질','지'],['握','쥘','악'],['提','끌','제'],['攜','이끌','휴'],
+    ['推','밀','추'],['拉','끌','납'],['拔','뽑을','발'],['插','꽂을','삽'],['置','둘','치'],
+    ['設','베풀','설'],['建','세울','건'],['築','쌓을','축'],['造','지을','조'],['製','지을','제'],
+    ['創','비롯할','창'],['作','지을','작'],['撰','지을','찬'],['著','나타날','저'],['編','엮을','편'],
+    ['輯','모을','집'],['刊','새길','간'],['印','도장','인'],['版','판','판'],['出','날','출'],
+    ['售','팔','수'],['購','살','구'],['賣','팔','매'],['買','살','매'],['貿','바꿀','무'],
+  ]
+};
+
+// 전체 합치기
+const ALL_GRADES = Object.keys(HANJA_DATA);
+let currentGrade = 'all';
+let currentMode = 'list';
+let memorized = JSON.parse(localStorage.getItem('hanja_mem') || '{}');
+let flashIdx = 0;
+let flashList = [];
+let quizState = null;
+let writerObj = null;
+let writerIdx = 0;
+
+function saveMemorized() {
+  localStorage.setItem('hanja_mem', JSON.stringify(memorized));
+}
+
+function getList(grade) {
+  if (grade === 'all') return ALL_GRADES.flatMap(g => HANJA_DATA[g].map(h => ({char:h[0],hoon:h[1],um:h[2],grade:g})));
+  return (HANJA_DATA[grade] || []).map(h => ({char:h[0],hoon:h[1],um:h[2],grade:grade}));
+}
+
+function getMemKey(item) { return item.grade + '_' + item.char; }
+
+// ── GRADE TABS ──
+function buildGradeTabs() {
+  const bar = document.getElementById('gradeTabs');
+  bar.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'grade-btn' + (currentGrade==='all'?' active':'');
+  all.textContent = '전체 (500자)';
+  all.onclick = () => { currentGrade='all'; buildGradeTabs(); updateStats(); render(); };
+  bar.appendChild(all);
+  ALL_GRADES.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'grade-btn' + (currentGrade===g?' active':'');
+    const cnt = HANJA_DATA[g].length;
+    btn.textContent = `${g} (${cnt}자)`;
+    btn.onclick = () => { currentGrade=g; buildGradeTabs(); updateStats(); render(); };
+    bar.appendChild(btn);
+  });
+}
+
+// ── STATS ──
+function updateStats() {
+  const list = getList(currentGrade);
+  const total = list.length;
+  const done = list.filter(h => memorized[getMemKey(h)]).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('statsBar').innerHTML =
+    `<span>총 <strong>${total}</strong>자</span>` +
+    `<span>암기 완료 <strong style="color:var(--green)">${done}</strong>자</span>` +
+    `<span>미암기 <strong style="color:var(--accent)">${total-done}</strong>자</span>` +
+    `<span>진도 <strong>${pct}%</strong></span>`;
+}
+
+// ── MODE SWITCH ──
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['list','flash','quiz','writer'][i]===m);
+  });
+  flashIdx = 0;
+  render();
+}
+
+// ── RENDER ──
+function render() {
+  if (currentMode === 'list') renderList();
+  else if (currentMode === 'flash') renderFlash();
+  else if (currentMode === 'quiz') renderQuiz();
+  else if (currentMode === 'writer') renderWriter();
+}
+
+// ── 목록 ──
+function renderList() {
+  const list = getList(currentGrade);
+  const main = document.getElementById('mainContent');
+  if (!list.length) { main.innerHTML = '<div class="empty"><span class="big-char">無</span>데이터 없음</div>'; return; }
+  main.innerHTML = '<div class="hanja-grid" id="hGrid"></div>';
+  const grid = document.getElementById('hGrid');
+  list.forEach(h => {
+    const key = getMemKey(h);
+    const card = document.createElement('div');
+    card.className = 'hanja-card' + (memorized[key]?' memorized':'');
+    card.innerHTML = `
+      <span class="grade-badge">${h.grade}</span>
+      ${memorized[key]?'<span class="mem-badge">✓</span>':''}
+      <span class="hanja-char">${h.char}</span>
+      <div class="hanja-hoon">${h.hoon}</div>
+      <div class="hanja-um">${h.um}</div>
+    `;
+    card.onclick = () => {
+      memorized[key] = !memorized[key];
+      saveMemorized();
+      updateStats();
+      renderList();
+    };
+    grid.appendChild(card);
+  });
+}
+
+// ── 플래시카드 ──
+function renderFlash(idxOverride) {
+  const list = getList(currentGrade);
+  if (!list.length) { document.getElementById('mainContent').innerHTML = '<div class="empty"><span class="big-char">無</span>데이터 없음</div>'; return; }
+  if (idxOverride !== undefined) flashIdx = idxOverride;
+  if (flashIdx >= list.length) flashIdx = 0;
+  if (flashIdx < 0) flashIdx = list.length - 1;
+  flashList = list;
+  const h = list[flashIdx];
+  const key = getMemKey(h);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="flash-wrap">
+      <div class="flash-progress">${flashIdx+1} / ${list.length}</div>
+      <div class="flashcard" id="fc" onclick="document.getElementById('fc').classList.toggle('flipped')">
+        <div class="flashcard-inner">
+          <div class="flash-face flash-front">
+            <span class="flash-hanja">${h.char}</span>
+            <div class="flash-hint">탭하면 정답 공개</div>
+          </div>
+          <div class="flash-face flash-back">
+            <div class="flash-hoon">${h.hoon}</div>
+            <div class="flash-um">${h.um}</div>
+            <div class="flash-grade-info">${h.grade}</div>
+          </div>
+        </div>
+      </div>
+      <div class="flash-nav">
+        <button onclick="renderFlash(${flashIdx-1})">◀ 이전</button>
+        <button class="mem-btn ${memorized[key]?'':'off'}" onclick="toggleMemFlash('${key}',${flashIdx})">
+          ${memorized[key]?'✓ 암기완료':'암기완료 표시'}
+        </button>
+        <button onclick="renderFlash(${flashIdx+1})">다음 ▶</button>
+      </div>
+      <button style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:white;cursor:pointer;font-family:inherit" onclick="shuffleFlash()">🔀 섞기</button>
+    </div>
+  `;
+}
+
+function toggleMemFlash(key, idx) {
+  memorized[key] = !memorized[key];
+  saveMemorized();
+  updateStats();
+  renderFlash(idx);
+}
+
+function shuffleFlash() {
+  const list = getList(currentGrade);
+  flashList = list.sort(() => Math.random() - 0.5);
+  flashIdx = 0;
+  // re-render with shuffled
+  renderFlashDirect(flashList);
+}
+
+function renderFlashDirect(list) {
+  if (!list.length) return;
+  const h = list[flashIdx];
+  const key = getMemKey(h);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="flash-wrap">
+      <div class="flash-progress">${flashIdx+1} / ${list.length} (섞음)</div>
+      <div class="flashcard" id="fc" onclick="document.getElementById('fc').classList.toggle('flipped')">
+        <div class="flashcard-inner">
+          <div class="flash-face flash-front">
+            <span class="flash-hanja">${h.char}</span>
+            <div class="flash-hint">탭하면 정답 공개</div>
+          </div>
+          <div class="flash-face flash-back">
+            <div class="flash-hoon">${h.hoon}</div>
+            <div class="flash-um">${h.um}</div>
+            <div class="flash-grade-info">${h.grade}</div>
+          </div>
+        </div>
+      </div>
+      <div class="flash-nav">
+        <button onclick="flashIdx=Math.max(0,flashIdx-1);renderFlashDirect(flashList)">◀ 이전</button>
+        <button class="mem-btn ${memorized[key]?'':'off'}" onclick="memorized['${key}']=!memorized['${key}'];saveMemorized();updateStats();renderFlashDirect(flashList)">
+          ${memorized[key]?'✓ 암기완료':'암기완료 표시'}
+        </button>
+        <button onclick="flashIdx=Math.min(flashList.length-1,flashIdx+1);renderFlashDirect(flashList)">다음 ▶</button>
+      </div>
+      <button style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:white;cursor:pointer;font-family:inherit" onclick="shuffleFlash()">🔀 다시 섞기</button>
+    </div>
+  `;
+}
+
+// ── 퀴즈 ──
+function renderQuiz(reset) {
+  const list = getList(currentGrade);
+  if (list.length < 4) {
+    document.getElementById('mainContent').innerHTML = '<div class="empty"><span class="big-char">少</span>퀴즈를 위해 4자 이상 필요합니다</div>';
+    return;
+  }
+  if (!quizState || reset) {
+    const shuffled = [...list].sort(() => Math.random()-.5);
+    quizState = { list: shuffled, idx: 0, score: 0, answered: false, total: Math.min(20, shuffled.length) };
+  }
+  const qs = quizState;
+  if (qs.idx >= qs.total) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="quiz-wrap">
+        <div class="quiz-result">
+          <div style="font-size:.9rem;color:var(--dim);margin-bottom:8px">최종 점수</div>
+          <div class="big">${qs.score} / ${qs.total}</div>
+          <div style="margin-top:8px;color:var(--dim)">${Math.round(qs.score/qs.total*100)}점</div>
+        </div>
+        <button class="quiz-restart" onclick="renderQuiz(true)">다시 퀴즈</button>
+      </div>
+    `;
+    return;
+  }
+  const h = qs.list[qs.idx];
+  // 보기 4개 (정답 + 오답 3)
+  const wrong = list.filter(x => x.char !== h.char).sort(() => Math.random()-.5).slice(0,3);
+  const opts = [...wrong, h].sort(() => Math.random()-.5);
+  // 퀴즈 타입: 홀수=한자→훈음, 짝수=훈음→한자
+  const type = qs.idx % 2;
+  document.getElementById('mainContent').innerHTML = `
+    <div class="quiz-wrap">
+      <div class="quiz-score">${qs.idx+1}/${qs.total} · 점수: ${qs.score}</div>
+      <div class="quiz-question">
+        <div class="quiz-q-label">${type===0?'이 한자의 훈·음은?':'이 훈·음의 한자는?'}</div>
+        ${type===0
+          ? `<span class="quiz-q-hanja">${h.char}</span>`
+          : `<span class="quiz-q-text">${h.hoon} ${h.um}</span>`
+        }
+      </div>
+      <div class="quiz-options" id="qOpts">
+        ${opts.map((o,i) => `
+          <button class="quiz-opt" id="qo${i}" onclick="answerQuiz(${i}, '${o.char}', '${h.char}')">
+            ${type===0 ? o.hoon+' '+o.um : o.char}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function answerQuiz(idx, chosen, correct) {
+  const qs = quizState;
+  if (qs.answered) return;
+  qs.answered = true;
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach((btn, i) => {
+    btn.disabled = true;
+    const char = chosen === correct ? chosen : null;
+    // 정답 버튼 찾기
+  });
+  // 정답/오답 표시
+  opts.forEach((btn, i) => {
+    const txt = btn.textContent.trim();
+    // check by index
+  });
+  if (chosen === correct) qs.score++;
+  // 각 버튼에 정답/오답 클래스
+  const allOpts = document.querySelectorAll('.quiz-opt');
+  const type = qs.idx % 2;
+  const list = getList(currentGrade);
+  const h = qs.list[qs.idx];
+  const wrong = list.filter(x => x.char !== h.char).sort(() => Math.random()-.5).slice(0,3);
+  // 현재 opts는 이미 랜덤 배치됨 — chosen/correct로 직접 판단
+  allOpts.forEach((btn,i) => {
+    const val = btn.textContent.trim();
+    const correctVal = type===0 ? h.hoon+' '+h.um : h.char;
+    const chosenVal = allOpts[idx].textContent.trim();
+    if (val === correctVal) btn.classList.add('correct');
+    else if (i === idx && chosen !== correct) btn.classList.add('wrong');
+    btn.disabled = true;
+  });
+  setTimeout(() => {
+    qs.idx++;
+    qs.answered = false;
+    renderQuiz();
+  }, 1200);
+}
+
+// ── 획순 ──
+function renderWriter() {
+  const list = getList(currentGrade);
+  if (!list.length) { document.getElementById('mainContent').innerHTML = '<div class="empty"><span class="big-char">無</span>데이터 없음</div>'; return; }
+  if (writerIdx >= list.length) writerIdx = 0;
+  const h = list[writerIdx];
+  document.getElementById('mainContent').innerHTML = `
+    <div class="writer-wrap">
+      <div class="writer-info">
+        <div class="writer-hanja">${h.char}</div>
+        <div class="writer-sub">${h.hoon} <strong>${h.um}</strong> · ${h.grade}</div>
+      </div>
+      <div id="writer-container"></div>
+      <div class="writer-controls">
+        <button class="primary-btn" onclick="writerAnimate()">▶ 획순 보기</button>
+        <button onclick="writerQuizMode()">✏️ 따라 써보기</button>
+        <button onclick="writerReset()">↺ 초기화</button>
+      </div>
+      <div class="writer-nav">
+        <button onclick="writerGo(${writerIdx-1})">◀ 이전</button>
+        <span>${writerIdx+1} / ${list.length}</span>
+        <button onclick="writerGo(${writerIdx+1})">다음 ▶</button>
+      </div>
+      <div id="writer-msg" style="font-size:.82rem;color:var(--dim);text-align:center"></div>
+    </div>
+  `;
+  // HanziWriter 초기화 — 화면 폭에 맞게 캔버스 크기 동적 조정
+  setTimeout(() => {
+    try {
+      const size = Math.min(220, window.innerWidth - 80);
+      writerObj = HanziWriter.create('writer-container', h.char, {
+        width: size, height: size,
+        padding: 14,
+        strokeColor: '#1a1208',
+        radicalColor: '#8b4513',
+        highlightColor: '#c8860a',
+        outlineColor: '#d4c9b0',
+        showOutline: true,
+        showCharacter: false,
+        strokeAnimationSpeed: 1,
+        delayBetweenStrokes: 300,
+      });
+    } catch(e) {
+      const msg = document.getElementById('writer-msg');
+      if (msg) msg.textContent = '⚠️ 이 한자의 획순 데이터를 불러올 수 없습니다.';
+    }
+  }, 100);
+}
+
+function writerAnimate() {
+  if (!writerObj) return;
+  writerObj.animateCharacter();
+}
+
+function writerQuizMode() {
+  if (!writerObj) return;
+  document.getElementById('writer-msg').textContent = '획순대로 따라 그려보세요!';
+  writerObj.quiz({
+    onComplete: () => {
+      document.getElementById('writer-msg').textContent = '✓ 완성! 잘 하셨습니다.';
+    }
+  });
+}
+
+function writerReset() {
+  if (!writerObj) return;
+  writerObj.cancelQuiz();
+  writerObj.setCharacter(getList(currentGrade)[writerIdx].char);
+}
+
+function writerGo(idx) {
+  const list = getList(currentGrade);
+  writerIdx = ((idx % list.length) + list.length) % list.length;
+  writerObj = null;
+  renderWriter();
+}
+
+// ── INIT ──
+buildGradeTabs();
+updateStats();
+render();
+</script>
+</body>
+</html>

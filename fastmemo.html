@@ -435,6 +435,30 @@
   }
   .editor-textarea:focus { border-color: var(--accent); }
 
+  .editor-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .editor-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+  .editor-link:active { background: var(--surface-2); }
+  .editor-link svg { width: 15px; height: 15px; flex-shrink: 0; }
+
   .editor-actions {
     display: flex; gap: 10px;
     margin-top: 14px;
@@ -661,6 +685,7 @@
       <button class="cat-option" data-cat="basic"><span class="dot"></span>기타</button>
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
+    <div class="editor-links" id="editorLinks"></div>
     <div class="editor-actions" id="editorActions" style="display:none;">
       <button class="btn-delete" id="editorDelete">삭제</button>
     </div>
@@ -1011,6 +1036,45 @@ function render() {
   `).join('');
 }
 
+/* ---------- Editor: URL 자동 추출 & 링크 미리보기 ---------- */
+// "//" 가 입력되는 순간을 신호로 삼아 그 앞의 스킴(http/https)까지 포함해
+// 유효한 URL 토큰들을 텍스트에서 찾아 아래에 클릭 가능한 링크로 보여준다.
+function extractUrls(text) {
+  const regex = /https?:\/\/[^\s]+/g;
+  const found = text.match(regex) || [];
+  // 끝에 붙은 문장부호 등은 제거
+  const cleaned = found.map(u => u.replace(/[)\]}>,.!?;:'"]+$/, ''));
+  // 중복 제거, 순서 유지
+  const seen = new Set();
+  const result = [];
+  cleaned.forEach(u => {
+    if (u && !seen.has(u)) {
+      seen.add(u);
+      result.push(u);
+    }
+  });
+  return result;
+}
+
+function updateEditorLinks() {
+  const et = document.getElementById('editorText');
+  const box = document.getElementById('editorLinks');
+  const urls = extractUrls(et.value);
+  if (urls.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = urls.map(u => `
+    <a class="editor-link" href="${u.replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+      <span>${u}</span>
+    </a>
+  `).join('');
+}
+
 /* ---------- Editor ---------- */
 function refreshCatUI() {
   document.querySelectorAll('#catSelect .cat-option').forEach(b => {
@@ -1026,6 +1090,7 @@ function openNewMemo() {
   et._listType = null;
   et._listNum = null;
   refreshCatUI();
+  updateEditorLinks();
   openModal('editorModal');
   // 내용 textarea에 포커스
   setTimeout(() => et.focus(), 100);
@@ -1042,6 +1107,7 @@ function openEditMemo(id) {
   et2._listNum = null;
   document.getElementById('editorActions').style.display = 'flex';
   refreshCatUI();
+  updateEditorLinks();
   openModal('editorModal');
 }
 
@@ -1259,6 +1325,7 @@ function bindEvents() {
   }
 
   editorText.addEventListener('input', function(e) {
+    updateEditorLinks();
     const ta = this;
     const pos = ta.selectionStart;
     const val = ta.value;

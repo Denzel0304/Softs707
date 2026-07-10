@@ -293,17 +293,11 @@
     width: 100%;
     max-width: 520px;
     border-radius: 18px 18px 0 0;
-    padding: 20px 18px 0;
+    padding: 20px 18px calc(20px + var(--safe-bottom));
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-    max-height: calc(100% - 24px);
+    max-height: 90vh;
     display: flex; flex-direction: column;
-    overflow: hidden;
-  }
-  .sheet-scroll {
-    flex: 1;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(20px + var(--safe-bottom));
   }
   .dialog {
     background: var(--surface);
@@ -686,17 +680,15 @@
       <button class="editor-cancel" id="editorCancel">취소</button>
       <button class="editor-save" id="editorSave">저장</button>
     </div>
-    <div class="sheet-scroll">
-      <div class="cat-select" id="catSelect">
-        <button class="cat-option" data-cat="todo"><span class="dot"></span>투자</button>
-        <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
-        <button class="cat-option" data-cat="basic"><span class="dot"></span>기타</button>
-      </div>
-      <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
-      <div class="editor-links" id="editorLinks"></div>
-      <div class="editor-actions" id="editorActions" style="display:none;">
-        <button class="btn-delete" id="editorDelete">삭제</button>
-      </div>
+    <div class="cat-select" id="catSelect">
+      <button class="cat-option" data-cat="todo"><span class="dot"></span>투자</button>
+      <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
+      <button class="cat-option" data-cat="basic"><span class="dot"></span>기타</button>
+    </div>
+    <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
+    <div class="editor-links" id="editorLinks"></div>
+    <div class="editor-actions" id="editorActions" style="display:none;">
+      <button class="btn-delete" id="editorDelete">삭제</button>
     </div>
   </div>
 </div>
@@ -1493,21 +1485,17 @@ if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
 
-// 키보드가 올라올 때 sheet의 margin-bottom을 키보드 높이만큼 줘서 키보드 위에 위치시킨다.
-// overlay는 inset:0 그대로 유지해 목록이 노출되지 않도록 한다.
-(function() {
-  if (!window.visualViewport) return;
-  function applyViewport() {
+// 키보드가 올라올 때 sheet의 max-height만 줄여서 상단이 잘리지 않게 한다.
+// overlay/transform/margin은 일절 건드리지 않는다.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
     const vv = window.visualViewport;
-    const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    document.querySelectorAll('.modal-overlay:not(.center) .sheet').forEach(sheet => {
-      sheet.style.marginBottom = keyboardHeight > 0 ? keyboardHeight + 'px' : '';
-      sheet.style.maxHeight = `calc(${vv.height}px - 24px)`;
+    const available = vv.height - 24; // 24px: border-radius가 보일 여유
+    document.querySelectorAll('.sheet').forEach(sheet => {
+      sheet.style.maxHeight = available + 'px';
     });
-  }
-  window.visualViewport.addEventListener('resize', applyViewport);
-  window.visualViewport.addEventListener('scroll', applyViewport);
-}());
+  });
+}
 
 // Prevent accidental form submission via Enter on search
 document.getElementById('searchInput').addEventListener('keydown', (e) => {

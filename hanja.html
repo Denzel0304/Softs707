@@ -2,9 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <title>한자 암기 — 급수별 학습</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hanzi-writer/3.5.1/hanzi-writer.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 
@@ -20,6 +22,8 @@
     --red: #c0392b;
     --blue: #1a5276;
     --radius: 10px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,18 +33,22 @@
     background: var(--paper);
     color: var(--ink);
     min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 
   /* ── HEADER ── */
   header {
     background: var(--ink);
     color: var(--paper);
-    padding: 16px 24px;
+    padding: 14px 24px;
+    padding-top: calc(14px + var(--safe-top));
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 4px;
+    text-align: center;
   }
   .logo {
     font-family: 'Noto Serif KR', serif;
@@ -49,6 +57,10 @@
     letter-spacing: .04em;
   }
   .logo span { color: var(--accent2); }
+  .header-sub {
+    font-size: .78rem;
+    color: #aaa;
+  }
 
   /* ── GRADE TABS ── */
   .grade-bar {
@@ -59,8 +71,12 @@
     gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
+    justify-content: center;
   }
   .grade-bar::-webkit-scrollbar { display: none; }
+  @media (max-width: 600px) {
+    .grade-bar { justify-content: flex-start; }
+  }
   .grade-btn {
     padding: 10px 14px;
     border: none;
@@ -82,15 +98,32 @@
   }
   .grade-btn:hover:not(.active) { color: var(--ink); }
 
-  /* ── MODE TABS ── */
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    padding: 8px 16px;
+    background: var(--paper2);
+    border-bottom: 1px solid var(--border);
+    font-size: .8rem;
+    color: var(--dim);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stats-bar strong { color: var(--ink); }
+
+  /* ── MODE TABS (PC: top bar / Mobile: bottom nav) ── */
   .mode-bar {
-    padding: 12px 16px;
+    padding: 10px 16px;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: center;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
   }
   .mode-btn {
-    padding: 7px 16px;
+    padding: 7px 18px;
     border-radius: 20px;
     border: 1.5px solid var(--border);
     background: var(--paper);
@@ -108,7 +141,13 @@
   }
 
   /* ── MAIN CONTENT ── */
-  .main { padding: 16px; max-width: 900px; margin: 0 auto; }
+  .main {
+    padding: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+  }
 
   /* ── GRID (목록) ── */
   .hanja-grid {
@@ -232,62 +271,6 @@
     color: var(--green);
   }
 
-  /* ── WRITER ── */
-  .writer-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 8px 0;
-  }
-  .writer-info { text-align: center; }
-  .writer-hanja {
-    font-family: 'Noto Serif KR', serif;
-    font-size: 2rem;
-    color: var(--ink);
-  }
-  .writer-sub { font-size: .9rem; color: var(--dim); margin-top: 4px; }
-  #writer-container {
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    background: white;
-    overflow: hidden;
-  }
-  .writer-controls {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .writer-controls button {
-    padding: 9px 18px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border);
-    background: white;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: .85rem;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .writer-controls button:hover { background: var(--paper2); }
-  .writer-controls .primary-btn {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-  }
-  .writer-controls .primary-btn:hover { background: #6b3510; }
-  .writer-nav { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--dim); }
-  .writer-nav button {
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border);
-    background: white;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .writer-nav button:hover { background: var(--paper2); }
-
   /* ── QUIZ ── */
   .quiz-wrap {
     display: flex;
@@ -358,37 +341,188 @@
     margin-top: 10px;
   }
 
-  /* ── STATS BAR ── */
-  .stats-bar {
+  /* ── 주관식 ── */
+  .short-wrap {
     display: flex;
-    gap: 16px;
-    padding: 10px 16px;
-    background: var(--paper2);
-    border-bottom: 1px solid var(--border);
-    font-size: .8rem;
-    color: var(--dim);
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 0;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .short-progress { font-size: .82rem; color: var(--dim); align-self: flex-end; }
+  .short-question {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px 24px;
+    text-align: center;
+    width: 100%;
+  }
+  .short-q-label { font-size: .8rem; color: var(--dim); margin-bottom: 10px; }
+  .short-q-hanja {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 5rem;
+    line-height: 1;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .short-q-grade { font-size: .75rem; color: var(--dim); margin-bottom: 16px; }
+  .short-input-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
   }
-  .stats-bar strong { color: var(--ink); }
+  .short-input {
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 1rem;
+    width: 180px;
+    text-align: center;
+    outline: none;
+    transition: border-color .2s;
+    background: var(--paper);
+  }
+  .short-input:focus { border-color: var(--accent2); }
+  .short-input.correct-input { border-color: var(--green); background: #edfaf1; color: var(--green); }
+  .short-input.wrong-input { border-color: var(--red); background: #fdecea; color: var(--red); }
+  .short-submit {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .short-submit:hover { background: #6b3510; }
+  .short-submit:disabled { background: var(--border); cursor: default; }
+  .short-feedback {
+    font-size: .95rem;
+    font-weight: 700;
+    min-height: 24px;
+    text-align: center;
+  }
+  .short-feedback.ok { color: var(--green); }
+  .short-feedback.ng { color: var(--red); }
+  .short-hint {
+    font-size: .75rem;
+    color: var(--dim);
+    margin-top: 6px;
+  }
+  .short-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .short-nav button {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: .9rem;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background .15s;
+  }
+  .short-nav button:hover { background: var(--paper2); }
+  .short-skip {
+    font-size: .82rem;
+    color: var(--dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    text-decoration: underline;
+    padding: 4px;
+  }
+  .short-result {
+    text-align: center;
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    width: 100%;
+  }
+  .short-result .big { font-size: 2.5rem; font-weight: 700; color: var(--accent); font-family: 'Noto Serif KR', serif; }
 
   /* ── EMPTY ── */
   .empty { text-align: center; padding: 60px 20px; color: var(--dim); }
   .empty .big-char { font-family: 'Noto Serif KR', serif; font-size: 4rem; color: var(--border); display: block; }
 
-  /* ── MOBILE ── */
-  @media (max-width: 480px) {
-    header { padding: 12px 16px; }
-    .logo { font-size: 1.2rem; }
+  /* ══════════════════════════════
+     MOBILE APP 전용 스타일
+  ══════════════════════════════ */
+  @media (max-width: 600px) {
+    body {
+      padding-bottom: calc(64px + var(--safe-bottom));
+    }
 
-    .grade-bar { padding: 0 8px; }
+    /* 헤더 */
+    header {
+      padding: 12px 16px 10px;
+      padding-top: calc(12px + var(--safe-top));
+    }
+    .logo { font-size: 1.25rem; }
+    .header-sub { font-size: .72rem; }
+
+    /* 급수 탭 */
+    .grade-bar { padding: 0 8px; justify-content: flex-start; }
     .grade-btn { padding: 8px 10px; font-size: .78rem; }
 
-    .mode-bar { padding: 10px 12px; gap: 6px; }
-    .mode-btn { padding: 7px 12px; font-size: .78rem; }
+    /* 통계 */
+    .stats-bar { gap: 10px; font-size: .72rem; padding: 6px 12px; }
 
-    .main { padding: 12px; }
+    /* 모드바 → 하단 고정 앱 탭바 */
+    .mode-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      padding: 8px 0;
+      padding-bottom: calc(8px + var(--safe-bottom));
+      background: var(--ink);
+      border-top: 1px solid #333;
+      border-bottom: none;
+      gap: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      flex-wrap: unset;
+      justify-content: unset;
+    }
+    .mode-btn {
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: .68rem;
+      padding: 6px 4px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      line-height: 1.2;
+    }
+    .mode-btn .tab-icon { font-size: 1.3rem; }
+    .mode-btn.active {
+      background: transparent;
+      color: var(--accent2);
+      font-weight: 700;
+    }
 
-    /* 목록 — 모바일은 3열로 */
+    /* 메인 */
+    .main { padding: 10px 12px; }
+
+    /* 목록 3열 */
     .hanja-grid {
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
@@ -400,27 +534,23 @@
     .grade-badge { font-size: .58rem; }
 
     /* 플래시카드 */
-    .flashcard { height: 200px; }
+    .flashcard { height: 210px; }
     .flash-hanja { font-size: 4rem; }
     .flash-nav { flex-wrap: wrap; justify-content: center; gap: 8px; }
-    .flash-nav button { padding: 9px 14px; font-size: .82rem; }
+    .flash-nav button { padding: 10px 16px; font-size: .85rem; }
 
     /* 퀴즈 */
     .quiz-question { padding: 20px 14px; }
-    .quiz-q-hanja { font-size: 3.5rem; }
+    .quiz-q-hanja { font-size: 3.8rem; }
     .quiz-q-text { font-size: 1.1rem; }
     .quiz-options { gap: 8px; }
-    .quiz-opt { padding: 12px 8px; font-size: .88rem; }
+    .quiz-opt { padding: 14px 8px; font-size: .9rem; }
 
-    /* 획순 */
-    #writer-container { width: 100%; display: flex; justify-content: center; }
-    .writer-hanja { font-size: 1.6rem; }
-    .writer-controls { gap: 6px; }
-    .writer-controls button { padding: 8px 12px; font-size: .8rem; }
-    .writer-nav button { padding: 7px 12px; }
-
-    /* 통계바 */
-    .stats-bar { gap: 10px; font-size: .75rem; padding: 8px 12px; }
+    /* 주관식 */
+    .short-q-hanja { font-size: 4rem; }
+    .short-input { width: 160px; font-size: .95rem; }
+    .short-question { padding: 24px 16px 20px; }
+    .short-nav button { padding: 10px 16px; font-size: .85rem; }
   }
 </style>
 </head>
@@ -428,18 +558,26 @@
 
 <header>
   <div class="logo">漢字 <span>암기</span></div>
-  <div style="font-size:.8rem;color:#aaa;">한국어문회 급수별 · 8급~5급</div>
+  <div class="header-sub">한국어문회 급수별 · 8급~5급</div>
 </header>
 
 <div class="grade-bar" id="gradeTabs"></div>
 
 <div class="stats-bar" id="statsBar"></div>
 
-<div class="mode-bar">
-  <button class="mode-btn active" onclick="setMode('list')">📋 목록</button>
-  <button class="mode-btn" onclick="setMode('flash')">🃏 플래시카드</button>
-  <button class="mode-btn" onclick="setMode('quiz')">✏️ 퀴즈</button>
-  <button class="mode-btn" onclick="setMode('writer')">🖌️ 획순</button>
+<div class="mode-bar" id="modeBar">
+  <button class="mode-btn active" onclick="setMode('list')">
+    <span class="tab-icon">📋</span><span>목록</span>
+  </button>
+  <button class="mode-btn" onclick="setMode('flash')">
+    <span class="tab-icon">🃏</span><span>플래시카드</span>
+  </button>
+  <button class="mode-btn" onclick="setMode('quiz')">
+    <span class="tab-icon">✏️</span><span>퀴즈</span>
+  </button>
+  <button class="mode-btn" onclick="setMode('short')">
+    <span class="tab-icon">🖊️</span><span>주관식</span>
+  </button>
 </div>
 
 <div class="main" id="mainContent"></div>
@@ -566,7 +704,6 @@ const HANJA_DATA = {
   ]
 };
 
-// 전체 합치기
 const ALL_GRADES = Object.keys(HANJA_DATA);
 let currentGrade = 'all';
 let currentMode = 'list';
@@ -574,8 +711,12 @@ let memorized = JSON.parse(localStorage.getItem('hanja_mem') || '{}');
 let flashIdx = 0;
 let flashList = [];
 let quizState = null;
-let writerObj = null;
-let writerIdx = 0;
+// 주관식 상태
+let shortList = [];
+let shortIdx = 0;
+let shortScore = 0;
+let shortTotal = 0;
+let shortAnswered = false;
 
 function saveMemorized() {
   localStorage.setItem('hanja_mem', JSON.stringify(memorized));
@@ -615,7 +756,7 @@ function updateStats() {
   const pct = total ? Math.round(done/total*100) : 0;
   document.getElementById('statsBar').innerHTML =
     `<span>총 <strong>${total}</strong>자</span>` +
-    `<span>암기 완료 <strong style="color:var(--green)">${done}</strong>자</span>` +
+    `<span>암기완료 <strong style="color:var(--green)">${done}</strong>자</span>` +
     `<span>미암기 <strong style="color:var(--accent)">${total-done}</strong>자</span>` +
     `<span>진도 <strong>${pct}%</strong></span>`;
 }
@@ -623,8 +764,9 @@ function updateStats() {
 // ── MODE SWITCH ──
 function setMode(m) {
   currentMode = m;
+  const modes = ['list','flash','quiz','short'];
   document.querySelectorAll('.mode-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['list','flash','quiz','writer'][i]===m);
+    b.classList.toggle('active', modes[i]===m);
   });
   flashIdx = 0;
   render();
@@ -635,7 +777,7 @@ function render() {
   if (currentMode === 'list') renderList();
   else if (currentMode === 'flash') renderFlash();
   else if (currentMode === 'quiz') renderQuiz();
-  else if (currentMode === 'writer') renderWriter();
+  else if (currentMode === 'short') renderShort(true);
 }
 
 // ── 목록 ──
@@ -715,7 +857,6 @@ function shuffleFlash() {
   const list = getList(currentGrade);
   flashList = list.sort(() => Math.random() - 0.5);
   flashIdx = 0;
-  // re-render with shuffled
   renderFlashDirect(flashList);
 }
 
@@ -777,10 +918,8 @@ function renderQuiz(reset) {
     return;
   }
   const h = qs.list[qs.idx];
-  // 보기 4개 (정답 + 오답 3)
   const wrong = list.filter(x => x.char !== h.char).sort(() => Math.random()-.5).slice(0,3);
   const opts = [...wrong, h].sort(() => Math.random()-.5);
-  // 퀴즈 타입: 홀수=한자→훈음, 짝수=훈음→한자
   const type = qs.idx % 2;
   document.getElementById('mainContent').innerHTML = `
     <div class="quiz-wrap">
@@ -807,29 +946,13 @@ function answerQuiz(idx, chosen, correct) {
   const qs = quizState;
   if (qs.answered) return;
   qs.answered = true;
-  const opts = document.querySelectorAll('.quiz-opt');
-  opts.forEach((btn, i) => {
-    btn.disabled = true;
-    const char = chosen === correct ? chosen : null;
-    // 정답 버튼 찾기
-  });
-  // 정답/오답 표시
-  opts.forEach((btn, i) => {
-    const txt = btn.textContent.trim();
-    // check by index
-  });
   if (chosen === correct) qs.score++;
-  // 각 버튼에 정답/오답 클래스
   const allOpts = document.querySelectorAll('.quiz-opt');
   const type = qs.idx % 2;
-  const list = getList(currentGrade);
   const h = qs.list[qs.idx];
-  const wrong = list.filter(x => x.char !== h.char).sort(() => Math.random()-.5).slice(0,3);
-  // 현재 opts는 이미 랜덤 배치됨 — chosen/correct로 직접 판단
   allOpts.forEach((btn,i) => {
     const val = btn.textContent.trim();
     const correctVal = type===0 ? h.hoon+' '+h.um : h.char;
-    const chosenVal = allOpts[idx].textContent.trim();
     if (val === correctVal) btn.classList.add('correct');
     else if (i === idx && chosen !== correct) btn.classList.add('wrong');
     btn.disabled = true;
@@ -841,81 +964,143 @@ function answerQuiz(idx, chosen, correct) {
   }, 1200);
 }
 
-// ── 획순 ──
-function renderWriter() {
+// ══════════════════════════════════════════════════════
+// ── 주관식 ──
+// 한자를 보여주고 '훈 음' 형태로 직접 입력 (예: 석 삼)
+// 정해진 글자만 정답으로 인정
+// ══════════════════════════════════════════════════════
+function renderShort(reset) {
   const list = getList(currentGrade);
-  if (!list.length) { document.getElementById('mainContent').innerHTML = '<div class="empty"><span class="big-char">無</span>데이터 없음</div>'; return; }
-  if (writerIdx >= list.length) writerIdx = 0;
-  const h = list[writerIdx];
+  if (!list.length) {
+    document.getElementById('mainContent').innerHTML = '<div class="empty"><span class="big-char">無</span>데이터 없음</div>';
+    return;
+  }
+  if (reset) {
+    shortList = [...list].sort(() => Math.random() - 0.5);
+    shortIdx = 0;
+    shortScore = 0;
+    shortTotal = Math.min(20, shortList.length);
+    shortAnswered = false;
+  }
+  if (shortIdx >= shortTotal) {
+    const pct = Math.round(shortScore / shortTotal * 100);
+    document.getElementById('mainContent').innerHTML = `
+      <div class="short-wrap">
+        <div class="short-result">
+          <div style="font-size:.9rem;color:var(--dim);margin-bottom:8px">주관식 결과</div>
+          <div class="big">${shortScore} / ${shortTotal}</div>
+          <div style="margin-top:8px;color:var(--dim)">${pct}점</div>
+        </div>
+        <button class="quiz-restart" onclick="renderShort(true)">다시 풀기</button>
+      </div>
+    `;
+    return;
+  }
+  const h = shortList[shortIdx];
   document.getElementById('mainContent').innerHTML = `
-    <div class="writer-wrap">
-      <div class="writer-info">
-        <div class="writer-hanja">${h.char}</div>
-        <div class="writer-sub">${h.hoon} <strong>${h.um}</strong> · ${h.grade}</div>
+    <div class="short-wrap">
+      <div class="short-progress">${shortIdx+1} / ${shortTotal}</div>
+      <div class="short-question">
+        <div class="short-q-label">이 한자의 훈과 음을 입력하세요</div>
+        <span class="short-q-hanja">${h.char}</span>
+        <div class="short-q-grade">${h.grade}</div>
+        <div class="short-input-row">
+          <input
+            class="short-input"
+            id="shortAns"
+            type="text"
+            placeholder="예) 석 삼"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            onkeydown="if(event.key==='Enter')submitShort()"
+            oninput="shortResetFeedback()"
+          >
+          <button class="short-submit" id="shortSubmitBtn" onclick="submitShort()">확인</button>
+        </div>
+        <div class="short-feedback" id="shortFeedback"></div>
+        <div class="short-hint" id="shortHint">훈과 음을 한 칸 띄워서 입력 (예: 한 일)</div>
       </div>
-      <div id="writer-container"></div>
-      <div class="writer-controls">
-        <button class="primary-btn" onclick="writerAnimate()">▶ 획순 보기</button>
-        <button onclick="writerQuizMode()">✏️ 따라 써보기</button>
-        <button onclick="writerReset()">↺ 초기화</button>
+      <div class="short-nav">
+        <button onclick="shortGo(-1)">◀ 이전</button>
+        <button class="short-skip" onclick="shortSkip()">건너뛰기</button>
+        <button onclick="shortGo(1)">다음 ▶</button>
       </div>
-      <div class="writer-nav">
-        <button onclick="writerGo(${writerIdx-1})">◀ 이전</button>
-        <span>${writerIdx+1} / ${list.length}</span>
-        <button onclick="writerGo(${writerIdx+1})">다음 ▶</button>
-      </div>
-      <div id="writer-msg" style="font-size:.82rem;color:var(--dim);text-align:center"></div>
     </div>
   `;
-  // HanziWriter 초기화 — 화면 폭에 맞게 캔버스 크기 동적 조정
+  // 자동 포커스 (모바일 키보드 자동 열기 방지 위해 약간 딜레이)
   setTimeout(() => {
-    try {
-      const size = Math.min(220, window.innerWidth - 80);
-      writerObj = HanziWriter.create('writer-container', h.char, {
-        width: size, height: size,
-        padding: 14,
-        strokeColor: '#1a1208',
-        radicalColor: '#8b4513',
-        highlightColor: '#c8860a',
-        outlineColor: '#d4c9b0',
-        showOutline: true,
-        showCharacter: false,
-        strokeAnimationSpeed: 1,
-        delayBetweenStrokes: 300,
-      });
-    } catch(e) {
-      const msg = document.getElementById('writer-msg');
-      if (msg) msg.textContent = '⚠️ 이 한자의 획순 데이터를 불러올 수 없습니다.';
-    }
+    const inp = document.getElementById('shortAns');
+    if (inp && window.innerWidth > 600) inp.focus();
   }, 100);
 }
 
-function writerAnimate() {
-  if (!writerObj) return;
-  writerObj.animateCharacter();
+function normalizeShortInput(str) {
+  // 전각 공백, 연속 공백 → 단일 공백, 양끝 trim
+  return str.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function writerQuizMode() {
-  if (!writerObj) return;
-  document.getElementById('writer-msg').textContent = '획순대로 따라 그려보세요!';
-  writerObj.quiz({
-    onComplete: () => {
-      document.getElementById('writer-msg').textContent = '✓ 완성! 잘 하셨습니다.';
-    }
-  });
+function submitShort() {
+  if (shortAnswered) {
+    // 이미 답변됨: 다음으로
+    shortIdx++;
+    shortAnswered = false;
+    renderShort(false);
+    return;
+  }
+  const inp = document.getElementById('shortAns');
+  if (!inp) return;
+  const raw = inp.value;
+  const val = normalizeShortInput(raw);
+  if (!val) return;
+
+  const h = shortList[shortIdx];
+  // 정답: '훈 음' 형태 정확 일치만 허용
+  const correct = h.hoon + ' ' + h.um;
+  // 공백 없이 붙여쓰기도 허용 (예: 석삼)
+  const correctNoSpace = h.hoon + h.um;
+  const isCorrect = (val === correct) || (val === correctNoSpace);
+
+  shortAnswered = true;
+  inp.disabled = true;
+  document.getElementById('shortSubmitBtn').textContent = '다음 →';
+
+  const fb = document.getElementById('shortFeedback');
+  const hint = document.getElementById('shortHint');
+
+  if (isCorrect) {
+    inp.classList.add('correct-input');
+    fb.className = 'short-feedback ok';
+    fb.textContent = '✓ 정답입니다!';
+    shortScore++;
+  } else {
+    inp.classList.add('wrong-input');
+    fb.className = 'short-feedback ng';
+    fb.textContent = `✗ 오답`;
+    hint.innerHTML = `<span style="color:var(--accent);font-weight:700">정답: ${h.hoon} ${h.um}</span>`;
+  }
 }
 
-function writerReset() {
-  if (!writerObj) return;
-  writerObj.cancelQuiz();
-  writerObj.setCharacter(getList(currentGrade)[writerIdx].char);
+function shortResetFeedback() {
+  if (shortAnswered) return;
+  const inp = document.getElementById('shortAns');
+  if (inp) {
+    inp.classList.remove('correct-input','wrong-input');
+  }
+  const fb = document.getElementById('shortFeedback');
+  if (fb) fb.textContent = '';
 }
 
-function writerGo(idx) {
-  const list = getList(currentGrade);
-  writerIdx = ((idx % list.length) + list.length) % list.length;
-  writerObj = null;
-  renderWriter();
+function shortSkip() {
+  shortAnswered = false;
+  shortIdx++;
+  renderShort(false);
+}
+
+function shortGo(dir) {
+  shortAnswered = false;
+  shortIdx = Math.max(0, Math.min(shortTotal - 1, shortIdx + dir));
+  renderShort(false);
 }
 
 // ── INIT ──

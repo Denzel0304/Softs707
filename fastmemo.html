@@ -1485,14 +1485,17 @@ if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
 
-// 키보드가 올라올 때 sheet의 max-height만 줄여서 상단이 잘리지 않게 한다.
-// overlay/transform/margin은 일절 건드리지 않는다.
+// 키보드가 올라올 때 sheet와 textarea의 max-height를 줄여서 내용이 sheet 안에 들어오게 한다.
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
     const vv = window.visualViewport;
-    const available = vv.height - 24; // 24px: border-radius가 보일 여유
+    const sheetMax = vv.height - 24; // 24px: border-radius 여유
+    const taMax = Math.max(80, vv.height * 0.25); // 키보드 올라오면 textarea 높이 압축
     document.querySelectorAll('.sheet').forEach(sheet => {
-      sheet.style.maxHeight = available + 'px';
+      sheet.style.maxHeight = sheetMax + 'px';
+    });
+    document.querySelectorAll('.editor-textarea').forEach(ta => {
+      ta.style.maxHeight = taMax + 'px';
     });
   });
 }

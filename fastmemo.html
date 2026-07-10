@@ -293,11 +293,11 @@
     width: 100%;
     max-width: 520px;
     border-radius: 18px 18px 0 0;
-    padding: 20px 18px 0;
+    padding: 20px 18px calc(20px + var(--safe-bottom));
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     max-height: 90vh;
+    height: auto;
     display: flex; flex-direction: column;
-    overflow-y: auto;
   }
   .dialog {
     background: var(--surface);
@@ -441,7 +441,6 @@
     flex-direction: column;
     gap: 6px;
     margin-top: 10px;
-    margin-bottom: calc(20px + var(--safe-bottom));
   }
   .editor-link {
     display: flex;
@@ -464,7 +463,6 @@
   .editor-actions {
     display: flex; gap: 10px;
     margin-top: 14px;
-    margin-bottom: calc(20px + var(--safe-bottom));
   }
   .btn-delete {
     flex: 1;
@@ -1487,17 +1485,14 @@ if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
 
-// 키보드가 올라올 때 sheet와 textarea의 max-height를 줄여서 내용이 sheet 안에 들어오게 한다.
+// 키보드가 올라올 때 sheet의 max-height를 줄여서 상단이 잘리지 않게 한다.
+// sheet는 height:auto라 내용 크기에 맞게 줄어들므로 베이지 띠가 생기지 않는다.
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
     const vv = window.visualViewport;
-    const sheetMax = vv.height - 24; // 24px: border-radius 여유
-    const taMax = Math.max(80, vv.height * 0.25); // 키보드 올라오면 textarea 높이 압축
+    const sheetMax = vv.height - 24;
     document.querySelectorAll('.sheet').forEach(sheet => {
       sheet.style.maxHeight = sheetMax + 'px';
-    });
-    document.querySelectorAll('.editor-textarea').forEach(ta => {
-      ta.style.maxHeight = taMax + 'px';
     });
   });
 }

@@ -273,7 +273,7 @@
   /* === Modal === */
   .modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(45, 42, 38, 0.4);
     z-index: 100;
     display: none;
@@ -295,8 +295,9 @@
     border-radius: 18px 18px 0 0;
     padding: 20px 18px calc(20px + var(--safe-bottom));
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-    max-height: 90vh;
+    max-height: 90%;
     display: flex; flex-direction: column;
+    overflow-y: auto;
   }
   .dialog {
     background: var(--surface);
@@ -1483,6 +1484,25 @@ window.addEventListener('orientationchange', syncHeaderHeight);
 if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
+
+// 키보드가 올라올 때 모달 overlay가 visualViewport에 맞게 위치/크기를 따라가도록 한다.
+// 이렇게 하면 모달 상단이 잘리지 않고, 아래(키보드 위)에서 잘리는 자연스러운 동작을 함.
+(function() {
+  if (!window.visualViewport) return;
+  const overlays = () => document.querySelectorAll('.modal-overlay');
+  function applyViewport() {
+    const vv = window.visualViewport;
+    const top = vv.offsetTop;
+    const height = vv.height;
+    overlays().forEach(el => {
+      el.style.top = top + 'px';
+      el.style.height = height + 'px';
+      el.style.bottom = 'auto';
+    });
+  }
+  window.visualViewport.addEventListener('resize', applyViewport);
+  window.visualViewport.addEventListener('scroll', applyViewport);
+}());
 
 // Prevent accidental form submission via Enter on search
 document.getElementById('searchInput').addEventListener('keydown', (e) => {

@@ -293,7 +293,7 @@
     width: 100%;
     max-width: 520px;
     border-radius: 18px 18px 0 0;
-    padding: 20px 18px calc(20px + var(--safe-bottom));
+    padding: 20px 18px 0;
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     max-height: 90vh;
     display: flex; flex-direction: column;
@@ -441,6 +441,7 @@
     flex-direction: column;
     gap: 6px;
     margin-top: 10px;
+    margin-bottom: calc(20px + var(--safe-bottom));
   }
   .editor-link {
     display: flex;
@@ -463,6 +464,7 @@
   .editor-actions {
     display: flex; gap: 10px;
     margin-top: 14px;
+    margin-bottom: calc(20px + var(--safe-bottom));
   }
   .btn-delete {
     flex: 1;

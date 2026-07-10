@@ -1486,27 +1486,20 @@ if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
 
-// 키보드가 올라올 때 sheet만 위로 밀어올린다.
-// overlay는 항상 화면 전체를 덮어야 목록이 노출되지 않는다.
+// 키보드가 올라올 때 sheet의 margin-bottom을 키보드 높이만큼 줘서 키보드 위에 위치시킨다.
+// overlay는 inset:0 그대로 유지해 목록이 노출되지 않도록 한다.
 (function() {
   if (!window.visualViewport) return;
   function applyViewport() {
     const vv = window.visualViewport;
     const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     document.querySelectorAll('.modal-overlay:not(.center) .sheet').forEach(sheet => {
-      sheet.style.transform = keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : '';
+      sheet.style.marginBottom = keyboardHeight > 0 ? keyboardHeight + 'px' : '';
       sheet.style.maxHeight = `calc(${vv.height}px - 24px)`;
-    });
-  }
-  function resetViewport() {
-    document.querySelectorAll('.modal-overlay:not(.center) .sheet').forEach(sheet => {
-      sheet.style.transform = '';
-      sheet.style.maxHeight = '';
     });
   }
   window.visualViewport.addEventListener('resize', applyViewport);
   window.visualViewport.addEventListener('scroll', applyViewport);
-  window.addEventListener('focusout', () => setTimeout(resetViewport, 150));
 }());
 
 // Prevent accidental form submission via Enter on search

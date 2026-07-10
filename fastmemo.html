@@ -1485,14 +1485,20 @@ if (window.ResizeObserver) {
   new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
 }
 
-// 키보드가 올라올 때 sheet의 max-height를 줄여서 상단이 잘리지 않게 한다.
-// sheet는 height:auto라 내용 크기에 맞게 줄어들므로 베이지 띠가 생기지 않는다.
+// 키보드가 올라오면 sheet의 padding-bottom을 키보드 높이만큼 늘려
+// 내용(링크, 삭제버튼)이 키보드에 가리지 않게 한다.
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
     const vv = window.visualViewport;
-    const sheetMax = vv.height - 24;
+    const keyboardHeight = window.innerHeight - vv.height;
     document.querySelectorAll('.sheet').forEach(sheet => {
-      sheet.style.maxHeight = sheetMax + 'px';
+      if (keyboardHeight > 0) {
+        sheet.style.paddingBottom = keyboardHeight + 'px';
+        sheet.style.maxHeight = (vv.height - 24) + 'px';
+      } else {
+        sheet.style.paddingBottom = '';
+        sheet.style.maxHeight = '';
+      }
     });
   });
 }

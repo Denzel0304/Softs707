@@ -295,9 +295,10 @@
     border-radius: 18px 18px 0 0;
     padding: 20px 18px calc(20px + var(--safe-bottom));
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-    max-height: 90%;
+    /* overlay 상단에 최소 24px 여유를 둬서 border-radius가 잘리지 않게 함 */
+    max-height: calc(100% - 24px);
     display: flex; flex-direction: column;
-    overflow-y: auto;
+    /* overflow-y는 sheet 자체가 아닌 내부 textarea에서 처리 */
   }
   .dialog {
     background: var(--surface);

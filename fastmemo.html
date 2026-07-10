@@ -293,12 +293,17 @@
     width: 100%;
     max-width: 520px;
     border-radius: 18px 18px 0 0;
-    padding: 20px 18px calc(20px + var(--safe-bottom));
+    padding: 20px 18px 0;
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-    /* overlay 상단에 최소 24px 여유를 둬서 border-radius가 잘리지 않게 함 */
     max-height: calc(100% - 24px);
     display: flex; flex-direction: column;
-    /* overflow-y는 sheet 자체가 아닌 내부 textarea에서 처리 */
+    overflow: hidden;
+  }
+  .sheet-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(20px + var(--safe-bottom));
   }
   .dialog {
     background: var(--surface);
@@ -681,15 +686,17 @@
       <button class="editor-cancel" id="editorCancel">취소</button>
       <button class="editor-save" id="editorSave">저장</button>
     </div>
-    <div class="cat-select" id="catSelect">
-      <button class="cat-option" data-cat="todo"><span class="dot"></span>투자</button>
-      <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
-      <button class="cat-option" data-cat="basic"><span class="dot"></span>기타</button>
-    </div>
-    <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
-    <div class="editor-links" id="editorLinks"></div>
-    <div class="editor-actions" id="editorActions" style="display:none;">
-      <button class="btn-delete" id="editorDelete">삭제</button>
+    <div class="sheet-scroll">
+      <div class="cat-select" id="catSelect">
+        <button class="cat-option" data-cat="todo"><span class="dot"></span>투자</button>
+        <button class="cat-option" data-cat="idea"><span class="dot"></span>글감</button>
+        <button class="cat-option" data-cat="basic"><span class="dot"></span>기타</button>
+      </div>
+      <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
+      <div class="editor-links" id="editorLinks"></div>
+      <div class="editor-actions" id="editorActions" style="display:none;">
+        <button class="btn-delete" id="editorDelete">삭제</button>
+      </div>
     </div>
   </div>
 </div>

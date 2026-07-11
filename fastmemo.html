@@ -285,11 +285,16 @@
     #editorModal, #menuModal { align-items: center; padding: 24px; }
 
     .sheet {
-      border-radius: 18px;
+      border-radius: 18px !important;
       max-width: 560px;
       max-height: 80vh;
       padding-bottom: 24px;
       animation: popIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .editor-textarea {
+      min-height: 240px;
+      max-height: 50vh;
     }
 
     .menu {

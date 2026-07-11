@@ -1154,8 +1154,8 @@ function openNewMemo() {
   refreshCatUI();
   updateEditorLinks();
   openModal('editorModal');
-  // 내용 textarea에 포커스
-  setTimeout(() => et.focus(), 100);
+  // 내용 textarea에 포커스 + 스크롤 초기화
+  setTimeout(() => { et.scrollTop = 0; document.getElementById('editorLinks').scrollTop = 0; et.focus(); }, 50);
 }
 
 function openEditMemo(id) {
@@ -1171,6 +1171,7 @@ function openEditMemo(id) {
   refreshCatUI();
   updateEditorLinks();
   openModal('editorModal');
+  setTimeout(() => { et2.scrollTop = 0; document.getElementById('editorLinks').scrollTop = 0; }, 50);
 }
 
 function trySave() {

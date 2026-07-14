@@ -1596,6 +1596,28 @@ document.getElementById('toggle-emergency').checked = isEmergencyMode;
 document.getElementById('toggle-anxiety').checked = isAnxietyMode;
 showMain();
 
+// ── 배경음악 자동재생 ──
+(function initBgm() {
+  const audio = new Audio('rebuild.mp3');
+  audio.loop = true;
+  audio.volume = 1.0;
+
+  // 즉시 재생 시도 (브라우저가 허용하면 바로 재생)
+  const tryPlay = () => audio.play().catch(() => {});
+
+  tryPlay();
+
+  // 브라우저 정책으로 자동재생이 차단된 경우:
+  // 첫 번째 사용자 인터랙션(터치/클릭) 시 재생
+  const unlockHandler = () => {
+    tryPlay();
+    document.removeEventListener('click', unlockHandler);
+    document.removeEventListener('touchstart', unlockHandler);
+  };
+  document.addEventListener('click', unlockHandler, { once: true });
+  document.addEventListener('touchstart', unlockHandler, { once: true });
+})();
+
 </script>
 </body>
 </html>

@@ -1200,6 +1200,9 @@ function trySave() {
       createdAt: now,
       updatedAt: now
     });
+    // 새 메모는 최상단에 표시되므로 스크롤을 top으로 리셋
+    const lc = document.querySelector('.list-container');
+    if (lc) lc.scrollTop = 0;
   }
   queueSync();
   render();

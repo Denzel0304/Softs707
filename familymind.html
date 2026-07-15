@@ -728,7 +728,7 @@ async function savePost() {
   syncState('syncing');
   try {
     const args = { p_key: getKey(), p_content: content };
-    if (editingPostId) args.p_post_id = editingPostId;
+    if (editingPostId && editingPostId !== '') args.p_post_id = editingPostId;
     const r = await rpc('heart_3479_post_save', args);
     const data = await r.json();
     if (data.ok) {
@@ -738,7 +738,7 @@ async function savePost() {
       toast(msg);
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('저장에 실패했어요'); }
-  } catch { toast('네트워크 오류'); }
+  } catch(e) { toast('오류: ' + e.message); }
   finally { document.getElementById('editorSave').disabled = false; syncState('idle'); }
 }
 

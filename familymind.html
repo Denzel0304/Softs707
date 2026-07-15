@@ -621,7 +621,6 @@ async function pull() {
     setTimeout(() => syncState('idle'), 2000);
   } catch {
     syncState('err');
-    throw new Error('pull_failed');
   }
   try { renderFeed(); } catch(e) { console.error('renderFeed error:', e); }
 }
@@ -734,8 +733,8 @@ async function savePost() {
     if (data.ok) {
       const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
       closeAllModals();
-      try { await pull(); } catch {}
       toast(msg);
+      pull(); // 결과 기다리지 않고 독립 실행
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('저장에 실패했어요'); }
   } catch(e) { toast('네트워크 오류'); }
@@ -791,8 +790,8 @@ async function doComment(postId) {
     const data = await r.json();
     if (data.ok) {
       input.value = ''; input.style.height = '';
-      try { await pull(); } catch {}
       toast('댓글을 달았어요 💬');
+      pull();
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('댓글 실패'); }
   } catch { toast('네트워크 오류'); }

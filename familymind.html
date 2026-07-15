@@ -534,7 +534,6 @@ window.addEventListener('popstate', () => {
 function onModalClosed(id) {
   if (id === 'editorModal') {
     editingPostId = null;
-    document.getElementById('editorTitle').value = '';
     document.getElementById('editorText').value = '';
     document.getElementById('editorChar').textContent = '0자';
     document.getElementById('editorLabel').textContent = '마음 쓰기';

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>진단</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+    background: #fff8f3; padding: 24px; min-height: 100vh;
+  }
+  .card {
+    background: white; border-radius: 16px; padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  h2 { font-size: 16px; font-weight: 800; margin-bottom: 14px; color: #2d1f14; }
+  input, textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #f0d9c8;
+    border-radius: 10px; font-size: 14px; margin-bottom: 10px;
+    font-family: inherit;
+  }
+  button {
+    width: 100%; padding: 12px; background: #e8732a; color: white;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit; margin-bottom: 8px;
+  }
+  button.sec { background: #7a5c48; }
+  pre {
+    background: #1e1e1e; color: #d4d4d4; padding: 14px;
+    border-radius: 10px; font-size: 12px; white-space: pre-wrap;
+    word-break: break-all; line-height: 1.6; margin-top: 10px;
+  }
+  .ok  { color: #4ade80; }
+  .err { color: #f87171; }
+  label { font-size: 12px; font-weight: 700; color: #7a5c48; margin-bottom: 4px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>🔍 우리 마음 진단</h2>
+
+  <label>Supabase URL</label>
+  <input type="text" id="sbUrl" value="https://zkkhzsgaryoraytvsqbf.supabase.co">
+
+  <label>Anon Key</label>
+  <input type="text" id="sbAnon" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk">
+
+  <label>아이디</label>
+  <input type="text" id="loginId" placeholder="father">
+
+  <label>비밀번호</label>
+  <input type="password" id="loginPw" placeholder="dong0304">
+
+  <button onclick="doLogin()">① 로그인 테스트</button>
+  <pre id="r1">결과가 여기 나와요</pre>
+</div>
+
+<div class="card">
+  <h2>📝 글 작성 테스트</h2>
+  <label>세션키 (로그인 후 자동 입력)</label>
+  <input type="text" id="sessionKey" placeholder="로그인 먼저 하세요">
+
+  <label>글 내용</label>
+  <textarea id="postContent" rows="3" placeholder="테스트 글입니다">테스트 글입니다</textarea>
+
+  <button onclick="doPostSave()">② 글 작성 테스트</button>
+  <pre id="r2">결과가 여기 나와요</pre>
+</div>
+
+<div class="card">
+  <h2>📋 피드 조회 테스트</h2>
+  <button onclick="doPull()">③ 피드 pull 테스트</button>
+  <pre id="r3">결과가 여기 나와요</pre>
+</div>
+
+<script>
+function getUrl() { return document.getElementById('sbUrl').value.trim(); }
+function getAnon() { return document.getElementById('sbAnon').value.trim(); }
+
+async function rpc(fn, args) {
+  const r = await fetch(getUrl() + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {
+      'apikey': getAnon(),
+      'Authorization': 'Bearer ' + getAnon(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args)
+  });
+  const text = await r.text();
+  return { status: r.status, body: text };
+}
+
+async function doLogin() {
+  const el = document.getElementById('r1');
+  el.textContent = '요청 중...';
+  try {
+    const id = document.getElementById('loginId').value.trim();
+    const pw = document.getElementById('loginPw').value.trim();
+    const res = await rpc('heart_3479_login', { p_id: id, p_pw: pw });
+    const parsed = JSON.parse(res.body);
+    el.innerHTML = '<span class="' + (parsed.ok ? 'ok' : 'err') + '">HTTP ' + res.status + '</span>\n' + JSON.stringify(parsed, null, 2);
+    if (parsed.ok && parsed.key) {
+      document.getElementById('sessionKey').value = parsed.key;
+    }
+  } catch(e) {
+    el.innerHTML = '<span class="err">오류: ' + e.message + '</span>';
+  }
+}
+
+async function doPostSave() {
+  const el = document.getElementById('r2');
+  el.textContent = '요청 중...';
+  try {
+    const key = document.getElementById('sessionKey').value.trim();
+    const content = document.getElementById('postContent').value.trim();
+    const res = await rpc('heart_3479_post_save', { p_key: key, p_content: content });
+    const parsed = JSON.parse(res.body);
+    el.innerHTML = '<span class="' + (parsed.ok ? 'ok' : 'err') + '">HTTP ' + res.status + '</span>\n' + JSON.stringify(parsed, null, 2);
+  } catch(e) {
+    el.innerHTML = '<span class="err">오류: ' + e.message + '</span>';
+  }
+}
+
+async function doPull() {
+  const el = document.getElementById('r3');
+  el.textContent = '요청 중...';
+  try {
+    const key = document.getElementById('sessionKey').value.trim();
+    const res = await rpc('heart_3479_pull', { p_key: key });
+    let parsed;
+    try { parsed = JSON.parse(res.body); } catch { parsed = res.body; }
+    const preview = typeof parsed === 'object'
+      ? JSON.stringify(parsed, null, 2).substring(0, 800) + '\n...(생략)'
+      : parsed;
+    el.innerHTML = '<span class="' + (parsed.ok ? 'ok' : 'err') + '">HTTP ' + res.status + '</span>\n' + preview;
+  } catch(e) {
+    el.innerHTML = '<span class="err">오류: ' + e.message + '</span>';
+  }
+}
+</script>
+</body>
+</html>

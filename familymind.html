@@ -617,10 +617,13 @@ async function pull() {
     if (data.ok === false && data.reason === 'unauthorized') { authFail(); return; }
     authFailCount = 0;
     posts = data.posts || [];
-    renderFeed();
     syncState('synced');
     setTimeout(() => syncState('idle'), 2000);
-  } catch { syncState('err'); }
+  } catch {
+    syncState('err');
+    throw new Error('pull_failed');
+  }
+  try { renderFeed(); } catch(e) { console.error('renderFeed error:', e); }
 }
 
 /* ── 렌더 ── */
@@ -729,9 +732,10 @@ async function savePost() {
     const r = await rpc('heart_3479_post_save', args);
     const data = await r.json();
     if (data.ok) {
+      const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
       closeAllModals();
-      await pull();
-      toast(editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡');
+      try { await pull(); } catch {}
+      toast(msg);
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('저장에 실패했어요'); }
   } catch { toast('네트워크 오류'); }
@@ -783,7 +787,7 @@ async function doComment(postId) {
     const data = await r.json();
     if (data.ok) {
       input.value = ''; input.style.height = '';
-      await pull();
+      try { await pull(); } catch {}
       toast('댓글을 달았어요 💬');
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('댓글 실패'); }
@@ -810,7 +814,7 @@ async function doDelete() {
       ? await rpc('heart_3479_post_delete',    { p_key: getKey(), p_post_id:    id })
       : await rpc('heart_3479_comment_delete', { p_key: getKey(), p_comment_id: id });
     const data = await r.json();
-    if (data.ok) { await pull(); toast(type === 'post' ? '글을 삭제했어요' : '댓글을 삭제했어요'); }
+    if (data.ok) { try { await pull(); } catch {} toast(type === 'post' ? '글을 삭제했어요' : '댓글을 삭제했어요'); }
     else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('삭제 실패'); }
   } catch { toast('네트워크 오류'); }

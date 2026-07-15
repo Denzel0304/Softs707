@@ -560,7 +560,7 @@ async function doLogin() {
     const r = await rpc('heart_3479_login', { p_id: id, p_pw: pw });
     const data = await r.json();
     if (data.ok) {
-      me = { key: data.key, user_id: data.user_id, nickname: data.nickname, avatar: data.avatar };
+      me = { key: data.key, username: data.username, nickname: data.nickname, avatar: data.avatar };
       setKey(data.key); saveUser(me);
       document.getElementById('loginPw').value = '';
       msg.className='login-msg ok'; msg.textContent='환영해요, ' + data.nickname + ' 🧡';
@@ -634,7 +634,7 @@ function renderFeed() {
 }
 
 function renderPost(p) {
-  const isMine = me && p.user_id === me.user_id;
+  const isMine = me && p.user_id === me.username;
   const myReactions = Array.isArray(p.my_reactions) ? p.my_reactions : [];
   const reactions = p.reactions || {};
   const comments = Array.isArray(p.comments) ? p.comments : [];
@@ -644,11 +644,11 @@ function renderPost(p) {
     <button class="post-del-btn" onclick="askDelete('${p.id}','post')">삭제</button>
   </div>` : '';
 
-  const titleHtml = p.title ? `<div class="post-title">${escHtml(p.title)}</div>` : '';
-
-  const isMyPost = me && p.user_id === me.user_id;
+  const isMyPost = me && p.user_id === me.username;
   const reactHtml = Object.keys(REACT).map(type => {
-    const cnt = reactions[type] || 0;
+    // reactions 구조: {"like": ["father","mother"], ...} → 배열 길이가 카운트
+    const arr = Array.isArray(reactions[type]) ? reactions[type] : [];
+    const cnt = arr.length;
     const active = myReactions.includes(type) ? ' active-' + type : '';
     const label = cnt > 0
       ? REACT[type].emoji + ' ' + REACT[type].label + ' ' + cnt
@@ -660,7 +660,7 @@ function renderPost(p) {
   }).join('');
 
   const commentHtml = comments.map(c => {
-    const cMine = me && c.user_id === me.user_id;
+    const cMine = me && c.username === me.username;
     return '<div class="comment-item" id="ci-' + c.id + '">' +
       '<div class="comment-avatar">' + escHtml(c.avatar_emoji) + '</div>' +
       '<div class="comment-body"><div class="comment-name">' + escHtml(c.nickname) + '</div>' +
@@ -744,22 +744,23 @@ async function doReact(postId, type) {
   if (!me) return;
   const p = posts.find(x => x.id === postId);
   if (!p) return;
-  if (p.user_id === me.user_id) return; // 본인 글 반응 차단
+  if (p.user_id === me.username) return; // 본인 글 반응 차단
   p.my_reactions = p.my_reactions || [];
   p.reactions    = p.reactions    || {};
   const had = p.my_reactions.includes(type);
   if (had) {
     p.my_reactions = p.my_reactions.filter(t => t !== type);
-    p.reactions[type] = Math.max(0, (p.reactions[type]||1) - 1);
+    p.reactions[type] = (p.reactions[type] || []).filter(u => u !== me.username);
   } else {
     p.my_reactions.push(type);
-    p.reactions[type] = (p.reactions[type]||0) + 1;
+    p.reactions[type] = [...(p.reactions[type] || []), me.username];
   }
   // 반응 바만 즉시 업데이트
   const bar = document.getElementById('rb-' + postId);
   if (bar) {
     bar.innerHTML = Object.keys(REACT).map(t => {
-      const cnt = p.reactions[t] || 0;
+      const arr = Array.isArray(p.reactions[t]) ? p.reactions[t] : [];
+      const cnt = arr.length;
       const active = p.my_reactions.includes(t) ? ' active-' + t : '';
       const label = cnt > 0
         ? REACT[t].emoji + ' ' + REACT[t].label + ' ' + cnt

@@ -738,7 +738,7 @@ async function savePost() {
       pull(); // 결과 기다리지 않고 독립 실행
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('저장에 실패했어요'); }
-  } catch(e) { toast('네트워크 오류'); }
+  } catch(e) { toast('save오류: ' + e.message + ' / ' + e.name); }
   finally {
     const btn = document.getElementById('editorSave');
     if (btn) btn.disabled = false;

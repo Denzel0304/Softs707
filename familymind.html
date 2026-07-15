@@ -146,13 +146,13 @@
   }
 
   /* 반응 바 */
-  .reaction-bar { display: flex; gap: 6px; padding: 0 14px 12px; flex-wrap: wrap; }
+  .reaction-bar { display: flex; gap: 5px; padding: 0 10px 12px; flex-wrap: nowrap; }
   .react-btn {
-    display: flex; align-items: center; gap: 4px;
-    padding: 6px 12px; border-radius: 999px;
+    display: flex; align-items: center; gap: 3px;
+    padding: 6px 8px; border-radius: 999px;
     border: 1.5px solid var(--border); background: var(--surface-2);
-    font-size: 13px; font-weight: 600; color: var(--text-soft);
-    transition: all 0.15s;
+    font-size: 12px; font-weight: 600; color: var(--text-soft);
+    transition: all 0.15s; flex: 1; justify-content: center; white-space: nowrap;
   }
   .react-btn:active { transform: scale(0.92); }
   .react-btn.active-like    { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
@@ -382,7 +382,6 @@
         <button class="editor-save" id="editorSave">올리기</button>
       </div>
     </div>
-    <input type="text" id="editorTitle" class="editor-title-input" placeholder="제목 (선택사항)">
     <textarea id="editorText" class="editor-textarea" placeholder="오늘 마음속에 담아둔 이야기를 써보세요..."></textarea>
     <div class="editor-char" id="editorChar">0자</div>
   </div>
@@ -694,7 +693,6 @@ function openNewPost() {
   editingPostId = null;
   document.getElementById('editorLabel').textContent = '마음 쓰기';
   document.getElementById('editorSave').textContent = '올리기';
-  document.getElementById('editorTitle').value = '';
   document.getElementById('editorText').value = '';
   document.getElementById('editorChar').textContent = '0자';
   openModal('editorModal');
@@ -707,7 +705,6 @@ function openEditPost(postId) {
   editingPostId = postId;
   document.getElementById('editorLabel').textContent = '마음 수정';
   document.getElementById('editorSave').textContent = '수정 완료';
-  document.getElementById('editorTitle').value = p.title || '';
   document.getElementById('editorText').value = p.content;
   document.getElementById('editorChar').textContent = p.content.length + '자';
   openModal('editorModal');
@@ -715,13 +712,12 @@ function openEditPost(postId) {
 }
 
 async function savePost() {
-  const title   = document.getElementById('editorTitle').value.trim() || null;
   const content = document.getElementById('editorText').value.trim();
   if (!content) { toast('내용을 입력해주세요'); return; }
   document.getElementById('editorSave').disabled = true;
   syncState('syncing');
   try {
-    const args = { p_key: getKey(), p_content: content, p_title: title };
+    const args = { p_key: getKey(), p_content: content };
     if (editingPostId) args.p_post_id = editingPostId;
     const r = await rpc('heart_3479_post_save', args);
     const data = await r.json();

@@ -730,15 +730,17 @@ async function savePost() {
     const args = { p_key: getKey(), p_content: content };
     if (editingPostId && editingPostId !== '') args.p_post_id = editingPostId;
     const r = await rpc('heart_3479_post_save', args);
-    const data = await r.json();
+    const raw = await r.text();
+    let data;
+    try { data = JSON.parse(raw); } catch(pe) { toast('응답: ' + raw.substring(0,100)); return; }
     if (data.ok) {
       const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
       closeAllModals();
       toast(msg);
-      pull(); // 결과 기다리지 않고 독립 실행
+      pull();
     } else if (data.reason === 'unauthorized') { authFail(); }
-    else { toast('저장에 실패했어요'); }
-  } catch(e) { toast('save오류: ' + e.message + ' / ' + e.name); }
+    else { toast('실패: ' + JSON.stringify(data)); }
+  } catch(e) { toast('save오류: ' + e.message); }
   finally {
     const btn = document.getElementById('editorSave');
     if (btn) btn.disabled = false;

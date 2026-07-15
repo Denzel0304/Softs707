@@ -90,14 +90,7 @@
     display: flex; align-items: center; justify-content: center; gap: 7px;
     font-size: 18px; font-weight: 800; letter-spacing: -0.03em;
   }
-  .sync-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--text-mute); flex-shrink: 0; transition: background 0.3s;
-  }
-  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
-  .sync-dot.synced  { background: #16a34a; }
-  .sync-dot.err     { background: #dc2626; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
   .menu-btn {
     width: 38px; height: 38px;
     display: flex; align-items: center; justify-content: center;
@@ -371,7 +364,7 @@
     <div class="header-title">
       <span>🏡</span>
       <span>우리 마음</span>
-      <div class="sync-dot" id="syncDot"></div>
+
     </div>
     <button class="menu-btn" id="menuBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -491,8 +484,7 @@ function loadUser()    { try { return JSON.parse(localStorage.getItem(LS_USER));
 
 /* ── 동기 표시 ── */
 function syncState(s) {
-  const d = document.getElementById('syncDot');
-  d.className = 'sync-dot' + (s !== 'idle' ? ' ' + s : '');
+  if (s === 'err') toast('서버 연결에 실패했어요 😢');
 }
 
 /* ── 유틸 ── */
@@ -621,7 +613,7 @@ async function doLogout() {
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('loginMsg').textContent = '';
   document.getElementById('loginId').value = '';
-  authFailCount = 0; syncState('idle');
+  authFailCount = 0;
   setTimeout(() => document.getElementById('loginId').focus(), 60);
 }
 
@@ -634,19 +626,17 @@ function authFail() {
 /* ── 데이터 ── */
 async function pull(resetPage) {
   const key = getKey(); if (!key) return;
-  syncState('syncing');
+ ;
   try {
     const r = await rpc('heart_3479_pull', { p_key: key });
     const raw = await r.text();
     let data;
-    try { data = JSON.parse(raw); } catch(e) { toast('파싱오류: ' + raw.substring(0,80)); syncState('err'); return; }
+    try { data = JSON.parse(raw); } catch(e) { toast('파싱오류: ' + raw.substring(0,80)); return; }
     if (data.ok === false && data.reason === 'unauthorized') { authFail(); return; }
-    if (data.ok === false) { toast('pull실패: ' + JSON.stringify(data)); syncState('err'); return; }
+    if (data.ok === false) { toast('pull실패: ' + JSON.stringify(data)); return; }
     authFailCount = 0;
     posts = data.posts || [];
-    syncState('synced');
-    setTimeout(() => syncState('idle'), 2000);
-  } catch(e) { toast('pull오류: ' + e.message); syncState('err'); return; }
+  } catch(e) { toast('pull오류: ' + e.message); return; }
   try { renderFeed(resetPage); } catch(e) { toast('렌더오류: ' + e.message); }
 }
 
@@ -779,7 +769,7 @@ async function savePost() {
   const content = document.getElementById('editorText').value.trim();
   if (!content) { toast('내용을 입력해주세요'); return; }
   document.getElementById('editorSave').disabled = true;
-  syncState('syncing');
+ ;
   try {
     const args = { p_key: getKey(), p_content: content };
     if (editingPostId && editingPostId !== '') args.p_post_id = editingPostId;
@@ -799,7 +789,7 @@ async function savePost() {
   finally {
     const btn = document.getElementById('editorSave');
     if (btn) btn.disabled = false;
-    syncState('idle');
+   ;
   }
 }
 
@@ -847,7 +837,7 @@ async function doComment(postId) {
   const input = document.getElementById('cin-' + postId);
   const content = input.value.trim();
   if (!content) return;
-  input.disabled = true; syncState('syncing');
+  input.disabled = true;
   try {
     const r = await rpc('heart_3479_comment_add', { p_key: getKey(), p_post_id: postId, p_content: content });
     const data = await r.json();
@@ -858,7 +848,7 @@ async function doComment(postId) {
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('댓글 실패'); }
   } catch { toast('네트워크 오류'); }
-  finally { input.disabled = false; syncState('idle'); }
+  finally { input.disabled = false; }
 }
 
 /* ── 삭제 ── */
@@ -874,7 +864,7 @@ function askDelete(id, type) {
 async function doDelete() {
   if (!pendingDeleteId) { closeModal(); return; }
   const id = pendingDeleteId, type = pendingDeleteType;
-  closeAllModals(); syncState('syncing');
+  closeAllModals();
   try {
     const r = type === 'post'
       ? await rpc('heart_3479_post_delete',    { p_key: getKey(), p_post_id:    id })
@@ -884,7 +874,7 @@ async function doDelete() {
     else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('삭제 실패'); }
   } catch { toast('네트워크 오류'); }
-  finally { syncState('idle'); }
+  finally { }
 }
 
 /* ── 메뉴 UI ── */

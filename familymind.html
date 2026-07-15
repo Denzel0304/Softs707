@@ -159,7 +159,7 @@
   .react-btn.active-cheer   { background: #d1fae5; border-color: #10b981; color: #065f46; }
   .react-btn.active-love    { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
   .react-btn.active-comfort { background: #ede9fe; border-color: #8b5cf6; color: #4c1d95; }
-  .react-btn.react-disabled { cursor: default; }
+  .react-btn.react-disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* 댓글 */
   .comment-section {
@@ -306,29 +306,6 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 페이지네이션 */
-  .pagination {
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px; padding: 18px 0 4px;
-  }
-  .page-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 38px; height: 38px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--surface);
-    font-size: 14px; font-weight: 600; color: var(--text-soft);
-    box-shadow: var(--shadow-sm); transition: all 0.15s;
-  }
-  .page-btn:active { background: var(--surface-2); transform: scale(0.93); }
-  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-  .page-btn.current {
-    background: var(--accent); color: white;
-    border-color: var(--accent); box-shadow: none;
-  }
-  .page-info {
-    font-size: 13px; font-weight: 600; color: var(--text-soft);
-    min-width: 64px; text-align: center;
-  }
-
   /* PC */
   @media (min-width: 768px) {
     :root { --pc-w: 680px; }
@@ -467,8 +444,6 @@ const REACT = {
 let posts = [];
 let me = null;
 let editingPostId = null;
-let currentPage = 1;
-const PAGE_SIZE = 10;
 let pendingDeleteId = null;
 let pendingDeleteType = null;
 let authFailCount = 0;
@@ -632,7 +607,7 @@ function authFail() {
 }
 
 /* ── 데이터 ── */
-async function pull(resetPage) {
+async function pull() {
   const key = getKey(); if (!key) return;
   syncState('syncing');
   try {
@@ -647,42 +622,17 @@ async function pull(resetPage) {
     syncState('synced');
     setTimeout(() => syncState('idle'), 2000);
   } catch(e) { toast('pull오류: ' + e.message); syncState('err'); return; }
-  try { renderFeed(resetPage); } catch(e) { toast('렌더오류: ' + e.message); }
+  try { renderFeed(); } catch(e) { toast('렌더오류: ' + e.message); }
 }
 
 /* ── 렌더 ── */
-function renderFeed(resetPage) {
-  if (resetPage) currentPage = 1;
+function renderFeed() {
   const feed = document.getElementById('feed');
   if (!posts.length) {
     feed.innerHTML = '<div class="empty-state"><div class="empty-icon">🌸</div><div class="empty-text">아직 올라온 글이 없어요.<br>첫 마음을 나눠보세요 💛</div></div>';
     return;
   }
-  const totalPages = Math.ceil(posts.length / PAGE_SIZE);
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const pagePosts = posts.slice(start, start + PAGE_SIZE);
-
-  const pagination = `
-    <div class="pagination">
-      <button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="page-info">${currentPage} / ${totalPages}</span>
-      <button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-    </div>`;
-
-  feed.innerHTML = pagePosts.map(p => renderPost(p)).join('') + (totalPages > 1 ? pagination : '');
-  document.querySelector('.feed-container').scrollTop = 0;
-}
-
-function goPage(page) {
-  const totalPages = Math.ceil(posts.length / PAGE_SIZE);
-  if (page < 1 || page > totalPages) return;
-  currentPage = page;
-  renderFeed();
+  feed.innerHTML = posts.map(p => renderPost(p)).join('');
 }
 
 function renderPost(p) {
@@ -706,7 +656,7 @@ function renderPost(p) {
       ? REACT[type].emoji + ' ' + REACT[type].label + ' ' + cnt
       : REACT[type].emoji + ' ' + REACT[type].label;
     if (isMyPost) {
-      return '<button class="react-btn react-disabled' + active + '" onclick="doReactMine()">' + label + '</button>';
+      return '<button class="react-btn react-disabled" disabled>' + label + '</button>';
     }
     return '<button class="react-btn' + active + '" onclick="doReact(\'' + p.id + '\',\'' + type + '\')">' + label + '</button>';
   }).join('');
@@ -767,12 +717,7 @@ function openEditPost(postId) {
   document.getElementById('editorText').value = p.content;
   document.getElementById('editorChar').textContent = p.content.length + '자';
   openModal('editorModal');
-  setTimeout(() => {
-    const ta = document.getElementById('editorText');
-    ta.scrollTop = 0;
-    ta.setSelectionRange(0, 0);
-    ta.focus();
-  }, 80);
+  setTimeout(() => document.getElementById('editorText').focus(), 80);
 }
 
 async function savePost() {
@@ -791,8 +736,7 @@ async function savePost() {
       const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
       closeAllModals();
       toast(msg);
-      currentPage = 1;
-      setTimeout(() => pull(true), 400);
+      setTimeout(() => location.reload(), 800);
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('실패: ' + JSON.stringify(data)); }
   } catch(e) { toast('save오류: ' + e.message); }
@@ -801,11 +745,6 @@ async function savePost() {
     if (btn) btn.disabled = false;
     syncState('idle');
   }
-}
-
-/* ── 내 글 반응 차단 토스트 ── */
-function doReactMine() {
-  toast('내 글에는 반응을 남길 수 없어요 😅');
 }
 
 /* ── 반응 (낙관적 업데이트) ── */

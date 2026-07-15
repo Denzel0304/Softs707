@@ -73,12 +73,14 @@ html, body {
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-cream);
+  background: #d6cfc4;       /* PC에서 앱 바깥 배경 */
   color: var(--ink);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  display: flex;
+  justify-content: center;
 }
 
 button {
@@ -264,8 +266,13 @@ input::placeholder, textarea::placeholder {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
+  max-width: 480px;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
+  box-shadow: 0 0 40px rgba(0,0,0,0.18);
+  background: var(--bg-cream);
+  position: relative;
 }
 
 #app.hidden { display: none; }
@@ -566,7 +573,7 @@ input::placeholder, textarea::placeholder {
    플로팅 추가 버튼
    ============================================ */
 .fab {
-  position: fixed;
+  position: absolute;
   right: 20px;
   bottom: calc(24px + var(--safe-bottom));
   width: 56px;

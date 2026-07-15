@@ -159,7 +159,7 @@
   .react-btn.active-cheer   { background: #d1fae5; border-color: #10b981; color: #065f46; }
   .react-btn.active-love    { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
   .react-btn.active-comfort { background: #ede9fe; border-color: #8b5cf6; color: #4c1d95; }
-  .react-btn.react-disabled { opacity: 0.35; cursor: not-allowed; }
+  .react-btn.react-disabled { cursor: default; }
 
   /* 댓글 */
   .comment-section {
@@ -706,7 +706,7 @@ function renderPost(p) {
       ? REACT[type].emoji + ' ' + REACT[type].label + ' ' + cnt
       : REACT[type].emoji + ' ' + REACT[type].label;
     if (isMyPost) {
-      return '<button class="react-btn react-disabled" disabled>' + label + '</button>';
+      return '<button class="react-btn react-disabled' + active + '" onclick="doReactMine()">' + label + '</button>';
     }
     return '<button class="react-btn' + active + '" onclick="doReact(\'' + p.id + '\',\'' + type + '\')">' + label + '</button>';
   }).join('');
@@ -801,6 +801,11 @@ async function savePost() {
     if (btn) btn.disabled = false;
     syncState('idle');
   }
+}
+
+/* ── 내 글 반응 차단 토스트 ── */
+function doReactMine() {
+  toast('내 글에는 반응을 남길 수 없어요 😅');
 }
 
 /* ── 반응 (낙관적 업데이트) ── */

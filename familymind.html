@@ -737,7 +737,7 @@ async function savePost() {
       const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
       closeAllModals();
       toast(msg);
-      pull();
+      setTimeout(() => location.reload(), 800);
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('실패: ' + JSON.stringify(data)); }
   } catch(e) { toast('save오류: ' + e.message); }

@@ -738,8 +738,12 @@ async function savePost() {
       toast(msg);
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('저장에 실패했어요'); }
-  } catch(e) { toast('오류: ' + e.message); }
-  finally { document.getElementById('editorSave').disabled = false; syncState('idle'); }
+  } catch(e) { toast('네트워크 오류'); }
+  finally {
+    const btn = document.getElementById('editorSave');
+    if (btn) btn.disabled = false;
+    syncState('idle');
+  }
 }
 
 /* ── 반응 (낙관적 업데이트) ── */

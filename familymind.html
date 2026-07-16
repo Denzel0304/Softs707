@@ -601,6 +601,7 @@ function toast(msg) {
      메인화면이면 → 사이트 이탈 (브라우저 기본)
 */
 const modalStack = [];
+let _suppressPopstate = false; // doDelete 등에서 history.go로 인한 popstate를 무시할 때 사용
 
 // 초기 상태: depth 0 = home
 history.replaceState({ depth: 0, view: 'home' }, '');
@@ -638,6 +639,7 @@ function onModalClosed(id) {
 }
 
 window.addEventListener('popstate', (e) => {
+  if (_suppressPopstate) { _suppressPopstate = false; return; }
   const state = e.state || {};
   // 모달이 열려있으면 모달 닫기
   if (modalStack.length) {
@@ -1095,17 +1097,35 @@ function askDelete(id, type) {
 async function doDelete() {
   if (!pendingDeleteId) { closeModal(); return; }
   const id = pendingDeleteId, type = pendingDeleteType;
-  closeAllModals();
+  // 모달 UI만 닫기 (history.go 없이) — popstate가 발생하지 않아 홈으로 빠져나가지 않음
+  const cnt = modalStack.length;
+  modalStack.slice().forEach(mid => {
+    const el = document.getElementById(mid);
+    if (el) el.classList.remove('show');
+    onModalClosed(mid);
+  });
+  modalStack.length = 0;
+  if (cnt > 0) { _suppressPopstate = true; history.go(-cnt); }
   try {
     const r = type === 'post'
       ? await rpc('heart_3479_post_delete',    { p_key: getKey(), p_post_id:    id })
       : await rpc('heart_3479_comment_delete', { p_key: getKey(), p_comment_id: id });
     const data = await r.json();
-    if (data.ok) { try { await pull(); } catch {} toast(type === 'post' ? '글을 삭제했어요' : '댓글을 삭제했어요'); }
+    if (data.ok) {
+      // 삭제된 항목을 로컬 posts에서 즉시 제거 후 renderFeed (pull 없이)
+      if (type === 'post') {
+        posts = posts.filter(p => p.id !== id);
+      } else {
+        posts.forEach(p => {
+          if (Array.isArray(p.comments)) p.comments = p.comments.filter(c => c.id !== id);
+        });
+      }
+      renderFeed();
+      toast(type === 'post' ? '글을 삭제했어요' : '댓글을 삭제했어요');
+    }
     else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('삭제 실패'); }
   } catch { toast('네트워크 오류'); }
-  finally { }
 }
 
 /* ── 메뉴 UI ── */

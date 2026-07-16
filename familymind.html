@@ -440,7 +440,7 @@
 </header>
 
 <!-- 피드 -->
-<div class="feed-container">
+<div class="feed-container" id="feedContainer">
   <div class="feed" id="feed"></div>
 </div>
 
@@ -521,6 +521,7 @@ const REACT = {
 };
 
 let posts = [];
+let members = [];
 let me = null;
 let editingPostId = null;
 let currentPage = 1;
@@ -670,7 +671,7 @@ function afterLogin() {
   document.getElementById('loginBtn').disabled = false;
   updateMenuUI();
   // 피드 컨테이너 숨기고 홈화면 준비
-  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('feedContainer').style.display = 'none';
   document.getElementById('fab').style.display = 'none';
   currentView = 'home';
   pull();
@@ -683,7 +684,7 @@ async function doLogout() {
   clearSession(); me = null; posts = [];
   currentView = 'home'; currentMember = null;
   document.getElementById('homeContainer').classList.remove('active');
-  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('feedContainer').style.display = 'none';
   document.getElementById('fab').style.display = 'none';
   document.getElementById('headerTitle').innerHTML = '<span>🏡</span><span>우리 마음</span>';
   document.getElementById('feed').innerHTML = '';
@@ -713,9 +714,13 @@ async function pull(resetPage) {
     if (data.ok === false && data.reason === 'unauthorized') { authFail(); return; }
     if (data.ok === false) { toast('pull실패: ' + JSON.stringify(data)); return; }
     authFailCount = 0;
+    members = data.members || [];
     posts = data.posts || [];
   } catch(e) { toast('pull오류: ' + e.message); return; }
-  try { renderCurrentView(resetPage); } catch(e) { toast('렌더오류: ' + e.message); }
+  try {
+    if (currentView === 'home') showHome();
+    else renderFeed(resetPage);
+  } catch(e) { toast('렌더오류: ' + e.message); }
 }
 
 /* ── 뷰 전환 ── */
@@ -728,11 +733,10 @@ function showHome() {
   currentView = 'home';
   currentMember = null;
   document.getElementById('homeContainer').classList.add('active');
-  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('feedContainer').style.display = 'none';
   document.getElementById('fab').style.display = 'none';
-  renderHome();
-  // 헤더 타이틀 복원
   document.getElementById('headerTitle').innerHTML = '<span>🏡</span><span>우리 마음</span>';
+  renderHome();
 }
 
 function showMemberFeed(username) {
@@ -743,7 +747,7 @@ function showMemberFeed(username) {
   currentView = 'member';
   currentPage = 1;
   document.getElementById('homeContainer').classList.remove('active');
-  document.getElementById('feed').parentElement.style.display = '';
+  document.getElementById('feedContainer').style.display = '';
   // 본인 피드면 FAB 보여줌
   document.getElementById('fab').style.display = (username === me.username) ? '' : 'none';
   // 헤더 타이틀 변경
@@ -760,7 +764,7 @@ function showAllFeed() {
   currentMember = null;
   currentPage = 1;
   document.getElementById('homeContainer').classList.remove('active');
-  document.getElementById('feed').parentElement.style.display = '';
+  document.getElementById('feedContainer').style.display = '';
   document.getElementById('fab').style.display = '';
   document.getElementById('headerTitle').innerHTML =
     '<button class="back-btn" onclick="showHome()">' +
@@ -772,39 +776,40 @@ function showAllFeed() {
 
 /* ── 홈화면 렌더 ── */
 function renderHome() {
-  // 멤버 목록 (zfamilypin 데이터를 posts에서 추출)
-  const memberMap = {};
+  // posts에서 멤버별 일기 수, 안읽은 수 집계
+  const countMap = {};
+  const unreadMap = {};
   posts.forEach(p => {
-    if (!memberMap[p.user_id]) {
-      memberMap[p.user_id] = { username: p.user_id, nickname: p.nickname, avatar: p.avatar_emoji, count: 0, unread: 0 };
-    }
-    memberMap[p.user_id].count++;
+    countMap[p.user_id] = (countMap[p.user_id] || 0) + 1;
     const readBy = Array.isArray(p.read_by) ? p.read_by : [];
-    // 본인 글 제외, 내가 안 읽은 것
     if (p.user_id !== me.username && !readBy.includes(me.username)) {
-      memberMap[p.user_id].unread++;
+      unreadMap[p.user_id] = (unreadMap[p.user_id] || 0) + 1;
     }
   });
-
-  // MEMBERS_ORDER 기준으로 정렬, posts에 없는 멤버도 표시하기 위해 기본값 세팅
-  // (posts가 비어있을 수 있으므로 fallback 없이 memberMap 기준으로만)
-  const members = MEMBERS_ORDER
-    .map(u => memberMap[u])
-    .filter(Boolean);
 
   const totalCount = posts.length;
   document.getElementById('homeTotal').innerHTML =
     '우리 가족 일기 총 <strong>' + totalCount + '</strong>개';
 
-  document.getElementById('homeGrid').innerHTML = members.map(m => {
-    const badge = m.unread > 0
-      ? '<div class="unread-badge">' + m.unread + '</div>'
+  // members는 pull에서 받아온 zfamilypin 전체 목록
+  const orderedMembers = MEMBERS_ORDER
+    .map(u => members.find(m => m.username === u))
+    .filter(Boolean);
+
+  // members가 비어있으면 MEMBERS_ORDER 기본값으로 fallback 없이 그냥 members 순서대로
+  const displayMembers = orderedMembers.length > 0 ? orderedMembers : members;
+
+  document.getElementById('homeGrid').innerHTML = displayMembers.map(m => {
+    const count = countMap[m.username] || 0;
+    const unread = unreadMap[m.username] || 0;
+    const badge = unread > 0
+      ? '<div class="unread-badge">' + unread + '</div>'
       : '';
     return '<div class="member-card" onclick="showMemberFeed(\'' + m.username + '\')">' +
       badge +
-      '<div class="member-avatar">' + m.avatar + '</div>' +
+      '<div class="member-avatar">' + m.avatar_emoji + '</div>' +
       '<div class="member-nickname">' + m.nickname + '</div>' +
-      '<div class="member-count">일기 ' + m.count + '개</div>' +
+      '<div class="member-count">일기 ' + count + '개</div>' +
       '</div>';
   }).join('');
 }
@@ -1118,7 +1123,7 @@ const savedKey  = getKey();
 if (savedUser && savedKey) {
   me = savedUser;
   document.getElementById('loginOverlay').classList.remove('active');
-  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('feedContainer').style.display = 'none';
   document.getElementById('fab').style.display = 'none';
   currentView = 'home';
   updateMenuUI(); pull();

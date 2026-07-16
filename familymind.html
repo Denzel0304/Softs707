@@ -672,7 +672,6 @@ function afterLogin() {
   updateMenuUI();
   // 피드 컨테이너 숨기고 홈화면 준비
   document.getElementById('feedContainer').style.display = 'none';
-  document.getElementById('fab').style.display = 'none';
   currentView = 'home';
   pull();
 }
@@ -734,7 +733,7 @@ function showHome() {
   currentMember = null;
   document.getElementById('homeContainer').classList.add('active');
   document.getElementById('feedContainer').style.display = 'none';
-  document.getElementById('fab').style.display = 'none';
+  document.getElementById('fab').style.display = '';
   document.getElementById('headerTitle').innerHTML = '<span>🏡</span><span>우리 마음</span>';
   renderHome();
 }
@@ -748,8 +747,7 @@ function showMemberFeed(username) {
   currentPage = 1;
   document.getElementById('homeContainer').classList.remove('active');
   document.getElementById('feedContainer').style.display = '';
-  // 본인 피드면 FAB 보여줌
-  document.getElementById('fab').style.display = (username === me.username) ? '' : 'none';
+  document.getElementById('fab').style.display = '';
   // 헤더 타이틀 변경
   document.getElementById('headerTitle').innerHTML =
     '<button class="back-btn" onclick="showHome()">' +
@@ -1124,7 +1122,6 @@ if (savedUser && savedKey) {
   me = savedUser;
   document.getElementById('loginOverlay').classList.remove('active');
   document.getElementById('feedContainer').style.display = 'none';
-  document.getElementById('fab').style.display = 'none';
   currentView = 'home';
   updateMenuUI(); pull();
 }

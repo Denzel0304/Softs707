@@ -140,13 +140,14 @@
   }
 
   /* 반응 바 */
-  .reaction-bar { display: flex; gap: 5px; padding: 0 10px 12px; flex-wrap: nowrap; }
+  .reaction-bar { display: flex; gap: 4px; padding: 0 10px 12px; flex-wrap: nowrap; }
   .react-btn {
-    display: flex; align-items: center; gap: 3px;
-    padding: 6px 8px; border-radius: 999px;
+    display: flex; align-items: center; gap: 2px;
+    padding: 5px 4px; border-radius: 999px;
     border: 1.5px solid var(--border); background: var(--surface-2);
-    font-size: 12px; font-weight: 600; color: var(--text-soft);
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
     transition: all 0.15s; flex: 1; justify-content: center; white-space: nowrap;
+    min-width: 0; overflow: hidden;
   }
   .react-btn:active { transform: scale(0.92); }
   .react-btn.active-like    { background: #fef3c7; border-color: #f59e0b; color: #92400e; }

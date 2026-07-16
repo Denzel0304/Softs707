@@ -617,7 +617,7 @@ function closeModal() {
   if (!modalStack.length) return;
   history.back();
 }
-function closeAllModals() {
+function closeAllModals(suppressNav) {
   const cnt = modalStack.length;
   modalStack.slice().forEach(id => {
     const el = document.getElementById(id);
@@ -625,7 +625,10 @@ function closeAllModals() {
     onModalClosed(id);
   });
   modalStack.length = 0;
-  if (cnt > 0) history.go(-cnt);
+  if (cnt > 0) {
+    if (suppressNav) _suppressPopstate = true;
+    history.go(-cnt);
+  }
 }
 function onModalClosed(id) {
   if (id === 'editorModal') {
@@ -1012,7 +1015,7 @@ async function savePost() {
     try { data = JSON.parse(raw); } catch(pe) { toast('응답: ' + raw.substring(0,100)); return; }
     if (data.ok) {
       const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
-      closeAllModals();
+      closeAllModals(true);
       toast(msg);
       currentPage = 1;
       setTimeout(() => pull(true), 400);

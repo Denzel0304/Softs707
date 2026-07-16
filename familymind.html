@@ -300,6 +300,61 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* 홈화면 */
+  .home-container {
+    position: fixed; inset: 0; padding-top: var(--header-h);
+    display: none; flex-direction: column;
+    background: var(--bg);
+  }
+  .home-container.active { display: flex; }
+  .home-inner {
+    flex: 1; padding: 16px 14px calc(40px + var(--safe-bottom));
+    display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .home-total {
+    text-align: center; font-size: 13px; color: var(--text-mute);
+    padding: 4px 0 2px;
+  }
+  .home-total strong { color: var(--accent); font-weight: 700; }
+  .home-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .member-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; box-shadow: var(--shadow-sm);
+    padding: 22px 14px 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    cursor: pointer; transition: all 0.15s; position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .member-card:active { transform: scale(0.96); background: var(--surface-2); }
+  .member-avatar { font-size: 42px; line-height: 1; }
+  .member-nickname { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .member-count { font-size: 12px; color: var(--text-mute); }
+  .unread-badge {
+    position: absolute; top: 12px; right: 12px;
+    background: #ef4444; color: white;
+    font-size: 11px; font-weight: 700;
+    min-width: 20px; height: 20px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.4);
+  }
+
+  /* 멤버 피드 헤더 */
+  .member-feed-header {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+  }
+  .back-btn svg { width: 18px; height: 18px; color: var(--text-soft); }
+
   /* 페이지네이션 */
   .pagination {
     display: flex; align-items: center; justify-content: center;
@@ -358,14 +413,21 @@
   </div>
 </div>
 
+<!-- 홈화면 -->
+<div id="homeContainer" class="home-container">
+  <div class="home-inner">
+    <div class="home-total" id="homeTotal"></div>
+    <div class="home-grid" id="homeGrid"></div>
+  </div>
+</div>
+
 <!-- 헤더 -->
 <header class="header" id="header">
   <div class="header-inner">
     <div></div>
-    <div class="header-title">
+    <div class="header-title" id="headerTitle">
       <span>🏡</span>
       <span>우리 마음</span>
-
     </div>
     <button class="menu-btn" id="menuBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -466,6 +528,12 @@ const PAGE_SIZE = 10;
 let pendingDeleteId = null;
 let pendingDeleteType = null;
 let authFailCount = 0;
+
+// 뷰 상태: 'home' | 'member' | 'feed'
+let currentView = 'home';
+let currentMember = null; // { username, nickname, avatar }
+
+const MEMBERS_ORDER = ['father','mother','firstson','secondson'];
 
 /* ── RPC ── */
 async function rpc(fn, args) {
@@ -601,6 +669,10 @@ function afterLogin() {
   document.getElementById('loginOverlay').classList.remove('active');
   document.getElementById('loginBtn').disabled = false;
   updateMenuUI();
+  // 피드 컨테이너 숨기고 홈화면 준비
+  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('fab').style.display = 'none';
+  currentView = 'home';
   pull();
 }
 
@@ -609,7 +681,12 @@ async function doLogout() {
   const key = getKey();
   if (key) { try { await rpc('heart_3479_logout', { p_key: key }); } catch {} }
   clearSession(); me = null; posts = [];
-  renderFeed();
+  currentView = 'home'; currentMember = null;
+  document.getElementById('homeContainer').classList.remove('active');
+  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('fab').style.display = 'none';
+  document.getElementById('headerTitle').innerHTML = '<span>🏡</span><span>우리 마음</span>';
+  document.getElementById('feed').innerHTML = '';
   document.getElementById('loginOverlay').classList.add('active');
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('loginMsg').textContent = '';
@@ -638,21 +715,130 @@ async function pull(resetPage) {
     authFailCount = 0;
     posts = data.posts || [];
   } catch(e) { toast('pull오류: ' + e.message); return; }
-  try { renderFeed(resetPage); } catch(e) { toast('렌더오류: ' + e.message); }
+  try { renderCurrentView(resetPage); } catch(e) { toast('렌더오류: ' + e.message); }
+}
+
+/* ── 뷰 전환 ── */
+function renderCurrentView(resetPage) {
+  if (currentView === 'home') renderHome();
+  else renderFeed(resetPage);
+}
+
+function showHome() {
+  currentView = 'home';
+  currentMember = null;
+  document.getElementById('homeContainer').classList.add('active');
+  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('fab').style.display = 'none';
+  renderHome();
+  // 헤더 타이틀 복원
+  document.getElementById('headerTitle').innerHTML = '<span>🏡</span><span>우리 마음</span>';
+}
+
+function showMemberFeed(username) {
+  const memberPosts = posts.filter(p => p.user_id === username);
+  if (!memberPosts.length) { toast('아직 쓴 글이 없어요'); return; }
+  const sample = memberPosts[0];
+  currentMember = { username, nickname: sample.nickname, avatar: sample.avatar_emoji };
+  currentView = 'member';
+  currentPage = 1;
+  document.getElementById('homeContainer').classList.remove('active');
+  document.getElementById('feed').parentElement.style.display = '';
+  // 본인 피드면 FAB 보여줌
+  document.getElementById('fab').style.display = (username === me.username) ? '' : 'none';
+  // 헤더 타이틀 변경
+  document.getElementById('headerTitle').innerHTML =
+    '<button class="back-btn" onclick="showHome()">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+    '</button>' +
+    '<span>' + sample.avatar_emoji + ' ' + sample.nickname + '</span>';
+  renderFeed();
+}
+
+function showAllFeed() {
+  currentView = 'feed';
+  currentMember = null;
+  currentPage = 1;
+  document.getElementById('homeContainer').classList.remove('active');
+  document.getElementById('feed').parentElement.style.display = '';
+  document.getElementById('fab').style.display = '';
+  document.getElementById('headerTitle').innerHTML =
+    '<button class="back-btn" onclick="showHome()">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+    '</button>' +
+    '<span>전체 일기</span>';
+  renderFeed();
+}
+
+/* ── 홈화면 렌더 ── */
+function renderHome() {
+  // 멤버 목록 (zfamilypin 데이터를 posts에서 추출)
+  const memberMap = {};
+  posts.forEach(p => {
+    if (!memberMap[p.user_id]) {
+      memberMap[p.user_id] = { username: p.user_id, nickname: p.nickname, avatar: p.avatar_emoji, count: 0, unread: 0 };
+    }
+    memberMap[p.user_id].count++;
+    const readBy = Array.isArray(p.read_by) ? p.read_by : [];
+    // 본인 글 제외, 내가 안 읽은 것
+    if (p.user_id !== me.username && !readBy.includes(me.username)) {
+      memberMap[p.user_id].unread++;
+    }
+  });
+
+  // MEMBERS_ORDER 기준으로 정렬, posts에 없는 멤버도 표시하기 위해 기본값 세팅
+  // (posts가 비어있을 수 있으므로 fallback 없이 memberMap 기준으로만)
+  const members = MEMBERS_ORDER
+    .map(u => memberMap[u])
+    .filter(Boolean);
+
+  const totalCount = posts.length;
+  document.getElementById('homeTotal').innerHTML =
+    '우리 가족 일기 총 <strong>' + totalCount + '</strong>개';
+
+  document.getElementById('homeGrid').innerHTML = members.map(m => {
+    const badge = m.unread > 0
+      ? '<div class="unread-badge">' + m.unread + '</div>'
+      : '';
+    return '<div class="member-card" onclick="showMemberFeed(\'' + m.username + '\')">' +
+      badge +
+      '<div class="member-avatar">' + m.avatar + '</div>' +
+      '<div class="member-nickname">' + m.nickname + '</div>' +
+      '<div class="member-count">일기 ' + m.count + '개</div>' +
+      '</div>';
+  }).join('');
+}
+
+/* ── 읽음 처리 ── */
+async function markRead(postId) {
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  const readBy = Array.isArray(p.read_by) ? p.read_by : [];
+  if (readBy.includes(me.username)) return; // 이미 읽음
+  if (p.user_id === me.username) return; // 본인 글
+  // 낙관적 업데이트
+  p.read_by = [...readBy, me.username];
+  try {
+    await rpc('heart_3479_mark_read', { p_key: getKey(), p_post_id: postId });
+  } catch {}
 }
 
 /* ── 렌더 ── */
 function renderFeed(resetPage) {
   if (resetPage) currentPage = 1;
   const feed = document.getElementById('feed');
-  if (!posts.length) {
+  // 멤버 피드면 해당 멤버 글만, 전체 피드면 전체
+  const viewPosts = currentMember
+    ? posts.filter(p => p.user_id === currentMember.username)
+    : posts;
+  if (!viewPosts.length) {
     feed.innerHTML = '<div class="empty-state"><div class="empty-icon">🌸</div><div class="empty-text">아직 올라온 글이 없어요.<br>첫 마음을 나눠보세요 💛</div></div>';
     return;
   }
-  const totalPages = Math.ceil(posts.length / PAGE_SIZE);
+  const totalPages = Math.ceil(viewPosts.length / PAGE_SIZE);
   if (currentPage > totalPages) currentPage = totalPages;
   const start = (currentPage - 1) * PAGE_SIZE;
-  const pagePosts = posts.slice(start, start + PAGE_SIZE);
+  const pagePosts = viewPosts.slice(start, start + PAGE_SIZE);
 
   const pagination = `
     <div class="pagination">
@@ -712,7 +898,7 @@ function renderPost(p) {
       '</div>';
   }).join('');
 
-  return '<div class="post-card" id="post-' + p.id + '">' +
+  return '<div class="post-card" id="post-' + p.id + '" onclick="markRead(\'' + p.id + '\')">' +
     '<div class="post-header">' +
       '<div class="post-avatar">' + escHtml(p.avatar_emoji) + '</div>' +
       '<div class="post-meta"><div class="post-nickname">' + escHtml(p.nickname) + '</div>' +
@@ -932,6 +1118,9 @@ const savedKey  = getKey();
 if (savedUser && savedKey) {
   me = savedUser;
   document.getElementById('loginOverlay').classList.remove('active');
+  document.getElementById('feed').parentElement.style.display = 'none';
+  document.getElementById('fab').style.display = 'none';
+  currentView = 'home';
   updateMenuUI(); pull();
 }
 

@@ -773,7 +773,6 @@ function showHome() {
 
 function showMemberFeed(username) {
   const member = members.find(m => m.username === username);
-  const memberPosts = posts.filter(p => p.user_id === username);
   const nickname = member ? member.nickname : username;
   const avatar = member ? member.avatar_emoji : '👤';
   currentMember = { username, nickname, avatar };
@@ -787,10 +786,11 @@ function showMemberFeed(username) {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
     '</button>' +
     '<span>' + avatar + ' ' + nickname + '</span>';
-  // 히스토리에 depth 1 push (중복 방지)
   if (!history.state || history.state.depth !== 1) {
     history.pushState({ depth: 1, view: 'member', username }, '');
   }
+  // 진입 시 해당 멤버 글 전체 읽음 처리 (본인 글 제외)
+  if (username !== me.username) markReadAll(username);
   renderFeed();
 }
 
@@ -835,19 +835,36 @@ function renderHome() {
 }
 
 /* ── 읽음 처리 ── */
+async function markReadAll(username) {
+  // 해당 멤버의 글 중 내가 안 읽은 것 전체 읽음 처리
+  const unread = posts.filter(p =>
+    p.user_id === username &&
+    p.user_id !== me.username &&
+    !(Array.isArray(p.read_by) ? p.read_by : []).includes(me.username)
+  );
+  if (!unread.length) return;
+  // 낙관적 업데이트
+  unread.forEach(p => {
+    p.read_by = [...(Array.isArray(p.read_by) ? p.read_by : []), me.username];
+  });
+  // RPC 순차 호출
+  for (const p of unread) {
+    try {
+      await rpc('heart_3479_mark_read', { p_key: getKey(), p_post_id: p.id });
+    } catch {}
+  }
+}
+
 async function markRead(postId) {
   const p = posts.find(x => x.id === postId);
   if (!p) return;
   const readBy = Array.isArray(p.read_by) ? p.read_by : [];
-  if (readBy.includes(me.username)) return; // 이미 읽음
-  if (p.user_id === me.username) return; // 본인 글
-  // 낙관적 업데이트
+  if (readBy.includes(me.username)) return;
+  if (p.user_id === me.username) return;
   p.read_by = [...readBy, me.username];
   try {
     await rpc('heart_3479_mark_read', { p_key: getKey(), p_post_id: postId });
   } catch {}
-  // 홈 배지 즉시 갱신 (홈화면 아닐 때도 백그라운드 반영)
-  // 홈화면으로 돌아올 때 renderHome() 다시 호출되므로 별도 처리 불필요
 }
 
 /* ── 렌더 ── */

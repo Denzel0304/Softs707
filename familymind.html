@@ -1014,11 +1014,18 @@ async function savePost() {
     let data;
     try { data = JSON.parse(raw); } catch(pe) { toast('응답: ' + raw.substring(0,100)); return; }
     if (data.ok) {
-      const msg = editingPostId ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
-      closeAllModals(true);
+      const isEdit = !!editingPostId;
+      const msg = isEdit ? '수정됐어요 ✏️' : '마음을 올렸어요 🧡';
+      // 새 글 작성이고 남의 피드에 있으면 → 홈으로 (억제 없이)
+      const goHome = !isEdit && currentMember && currentMember.username !== me.username;
+      closeAllModals(!goHome);
       toast(msg);
       currentPage = 1;
-      setTimeout(() => pull(true), 400);
+      if (goHome) {
+        setTimeout(() => { _showHomeInternal(); pull(true); }, 400);
+      } else {
+        setTimeout(() => pull(true), 400);
+      }
     } else if (data.reason === 'unauthorized') { authFail(); }
     else { toast('실패: ' + JSON.stringify(data)); }
   } catch(e) { toast('save오류: ' + e.message); }

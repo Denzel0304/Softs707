@@ -587,15 +587,27 @@ function toast(msg) {
 }
 
 /* ── 모달 시스템 ── */
+/* ── 히스토리 & 모달 관리 ──
+   히스토리 depth:
+     0 = 메인화면 (home)
+     1 = 구성원 화면 (member) — 딱 1단계만 쌓음
+   모달(에디터, 메뉴, 확인)은 depth 2+ 로 쌓임
+   뒤로가기:
+     모달 열려있으면 → 모달 닫기
+     구성원 화면이면 → 메인화면으로
+     메인화면이면 → 사이트 이탈 (브라우저 기본)
+*/
 const modalStack = [];
-history.replaceState({ d: 0 }, '');
+
+// 초기 상태: depth 0 = home
+history.replaceState({ depth: 0, view: 'home' }, '');
 
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.add('show');
   modalStack.push(id);
-  history.pushState({ d: modalStack.length }, '');
+  history.pushState({ depth: 2 + modalStack.length, view: 'modal', modalId: id }, '');
 }
 function closeModal() {
   if (!modalStack.length) return;
@@ -611,13 +623,6 @@ function closeAllModals() {
   modalStack.length = 0;
   if (cnt > 0) history.go(-cnt);
 }
-window.addEventListener('popstate', () => {
-  if (!modalStack.length) return;
-  const id = modalStack.pop();
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('show');
-  onModalClosed(id);
-});
 function onModalClosed(id) {
   if (id === 'editorModal') {
     editingPostId = null;
@@ -628,6 +633,24 @@ function onModalClosed(id) {
   }
   if (id === 'confirmModal') { pendingDeleteId = null; pendingDeleteType = null; }
 }
+
+window.addEventListener('popstate', (e) => {
+  const state = e.state || {};
+  // 모달이 열려있으면 모달 닫기
+  if (modalStack.length) {
+    const id = modalStack.pop();
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+    onModalClosed(id);
+    return;
+  }
+  // 구성원 화면에서 뒤로가기 → 메인화면
+  if (currentView === 'member' || currentView === 'feed') {
+    _showHomeInternal();
+    return;
+  }
+  // 메인화면에서 뒤로가기 → 브라우저가 사이트 이탈 처리 (막지 않음)
+});
 document.querySelectorAll('.modal-overlay').forEach(o =>
   o.addEventListener('click', e => { if (e.target === o) closeModal(); })
 );
@@ -670,9 +693,10 @@ function afterLogin() {
   document.getElementById('loginOverlay').classList.remove('active');
   document.getElementById('loginBtn').disabled = false;
   updateMenuUI();
-  // 피드 컨테이너 숨기고 홈화면 준비
   document.getElementById('feedContainer').style.display = 'none';
   currentView = 'home';
+  // 히스토리 초기화 - depth 0 = home
+  history.replaceState({ depth: 0, view: 'home' }, '');
   pull();
 }
 
@@ -717,18 +741,14 @@ async function pull(resetPage) {
     posts = data.posts || [];
   } catch(e) { toast('pull오류: ' + e.message); return; }
   try {
-    if (currentView === 'home') showHome();
+    if (currentView === 'home') _showHomeInternal();
     else renderFeed(resetPage);
   } catch(e) { toast('렌더오류: ' + e.message); }
 }
 
 /* ── 뷰 전환 ── */
-function renderCurrentView(resetPage) {
-  if (currentView === 'home') renderHome();
-  else renderFeed(resetPage);
-}
-
-function showHome() {
+// 내부용 - 히스토리 변경 없이 UI만 전환 (popstate 핸들러에서 호출)
+function _showHomeInternal() {
   currentView = 'home';
   currentMember = null;
   document.getElementById('homeContainer').classList.add('active');
@@ -738,37 +758,36 @@ function showHome() {
   renderHome();
 }
 
+// 외부용 - 히스토리도 함께 처리
+function showHome() {
+  // 구성원 화면에 있으면 history.back() → popstate가 _showHomeInternal 호출
+  if (currentView === 'member' || currentView === 'feed') {
+    history.back();
+  } else {
+    _showHomeInternal();
+  }
+}
+
 function showMemberFeed(username) {
+  const member = members.find(m => m.username === username);
   const memberPosts = posts.filter(p => p.user_id === username);
-  if (!memberPosts.length) { toast('아직 쓴 글이 없어요'); return; }
-  const sample = memberPosts[0];
-  currentMember = { username, nickname: sample.nickname, avatar: sample.avatar_emoji };
+  const nickname = member ? member.nickname : username;
+  const avatar = member ? member.avatar_emoji : '👤';
+  currentMember = { username, nickname, avatar };
   currentView = 'member';
   currentPage = 1;
   document.getElementById('homeContainer').classList.remove('active');
   document.getElementById('feedContainer').style.display = '';
   document.getElementById('fab').style.display = '';
-  // 헤더 타이틀 변경
   document.getElementById('headerTitle').innerHTML =
     '<button class="back-btn" onclick="showHome()">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
     '</button>' +
-    '<span>' + sample.avatar_emoji + ' ' + sample.nickname + '</span>';
-  renderFeed();
-}
-
-function showAllFeed() {
-  currentView = 'feed';
-  currentMember = null;
-  currentPage = 1;
-  document.getElementById('homeContainer').classList.remove('active');
-  document.getElementById('feedContainer').style.display = '';
-  document.getElementById('fab').style.display = '';
-  document.getElementById('headerTitle').innerHTML =
-    '<button class="back-btn" onclick="showHome()">' +
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
-    '</button>' +
-    '<span>전체 일기</span>';
+    '<span>' + avatar + ' ' + nickname + '</span>';
+  // 히스토리에 depth 1 push (중복 방지)
+  if (!history.state || history.state.depth !== 1) {
+    history.pushState({ depth: 1, view: 'member', username }, '');
+  }
   renderFeed();
 }
 
@@ -824,6 +843,8 @@ async function markRead(postId) {
   try {
     await rpc('heart_3479_mark_read', { p_key: getKey(), p_post_id: postId });
   } catch {}
+  // 홈 배지 즉시 갱신 (홈화면 아닐 때도 백그라운드 반영)
+  // 홈화면으로 돌아올 때 renderHome() 다시 호출되므로 별도 처리 불필요
 }
 
 /* ── 렌더 ── */

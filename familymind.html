@@ -342,6 +342,14 @@
     display: flex; align-items: center; justify-content: center;
     padding: 0 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.4);
   }
+  .reaction-badge {
+    position: absolute; top: 12px; left: 12px;
+    background: #16a34a; color: white;
+    font-size: 11px; font-weight: 700;
+    min-width: 20px; height: 20px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 5px; box-shadow: 0 2px 6px rgba(22,163,74,0.4);
+  }
 
   /* 멤버 피드 헤더 */
   .member-feed-header {
@@ -532,8 +540,9 @@ const PAGE_SIZE = 10;
 let pendingDeleteId = null;
 let pendingDeleteType = null;
 let authFailCount = 0;
+let reactionAlertCount = 0; // 내 글에 달린 미확인 반응 수
 
-// 뷰 상태: 'home' | 'member' | 'feed'
+// 뷰 상태: 'home' | 'member' | 'feed' | 'reaction'
 let currentView = 'home';
 let currentMember = null; // { username, nickname, avatar }
 
@@ -652,8 +661,8 @@ window.addEventListener('popstate', (e) => {
     onModalClosed(id);
     return;
   }
-  // 구성원 화면에서 뒤로가기 → 메인화면
-  if (currentView === 'member' || currentView === 'feed') {
+  // 구성원/반응 화면에서 뒤로가기 → 메인화면
+  if (currentView === 'member' || currentView === 'feed' || currentView === 'reaction') {
     _showHomeInternal();
     return;
   }
@@ -747,6 +756,7 @@ async function pull(resetPage) {
     authFailCount = 0;
     members = data.members || [];
     posts = data.posts || [];
+    reactionAlertCount = data.reaction_alert_count || 0;
   } catch(e) { toast('pull오류: ' + e.message); return; }
   try {
     if (currentView === 'home') _showHomeInternal();
@@ -768,12 +778,72 @@ function _showHomeInternal() {
 
 // 외부용 - 히스토리도 함께 처리
 function showHome() {
-  // 구성원 화면에 있으면 history.back() → popstate가 _showHomeInternal 호출
-  if (currentView === 'member' || currentView === 'feed') {
+  if (currentView === 'member' || currentView === 'feed' || currentView === 'reaction') {
     history.back();
   } else {
     _showHomeInternal();
   }
+}
+
+/* ── 반응 알림 피드 ── */
+function showReactionFeed() {
+  currentView = 'reaction';
+  currentMember = { username: me.username, nickname: me.nickname, avatar: me.avatar };
+  currentPage = 1;
+  document.getElementById('homeContainer').classList.remove('active');
+  document.getElementById('feedContainer').style.display = '';
+  document.getElementById('fab').style.display = '';
+  document.getElementById('headerTitle').innerHTML =
+    '<button class="back-btn" onclick="showHome()">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+    '</button>' +
+    '<span>💬 반응 온 내 글</span>';
+  if (!history.state || history.state.depth !== 1) {
+    history.pushState({ depth: 1, view: 'reaction' }, '');
+  }
+  renderReactionFeed();
+}
+
+function renderReactionFeed() {
+  const feed = document.getElementById('feed');
+  // 내 글 중에서 타인 반응/댓글이 있고 내가 아직 reaction_read_by에 없는 것
+  const alertPosts = posts.filter(p => {
+    if (p.user_id !== me.username) return false;
+    const rrb = Array.isArray(p.reaction_read_by) ? p.reaction_read_by : [];
+    if (rrb.includes(me.username)) return false;
+    // 타인 반응 있는지
+    const reactions = p.reactions || {};
+    const hasReaction = Object.values(reactions).some(arr =>
+      Array.isArray(arr) && arr.some(u => u !== me.username)
+    );
+    // 타인 댓글 있는지
+    const comments = Array.isArray(p.comments) ? p.comments : [];
+    const hasComment = comments.some(c => c.username !== me.username);
+    return hasReaction || hasComment;
+  });
+
+  if (!alertPosts.length) {
+    feed.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">새로운 반응이 없어요 😊</div></div>';
+    return;
+  }
+  feed.innerHTML = alertPosts.map(p => renderPost(p)).join('');
+  document.querySelector('.feed-container').scrollTop = 0;
+
+  // 모두 읽음 처리
+  alertPosts.forEach(p => markReactionRead(p.id));
+}
+
+async function markReactionRead(postId) {
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  const rrb = Array.isArray(p.reaction_read_by) ? p.reaction_read_by : [];
+  if (rrb.includes(me.username)) return;
+  // 낙관적 업데이트
+  p.reaction_read_by = [...rrb, me.username];
+  reactionAlertCount = Math.max(0, reactionAlertCount - 1);
+  try {
+    await rpc('heart_3479_mark_reaction_read', { p_key: getKey(), p_post_id: postId });
+  } catch {}
 }
 
 function showMemberFeed(username) {
@@ -827,11 +897,18 @@ function renderHome() {
   document.getElementById('homeGrid').innerHTML = displayMembers.map(m => {
     const count = countMap[m.username] || 0;
     const unread = unreadMap[m.username] || 0;
-    const badge = unread > 0
+    const isMe = me && m.username === me.username;
+    const redBadge = unread > 0
       ? '<div class="unread-badge">' + unread + '</div>'
       : '';
-    return '<div class="member-card" onclick="showMemberFeed(\'' + m.username + '\')">' +
-      badge +
+    const greenBadge = isMe && reactionAlertCount > 0
+      ? '<div class="reaction-badge">💬 ' + reactionAlertCount + '</div>'
+      : '';
+    const onclick = isMe && reactionAlertCount > 0
+      ? 'showReactionFeed()'
+      : 'showMemberFeed(\'' + m.username + '\')';
+    return '<div class="member-card" onclick="' + onclick + '">' +
+      redBadge + greenBadge +
       '<div class="member-avatar">' + m.avatar_emoji + '</div>' +
       '<div class="member-nickname">' + m.nickname + '</div>' +
       '<div class="member-count">일기 ' + count + '개</div>' +

@@ -282,7 +282,7 @@
     .title { font-size: 21px; }
 
     /* 모달: editor·menu는 화면 가운데 */
-    #editorModal, #menuModal { align-items: center; padding: 24px; }
+    #editorModal { align-items: center; padding: 24px; }
 
     .sheet {
       border-radius: 18px !important;
@@ -306,13 +306,7 @@
 
 
 
-    .menu {
-      border-radius: 16px;
-      max-width: 400px;
-      padding-bottom: 8px;
-      animation: popIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .menu-handle { display: none; }
+
   }
 
   @media (min-width: 1100px) {
@@ -358,32 +352,7 @@
     animation: popIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  /* Settings menu */
-  .menu {
-    background: var(--surface);
-    border-radius: 14px 14px 0 0;
-    width: 100%;
-    max-width: 520px;
-    padding: 8px 0 calc(8px + var(--safe-bottom));
-    animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .menu-handle {
-    width: 36px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 4px auto 12px;
-  }
-  .menu-item {
-    width: 100%;
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 20px;
-    font-size: 15px;
-    color: var(--text);
-    text-align: left;
-  }
-  .menu-item:active { background: var(--surface-2); }
-  .menu-item svg { width: 20px; height: 20px; color: var(--text-soft); flex-shrink: 0; }
-  .menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
 
   /* Editor */
   .editor-head {
@@ -774,10 +743,11 @@
       </svg>
       <div class="title">빠른 메모</div>
     </div>
-    <button class="gear-btn" id="gearBtn" aria-label="설정">
+    <button class="gear-btn" id="gearBtn" aria-label="로그아웃">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
       </svg>
     </button>
   </div>
@@ -813,36 +783,6 @@
   </svg>
 </button>
 
-<!-- Settings Menu Modal -->
-<div class="modal-overlay" id="menuModal" data-modal="menu">
-  <div class="menu" onclick="event.stopPropagation()">
-    <div class="menu-handle"></div>
-    <button class="menu-item" id="menuExport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      내보내기 (JSON)
-    </button>
-    <div class="menu-divider"></div>
-    <button class="menu-item" id="menuImport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      가져오기 (JSON)
-    </button>
-    <div class="menu-divider"></div>
-    <button class="menu-item" id="menuLogout" style="color:#c0392b;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
-      </svg>
-      로그아웃
-    </button>
-  </div>
-</div>
 
 <!-- Editor Modal -->
 <div class="modal-overlay" id="editorModal" data-modal="editor">
@@ -886,7 +826,7 @@
 
 <div class="toast" id="toast"></div>
 
-<input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+
 <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
 
 <!-- 사진 뷰어 -->
@@ -1517,81 +1457,12 @@ function doDelete() {
   toast('삭제되었습니다');
 }
 
-/* ---------- Export / Import ---------- */
-function exportJson() {
-  const data = {
-    app: 'quick-memo',
-    version: 1,
-    exportedAt: Date.now(),
-    memos: memos
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const d = new Date();
-  const ts = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
-  a.href = url;
-  a.download = `quick-memo_${ts}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  closeModal();
-  toast('내보내기 완료');
-}
 
-function importJson(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const incoming = Array.isArray(data) ? data : data.memos;
-      if (!Array.isArray(incoming)) throw new Error('invalid format');
-
-      const existingIds = new Set(memos.map(m => m.id));
-      let added = 0;
-      incoming.forEach(m => {
-        if (!m || typeof m.content !== 'string' || !CATS.includes(m.cat)) return;
-        let id = m.id || genId();
-        if (existingIds.has(id)) id = genId();   // 충돌시 새 id
-        const now = Date.now();
-        memos.push({
-          id,
-          content: m.content,
-          cat: m.cat,
-          createdAt: m.createdAt || now,
-          updatedAt: m.updatedAt || m.createdAt || now
-        });
-        existingIds.add(id);
-        added++;
-      });
-      queueSync();
-      render();
-      closeModal();
-      toast(`${added}개 가져왔습니다`);
-    } catch (err) {
-      toast('가져오기 실패: 잘못된 파일');
-    }
-  };
-  reader.readAsText(file);
-}
 
 /* ---------- Event bindings ---------- */
 function bindEvents() {
-  // Gear → menu
-  document.getElementById('gearBtn').addEventListener('click', () => openModal('menuModal'));
-
-  // Menu items
-  document.getElementById('menuExport').addEventListener('click', exportJson);
-  document.getElementById('menuLogout').addEventListener('click', doLogout);
-  document.getElementById('menuImport').addEventListener('click', () => {
-    document.getElementById('fileInput').click();
-  });
-  document.getElementById('fileInput').addEventListener('change', (e) => {
-    const f = e.target.files[0];
-    if (f) importJson(f);
-    e.target.value = '';
-  });
+  // Gear(로그아웃) 버튼 → 바로 doLogout()
+  document.getElementById('gearBtn').addEventListener('click', doLogout);
 
   // FAB
   document.getElementById('fab').addEventListener('click', openNewMemo);

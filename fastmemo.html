@@ -348,6 +348,8 @@
     max-height: 90vh;
     height: auto;
     display: flex; flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .dialog {
     background: var(--surface);
@@ -616,6 +618,7 @@
     display: flex; align-items: center; gap: 8px;
     margin-top: 10px;
     flex-wrap: wrap;
+    flex-shrink: 0;
   }
   .photo-add-btn {
     width: 56px; height: 56px;
@@ -1883,8 +1886,11 @@ if (window.visualViewport) {
     const keyboardHeight = window.innerHeight - vv.height;
     document.querySelectorAll('.sheet').forEach(sheet => {
       if (keyboardHeight > 0) {
-        sheet.style.paddingBottom = keyboardHeight + 'px';
-        sheet.style.maxHeight = (vv.height - 24) + 'px';
+        // 키보드 높이만큼 하단 패딩 확보 (사진버튼 등 잘림 방지)
+        const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
+        sheet.style.paddingBottom = (keyboardHeight + 20) + 'px';
+        // maxHeight는 vv.height 기준으로 여유있게 설정 (내부 스크롤로 커버)
+        sheet.style.maxHeight = Math.min(vv.height - 8, window.innerHeight * 0.92) + 'px';
       } else {
         sheet.style.paddingBottom = '';
         sheet.style.maxHeight = '';

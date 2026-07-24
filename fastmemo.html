@@ -583,6 +583,124 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* === 사진 썸네일 (카드) === */
+  .card-photos {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .card-thumb {
+    width: 64px; height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: transform 0.12s;
+    flex-shrink: 0;
+  }
+  .card-thumb:active { transform: scale(0.94); }
+  .card-thumb-more {
+    width: 64px; height: 64px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--text-soft);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* === 에디터 사진 영역 === */
+  .editor-photo-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .photo-add-btn {
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--border);
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px;
+    color: var(--text-mute);
+    font-size: 10px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .photo-add-btn:active { background: var(--surface-2); }
+  .photo-add-btn svg { width: 20px; height: 20px; }
+  .photo-add-btn.uploading { opacity: 0.5; pointer-events: none; }
+  .editor-thumb-wrap {
+    position: relative; flex-shrink: 0;
+  }
+  .editor-thumb {
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+  }
+  .editor-thumb-del {
+    position: absolute; top: -6px; right: -6px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #e74c3c;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  /* === 사진 뷰어 모달 === */
+  .viewer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .viewer-overlay.show { display: flex; }
+  .viewer-close {
+    position: absolute; top: calc(16px + var(--safe-top)); right: 16px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .viewer-close svg { width: 20px; height: 20px; }
+  .viewer-img {
+    max-width: 100vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 4px;
+    user-select: none;
+  }
+  .viewer-nav {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .viewer-nav.prev { left: 12px; }
+  .viewer-nav.next { right: 12px; }
+  .viewer-nav svg { width: 20px; height: 20px; }
+  .viewer-nav:disabled { opacity: 0.2; pointer-events: none; }
+  .viewer-counter {
+    position: absolute; bottom: calc(16px + var(--safe-bottom));
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+  }
+
   /* Search highlight */
   mark {
     background: #fff3a8;
@@ -739,6 +857,15 @@
     </div>
     <textarea class="editor-textarea" id="editorText" placeholder="메모 내용..." enterkeyhint="enter"></textarea>
     <div class="editor-links" id="editorLinks"></div>
+    <div class="editor-photo-bar" id="editorPhotoBar">
+      <button class="photo-add-btn" id="photoAddBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        사진
+      </button>
+    </div>
     <div class="editor-actions" id="editorActions" style="display:none;">
       <button class="btn-delete" id="editorDelete">삭제</button>
     </div>
@@ -760,11 +887,39 @@
 <div class="toast" id="toast"></div>
 
 <input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+<input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+
+<!-- 사진 뷰어 -->
+<div class="viewer-overlay" id="viewerOverlay">
+  <button class="viewer-close" id="viewerClose">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+    </svg>
+  </button>
+  <button class="viewer-nav prev" id="viewerPrev">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+  <img class="viewer-img" id="viewerImg" src="" alt="">
+  <button class="viewer-nav next" id="viewerNext">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
+  <div class="viewer-counter" id="viewerCounter"></div>
+</div>
 
 <script>
 /* =========================================================
    빠른 메모 — single-file app + Supabase 동기화
    ========================================================= */
+
+/* =========================================================
+   Cloudinary 설정
+   ========================================================= */
+const CLD_CLOUD  = 'raipkzzt';
+const CLD_PRESET = 'memo_ipload';
 
 const SB_URL  = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
@@ -1079,7 +1234,19 @@ function render() {
     return;
   }
 
-  list.innerHTML = filtered.map(m => `
+  list.innerHTML = filtered.map(m => {
+    const photos = m.photos || [];
+    const MAX_THUMB = 3;
+    let thumbHtml = '';
+    if (photos.length > 0) {
+      const shown = photos.slice(0, MAX_THUMB);
+      const extra = photos.length - MAX_THUMB;
+      thumbHtml = `<div class="card-photos">
+        ${shown.map((url, i) => `<img class="card-thumb" src="${url}" data-id="${m.id}" data-idx="${i}" alt="">`).join('')}
+        ${extra > 0 ? `<div class="card-thumb-more" data-id="${m.id}" data-idx="${MAX_THUMB}">+${extra}</div>` : ''}
+      </div>`;
+    }
+    return `
     <div class="card" data-cat="${m.cat}" data-id="${m.id}">
       <div class="card-stripe"></div>
       <div class="card-body" data-action="edit" data-id="${m.id}">
@@ -1088,14 +1255,100 @@ function render() {
           <span class="card-time">${relTime(m.updatedAt)}</span>
         </div>
         <div class="card-content">${highlight(m.content, q)}</div>
+        ${thumbHtml}
       </div>
       <button class="card-x" data-action="delete" data-id="${m.id}" aria-label="삭제">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
         </svg>
       </button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   사진 — Cloudinary 업로드
+   ========================================================= */
+let editingPhotos = [];   // 에디터에서 현재 편집 중인 사진 URL 배열
+let viewerPhotos  = [];   // 뷰어에 띄울 사진 URL 배열
+let viewerIdx     = 0;
+
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`, {
+    method: 'POST', body: fd
+  });
+  if (!res.ok) throw new Error('업로드 실패');
+  const data = await res.json();
+  return data.secure_url;
+}
+
+async function handlePhotoSelect(files) {
+  const btn = document.getElementById('photoAddBtn');
+  btn.classList.add('uploading');
+  btn.querySelector('svg').style.display = 'none';
+  btn.childNodes[btn.childNodes.length - 1].textContent = '...';
+  try {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      toast('업로드 중...');
+      const url = await uploadToCloudinary(file);
+      editingPhotos.push(url);
+    }
+    renderEditorPhotos();
+    toast('사진 추가됨');
+  } catch (e) {
+    toast('업로드 실패');
+  } finally {
+    btn.classList.remove('uploading');
+    btn.querySelector('svg').style.display = '';
+    btn.childNodes[btn.childNodes.length - 1].textContent = '사진';
+  }
+}
+
+function renderEditorPhotos() {
+  const bar = document.getElementById('editorPhotoBar');
+  // 기존 썸네일 제거 (버튼 빼고)
+  bar.querySelectorAll('.editor-thumb-wrap').forEach(el => el.remove());
+  const btn = document.getElementById('photoAddBtn');
+  editingPhotos.forEach((url, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'editor-thumb-wrap';
+    wrap.innerHTML = `
+      <img class="editor-thumb" src="${url}" alt="">
+      <div class="editor-thumb-del" data-idx="${i}">×</div>
+    `;
+    bar.insertBefore(wrap, btn);
+  });
+  bar.querySelectorAll('.editor-thumb-del').forEach(del => {
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editingPhotos.splice(Number(del.dataset.idx), 1);
+      renderEditorPhotos();
+    });
+  });
+}
+
+/* ---------- 뷰어 ---------- */
+function openViewer(photos, startIdx) {
+  viewerPhotos = photos;
+  viewerIdx = startIdx;
+  updateViewerImg();
+  document.getElementById('viewerOverlay').classList.add('show');
+}
+
+function updateViewerImg() {
+  document.getElementById('viewerImg').src = viewerPhotos[viewerIdx];
+  const total = viewerPhotos.length;
+  document.getElementById('viewerCounter').textContent = total > 1 ? `${viewerIdx + 1} / ${total}` : '';
+  document.getElementById('viewerPrev').disabled = viewerIdx === 0;
+  document.getElementById('viewerNext').disabled = viewerIdx === total - 1;
+}
+
+function closeViewer() {
+  document.getElementById('viewerOverlay').classList.remove('show');
 }
 
 /* ---------- Editor: URL 자동 추출 & 링크 미리보기 ---------- */
@@ -1147,14 +1400,15 @@ function refreshCatUI() {
 function openNewMemo() {
   editingId = null;
   editingCat = null;
+  editingPhotos = [];
   const et = document.getElementById('editorText');
   et.value = '';
   et._listType = null;
   et._listNum = null;
   refreshCatUI();
   updateEditorLinks();
+  renderEditorPhotos();
   openModal('editorModal');
-  // 내용 textarea에 포커스 + 스크롤 초기화
   setTimeout(() => { et.scrollTop = 0; document.getElementById('editorLinks').scrollTop = 0; et.focus(); }, 50);
 }
 
@@ -1163,6 +1417,7 @@ function openEditMemo(id) {
   if (!m) return;
   editingId = id;
   editingCat = m.cat;
+  editingPhotos = m.photos ? [...m.photos] : [];
   const et2 = document.getElementById('editorText');
   et2.value = m.content;
   et2._listType = null;
@@ -1170,6 +1425,7 @@ function openEditMemo(id) {
   document.getElementById('editorActions').style.display = 'flex';
   refreshCatUI();
   updateEditorLinks();
+  renderEditorPhotos();
   openModal('editorModal');
   setTimeout(() => { et2.scrollTop = 0; document.getElementById('editorLinks').scrollTop = 0; }, 50);
 }
@@ -1190,6 +1446,7 @@ function trySave() {
     if (m) {
       m.content = text;
       m.cat = editingCat;
+      m.photos = [...editingPhotos];
       m.updatedAt = now;
     }
   } else {
@@ -1197,6 +1454,7 @@ function trySave() {
       id: genId(),
       content: text,
       cat: editingCat,
+      photos: [...editingPhotos],
       createdAt: now,
       updatedAt: now
     });
@@ -1313,6 +1571,51 @@ function bindEvents() {
 
   // FAB
   document.getElementById('fab').addEventListener('click', openNewMemo);
+
+  // 사진 추가 버튼
+  document.getElementById('photoAddBtn').addEventListener('click', () => {
+    document.getElementById('photoInput').click();
+  });
+  document.getElementById('photoInput').addEventListener('change', (e) => {
+    if (e.target.files.length) handlePhotoSelect(e.target.files);
+    e.target.value = '';
+  });
+
+  // 카드 썸네일 클릭 → 뷰어
+  document.getElementById('list').addEventListener('click', (e) => {
+    const thumb = e.target.closest('.card-thumb, .card-thumb-more');
+    if (thumb) {
+      e.stopPropagation();
+      const id = thumb.dataset.id;
+      const idx = Number(thumb.dataset.idx);
+      const m = memos.find(x => x.id === id);
+      if (m && m.photos) openViewer(m.photos, idx);
+    }
+  });
+
+  // 뷰어 닫기 / 이전 / 다음
+  document.getElementById('viewerClose').addEventListener('click', closeViewer);
+  document.getElementById('viewerOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('viewerOverlay')) closeViewer();
+  });
+  document.getElementById('viewerPrev').addEventListener('click', () => {
+    if (viewerIdx > 0) { viewerIdx--; updateViewerImg(); }
+  });
+  document.getElementById('viewerNext').addEventListener('click', () => {
+    if (viewerIdx < viewerPhotos.length - 1) { viewerIdx++; updateViewerImg(); }
+  });
+  // 뷰어 스와이프 (터치)
+  let touchStartX = 0;
+  document.getElementById('viewerOverlay').addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.getElementById('viewerOverlay').addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && viewerIdx < viewerPhotos.length - 1) { viewerIdx++; updateViewerImg(); }
+      if (diff < 0 && viewerIdx > 0) { viewerIdx--; updateViewerImg(); }
+    }
+  }, { passive: true });
 
   // Search
   const searchInput = document.getElementById('searchInput');

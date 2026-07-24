@@ -1104,9 +1104,15 @@ function registerAuthFail() {
 
 const modalStack = [];  // 현재 열려있는 모달 id들
 
+let _savedScrollTop = 0;
+
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
+  if (modalStack.length === 0) {
+    const lc = document.querySelector('.list-container');
+    if (lc) _savedScrollTop = lc.scrollTop;
+  }
   el.classList.add('show');
   modalStack.push(id);
   history.pushState({ modalDepth: modalStack.length }, '');
@@ -1136,6 +1142,11 @@ window.addEventListener('popstate', (e) => {
   if (el) el.classList.remove('show');
   // 모달별 정리 작업
   onModalClosed(id);
+  // 마지막 모달이 닫히면 스크롤 위치 복원
+  if (modalStack.length === 0) {
+    const lc = document.querySelector('.list-container');
+    if (lc) requestAnimationFrame(() => { lc.scrollTop = _savedScrollTop; });
+  }
 });
 
 // 첫 로드 시 history에 base state를 하나 깔아둔다.

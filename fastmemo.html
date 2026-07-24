@@ -1595,17 +1595,7 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  // 카드 썸네일 클릭 → 뷰어
-  document.getElementById('list').addEventListener('click', (e) => {
-    const thumb = e.target.closest('.card-thumb, .card-thumb-more');
-    if (thumb) {
-      e.stopPropagation();
-      const id = thumb.dataset.id;
-      const idx = Number(thumb.dataset.idx);
-      const m = memos.find(x => x.id === id);
-      if (m && m.photos) openViewer(m.photos, idx);
-    }
-  });
+  // 카드 썸네일 클릭 → 뷰어  (edit 리스너와 통합 — 아래 Card actions 리스너에 포함됨)
 
   // 뷰어 닫기 / 이전 / 다음
   document.getElementById('viewerClose').addEventListener('click', (e) => {
@@ -1672,14 +1662,26 @@ function bindEvents() {
     render();
   });
 
-  // Card actions
+  // Card actions (썸네일·삭제·편집 모두 단일 리스너로 처리)
   document.getElementById('list').addEventListener('click', (e) => {
+    // 1) 썸네일 클릭 → 뷰어 (가장 먼저 체크)
+    const thumb = e.target.closest('.card-thumb, .card-thumb-more');
+    if (thumb) {
+      e.stopPropagation();
+      const id = thumb.dataset.id;
+      const idx = Number(thumb.dataset.idx);
+      const m = memos.find(x => x.id === id);
+      if (m && m.photos) openViewer(m.photos, idx);
+      return;
+    }
+    // 2) 삭제 버튼
     const delBtn = e.target.closest('[data-action="delete"]');
     if (delBtn) {
       e.stopPropagation();
       askDelete(delBtn.dataset.id);
       return;
     }
+    // 3) 카드 본문 클릭 → 편집
     const editBtn = e.target.closest('[data-action="edit"]');
     if (editBtn) {
       openEditMemo(editBtn.dataset.id);

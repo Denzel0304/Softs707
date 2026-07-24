@@ -1123,7 +1123,13 @@ function closeAllModals() {
 }
 
 // popstate가 모달 닫기의 유일한 경로. 이걸로 일관성 확보.
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (e) => {
+  // 뷰어가 열려있으면 뷰어만 닫기
+  const overlay = document.getElementById('viewerOverlay');
+  if (overlay && overlay.classList.contains('show')) {
+    overlay.classList.remove('show');
+    return;
+  }
   if (modalStack.length === 0) return;
   const id = modalStack.pop();
   const el = document.getElementById(id);
@@ -1336,7 +1342,9 @@ function openViewer(photos, startIdx) {
   viewerPhotos = photos;
   viewerIdx = startIdx;
   updateViewerImg();
+  // history 스택에 추가해서 뒤로가기로 닫히게
   document.getElementById('viewerOverlay').classList.add('show');
+  history.pushState({ viewer: true }, '');
 }
 
 function updateViewerImg() {
@@ -1348,7 +1356,13 @@ function updateViewerImg() {
 }
 
 function closeViewer() {
-  document.getElementById('viewerOverlay').classList.remove('show');
+  const overlay = document.getElementById('viewerOverlay');
+  if (!overlay.classList.contains('show')) return;
+  overlay.classList.remove('show');
+  // history 스택 정리 (뒤로가기로 닫힌 게 아닐 때만)
+  if (history.state && history.state.viewer) {
+    history.back();
+  }
 }
 
 /* ---------- Editor: URL 자동 추출 & 링크 미리보기 ---------- */
@@ -1436,8 +1450,8 @@ function trySave() {
     toast('종류를 선택해주세요');
     return;
   }
-  if (!text) {
-    toast('내용을 입력해주세요');
+  if (!text && editingPhotos.length === 0) {
+    toast('내용 또는 사진을 입력해주세요');
     return;
   }
   const now = Date.now();
@@ -1594,14 +1608,19 @@ function bindEvents() {
   });
 
   // 뷰어 닫기 / 이전 / 다음
-  document.getElementById('viewerClose').addEventListener('click', closeViewer);
+  document.getElementById('viewerClose').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeViewer();
+  });
   document.getElementById('viewerOverlay').addEventListener('click', (e) => {
     if (e.target === document.getElementById('viewerOverlay')) closeViewer();
   });
-  document.getElementById('viewerPrev').addEventListener('click', () => {
+  document.getElementById('viewerPrev').addEventListener('click', (e) => {
+    e.stopPropagation();
     if (viewerIdx > 0) { viewerIdx--; updateViewerImg(); }
   });
-  document.getElementById('viewerNext').addEventListener('click', () => {
+  document.getElementById('viewerNext').addEventListener('click', (e) => {
+    e.stopPropagation();
     if (viewerIdx < viewerPhotos.length - 1) { viewerIdx++; updateViewerImg(); }
   });
   // 뷰어 스와이프 (터치)
@@ -1616,6 +1635,16 @@ function bindEvents() {
       if (diff < 0 && viewerIdx > 0) { viewerIdx--; updateViewerImg(); }
     }
   }, { passive: true });
+
+  // 에디터 썸네일 클릭 → 뷰어
+  document.getElementById('editorPhotoBar').addEventListener('click', (e) => {
+    const thumb = e.target.closest('.editor-thumb');
+    if (thumb) {
+      e.stopPropagation();
+      const idx = Array.from(document.querySelectorAll('.editor-thumb')).indexOf(thumb);
+      if (idx >= 0) openViewer(editingPhotos, idx);
+    }
+  });
 
   // Search
   const searchInput = document.getElementById('searchInput');

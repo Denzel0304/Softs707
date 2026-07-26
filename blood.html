@@ -191,7 +191,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
 
 .btn {
   padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
-  transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
 .btn-primary { background: var(--accent); color: white; }
 .btn-primary:active { opacity: 0.85; }
@@ -376,15 +376,16 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
 <!-- APP -->
 <div class="app">
   <!-- HEADER -->
-  <div class="header">
-    <div class="header-left">
+  <div class="header" style="position:relative;">
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:10px;position:absolute;left:50%;transform:translateX(-50%);">
       <span class="header-icon">🩸</span>
       <div>
         <div class="header-title">혈액검사 기록</div>
         <div class="header-sync" id="syncBar"></div>
       </div>
     </div>
-    <button class="logout-btn" onclick="doLogout()" title="로그아웃">⬡</button>
+    <button class="logout-btn" onclick="doLogout()" title="로그아웃" style="margin-left:auto;">🚪</button>
   </div>
 
   <!-- TAB BAR -->
@@ -430,7 +431,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
             <input type="date" id="inputDate" class="form-input">
           </div>
           <div class="form-group">
-            <label class="form-label">병원명</label>
+            <label class="form-label">병원명 (선택)</label>
             <input type="text" id="inputHospital" class="form-input" placeholder="병원 이름">
           </div>
         </div>
@@ -926,7 +927,6 @@ function saveRecord() {
   const hospital = document.getElementById('inputHospital').value.trim();
   if (!personId) { toast('대상자를 선택하세요'); return; }
   if (!date) { toast('날짜를 입력하세요'); return; }
-  if (!hospital) { toast('병원명을 입력하세요'); return; }
 
   const recordId = genId();
   const record = { id: recordId, person_id: personId, test_date: date, hospital, memo: document.getElementById('inputMemo').value.trim(), created_at: new Date().toISOString() };
@@ -1432,12 +1432,35 @@ function renderPersonTabs(containerId, activeId, onSelect) {
   ).join('');
 }
 
+let _modalStack = [];
+
 function openModal(id) {
   document.getElementById(id).classList.add('show');
+  if (_modalStack.length === 0) {
+    history.pushState({ modal: true }, '');
+  }
+  _modalStack.push(id);
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('show');
+  const idx = _modalStack.indexOf(id);
+  if (idx !== -1) _modalStack.splice(idx, 1);
+  if (_modalStack.length === 0 && history.state && history.state.modal) {
+    history.back();
+  }
 }
+
+window.addEventListener('popstate', function(e) {
+  if (_modalStack.length > 0) {
+    const topId = _modalStack[_modalStack.length - 1];
+    document.getElementById(topId).classList.remove('show');
+    _modalStack.pop();
+    // 아직 모달 남아있으면 다시 pushState
+    if (_modalStack.length > 0) {
+      history.pushState({ modal: true }, '');
+    }
+  }
+});
 
 /* =====================================================
    INIT

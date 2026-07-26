@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#EFF8FF">
+<title>혈액검사 기록</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #EFF8FF;
+  --surface: #FFFFFF;
+  --surface2: #E0F0FF;
+  --border: #B8DCFF;
+  --accent: #2E86DE;
+  --accent-soft: #D6ECFF;
+  --text: #1A2E3B;
+  --text-soft: #4A6B82;
+  --text-mute: #8AAFC8;
+  --danger: #E74C3C;
+  --danger-bg: #FDECEA;
+  --warn: #E67E22;
+  --warn-bg: #FEF5E7;
+  --ok: #27AE60;
+  --ok-bg: #EAFAF1;
+  --shadow-sm: 0 1px 3px rgba(46,134,222,0.08);
+  --shadow-md: 0 4px 16px rgba(46,134,222,0.12);
+  --shadow-lg: 0 12px 32px rgba(46,134,222,0.18);
+  --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 15px; -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+
+/* ===== LOGIN ===== */
+.login-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: none; align-items: center; justify-content: center; z-index: 999;
+}
+.login-overlay.active { display: flex; }
+.login-box {
+  width: 300px; padding: 36px 28px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 20px;
+  text-align: center; box-shadow: var(--shadow-lg);
+}
+.login-logo { font-size: 36px; margin-bottom: 12px; }
+.login-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: var(--text-mute); margin-bottom: 24px; }
+.pin-input {
+  width: 100%; padding: 13px; font-size: 24px; text-align: center;
+  letter-spacing: 12px; border: 1.5px solid var(--border); border-radius: 12px;
+  background: var(--surface2); margin-bottom: 14px; outline: none; color: var(--text);
+  transition: border-color 0.15s;
+}
+.pin-input:focus { border-color: var(--accent); }
+.login-btn {
+  width: 100%; padding: 12px; font-size: 15px; font-weight: 600;
+  background: var(--accent); color: #fff; border-radius: 12px; transition: opacity 0.15s;
+}
+.login-btn:active { opacity: 0.85; }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-msg { font-size: 12.5px; margin-top: 12px; min-height: 16px; color: var(--text-mute); }
+.login-msg.err { color: var(--danger); }
+.login-msg.ok { color: var(--ok); }
+
+/* ===== LAYOUT ===== */
+.app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+/* ===== HEADER ===== */
+.header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-top) + 12px) 20px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-sm); flex-shrink: 0; z-index: 10;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-icon { font-size: 22px; }
+.header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.header-sync { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+.logout-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-soft); font-size: 16px; transition: all 0.15s;
+}
+.logout-btn:active { background: var(--border); }
+
+/* ===== TAB BAR ===== */
+.tab-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1; min-width: 64px; padding: 10px 4px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 500; color: var(--text-mute);
+  border-bottom: 2.5px solid transparent; transition: all 0.15s; white-space: nowrap;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn .tab-icon { font-size: 20px; line-height: 1; }
+
+/* ===== CONTENT ===== */
+.content {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; padding-bottom: calc(20px + var(--safe-bottom));
+}
+.tab-panel { display: none; padding: 16px; }
+.tab-panel.active { display: block; }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 13px; font-weight: 600; color: var(--text-mute);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;
+}
+.section-title {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+
+/* ===== DASHBOARD ===== */
+.person-tabs {
+  display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none;
+}
+.person-tabs::-webkit-scrollbar { display: none; }
+.person-chip {
+  padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--surface); border: 1.5px solid var(--border); color: var(--text-soft);
+  white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
+}
+.person-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.dash-summary {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+}
+.dash-stat {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 12px; text-align: center; box-shadow: var(--shadow-sm);
+}
+.dash-stat-val { font-size: 22px; font-weight: 700; color: var(--accent); }
+.dash-stat-label { font-size: 11px; color: var(--text-mute); margin-top: 3px; }
+
+.latest-record { margin-bottom: 12px; }
+.record-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.record-date { font-size: 15px; font-weight: 700; }
+.record-hospital { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+.value-grid { display: flex; flex-direction: column; gap: 6px; }
+.value-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px; background: var(--surface2);
+}
+.value-name { flex: 1; font-size: 13px; font-weight: 500; }
+.value-unit { font-size: 11px; color: var(--text-mute); }
+.value-num { font-size: 15px; font-weight: 700; }
+.value-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+}
+.badge-ok { background: var(--ok-bg); color: var(--ok); }
+.badge-high { background: var(--warn-bg); color: var(--warn); }
+.badge-low { background: var(--accent-soft); color: var(--accent); }
+.badge-none { background: var(--surface2); color: var(--text-mute); }
+
+.group-label {
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  padding: 8px 0 4px; letter-spacing: 0.03em;
+}
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text-soft); margin-bottom: 6px; display: block; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; background: var(--surface); outline: none;
+  font-size: 15px; transition: border-color 0.15s; color: var(--text);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 70px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+.btn {
+  padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:active { opacity: 0.85; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:active { background: var(--border); }
+.btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c4be; }
+.btn-danger:active { opacity: 0.85; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 8px; }
+
+/* ===== VALUE INPUT GRID (검사 입력) ===== */
+.value-input-group { margin-bottom: 16px; }
+.value-input-group-title {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  padding: 8px 12px; background: var(--accent-soft);
+  border-radius: 8px; margin-bottom: 8px;
+}
+.value-input-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.value-input-row:last-child { border-bottom: none; }
+.value-input-name { flex: 1; font-size: 13px; font-weight: 500; }
+.value-input-range { font-size: 11px; color: var(--text-mute); }
+.value-input-unit { font-size: 11px; color: var(--text-mute); min-width: 30px; text-align: right; }
+.value-input-field {
+  width: 90px; padding: 7px 10px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 14px; text-align: right; outline: none;
+  background: var(--surface); transition: border-color 0.15s;
+}
+.value-input-field:focus { border-color: var(--accent); }
+
+/* ===== CHART ===== */
+.chart-controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.chart-select { flex: 1; min-width: 120px; }
+.chart-container { position: relative; height: 260px; margin-bottom: 16px; }
+.chart-person-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+.chart-person-tabs::-webkit-scrollbar { display: none; }
+
+/* ===== RECORDS LIST ===== */
+.record-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.record-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; cursor: pointer;
+}
+.record-card-header:active { background: var(--surface2); }
+.record-card-body { padding: 0 16px 14px; display: none; }
+.record-card-body.open { display: block; }
+.record-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* ===== SETTINGS ===== */
+.settings-section { margin-bottom: 20px; }
+.settings-section-title {
+  font-size: 14px; font-weight: 700; color: var(--text-soft);
+  margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+}
+.person-list-item, .group-list-item, .item-list-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px;
+}
+.list-item-name { flex: 1; font-size: 14px; font-weight: 500; }
+.list-item-sub { font-size: 11px; color: var(--text-mute); }
+.order-btns { display: flex; flex-direction: column; gap: 2px; }
+.order-btn {
+  width: 26px; height: 22px; border-radius: 6px; background: var(--surface2);
+  border: 1px solid var(--border); font-size: 11px; display: flex;
+  align-items: center; justify-content: center; color: var(--text-soft);
+  transition: all 0.1s;
+}
+.order-btn:active { background: var(--accent-soft); color: var(--accent); }
+.order-btn:disabled { opacity: 0.25; pointer-events: none; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px;
+  transition: all 0.15s;
+}
+.icon-btn-edit { background: var(--accent-soft); color: var(--accent); }
+.icon-btn-del { background: var(--danger-bg); color: var(--danger); }
+.icon-btn:active { opacity: 0.75; }
+
+.group-block { margin-bottom: 14px; }
+.group-block-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--accent-soft);
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px;
+}
+.group-block-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--accent); }
+.group-items-list { padding-left: 16px; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(26,46,59,0.45);
+  z-index: 200; display: none; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-overlay.center { align-items: center; padding: 20px; }
+.modal-sheet {
+  background: var(--bg); width: 100%; max-width: 520px;
+  border-radius: 20px 20px 0 0; padding: 20px 18px calc(20px + var(--safe-bottom));
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.22s cubic-bezier(0.2,0.8,0.2,1);
+}
+.modal-dialog {
+  background: var(--surface); border-radius: 16px; padding: 22px 20px 16px;
+  width: 100%; max-width: 340px;
+  animation: popIn 0.18s cubic-bezier(0.2,0.8,0.2,1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.modal-handle {
+  width: 40px; height: 4px; background: var(--border);
+  border-radius: 999px; margin: 0 auto 16px;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; left: 50%; bottom: calc(80px + var(--safe-bottom));
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: var(--bg);
+  padding: 11px 20px; border-radius: 999px; font-size: 13px; font-weight: 500;
+  z-index: 500; opacity: 0; transition: all 0.25s cubic-bezier(0.2,0.8,0.2,1);
+  pointer-events: none; box-shadow: var(--shadow-lg); white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-mute); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-state-text { font-size: 14px; }
+
+/* ===== PC ===== */
+@media (min-width: 768px) {
+  :root { --pc-w: 740px; }
+  body { background: #D0E8F8; }
+  .app { max-width: var(--pc-w); margin: 0 auto; box-shadow: var(--shadow-lg); background: var(--bg); min-height: 100vh; }
+  .tab-btn { font-size: 11px; padding: 10px 8px 8px; }
+  .tab-btn .tab-icon { font-size: 22px; }
+  .form-row { grid-template-columns: 1fr 1fr 1fr; }
+  .dash-summary { grid-template-columns: repeat(4, 1fr); }
+  .modal-sheet { border-radius: 20px; max-height: 80vh; }
+  .modal-overlay { padding: 20px; }
+  .modal-overlay.show:not(.center) { align-items: center; }
+  .chart-container { height: 320px; }
+  .value-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+}
+@media (min-width: 1100px) {
+  :root { --pc-w: 900px; }
+}
+
+/* ===== MISC ===== */
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.text-mute { color: var(--text-mute); font-size: 12px; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay" class="login-overlay active">
+  <div class="login-box">
+    <div class="login-logo">🩸</div>
+    <div class="login-title">혈액검사 기록</div>
+    <div class="login-sub">PIN 4자리를 입력하세요</div>
+    <input type="password" id="pinInput" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    <button id="loginBtn" class="login-btn" onclick="doLogin()">로그인</button>
+    <div id="loginMsg" class="login-msg"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <span class="header-icon">🩸</span>
+      <div>
+        <div class="header-title">혈액검사 기록</div>
+        <div class="header-sync" id="syncBar"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()" title="로그아웃">⬡</button>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('dashboard')" id="tab-dashboard">
+      <span class="tab-icon">📊</span>대시보드
+    </button>
+    <button class="tab-btn" onclick="switchTab('input')" id="tab-input">
+      <span class="tab-icon">➕</span>검사 입력
+    </button>
+    <button class="tab-btn" onclick="switchTab('chart')" id="tab-chart">
+      <span class="tab-icon">📈</span>추이 차트
+    </button>
+    <button class="tab-btn" onclick="switchTab('records')" id="tab-records">
+      <span class="tab-icon">📋</span>기록 목록
+    </button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">
+      <span class="tab-icon">⚙️</span>설정
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="panel-dashboard" class="tab-panel active">
+      <div id="dashPersonTabs" class="person-tabs"></div>
+      <div class="dash-summary" id="dashSummary"></div>
+      <div id="dashContent"></div>
+    </div>
+
+    <!-- ===== INPUT ===== -->
+    <div id="panel-input" class="tab-panel">
+      <div class="card">
+        <div class="card-title">기본 정보</div>
+        <div class="form-group">
+          <label class="form-label">대상자</label>
+          <select id="inputPerson" class="form-select"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">검사 날짜</label>
+            <input type="date" id="inputDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">병원명</label>
+            <input type="text" id="inputHospital" class="form-input" placeholder="병원 이름">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">메모 (선택)</label>
+          <textarea id="inputMemo" class="form-textarea" placeholder="특이사항 등"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">검사 수치 입력</div>
+        <div id="valueInputArea"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button class="btn btn-secondary" style="flex:1" onclick="clearInputForm()">초기화</button>
+        <button class="btn btn-primary" style="flex:2" onclick="saveRecord()">💾 저장</button>
+      </div>
+    </div>
+
+    <!-- ===== CHART ===== -->
+    <div id="panel-chart" class="tab-panel">
+      <div class="card">
+        <div class="card-title">대상자</div>
+        <div id="chartPersonTabs" class="chart-person-tabs"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">항목 선택</div>
+        <div class="chart-controls">
+          <select id="chartGroupSel" class="form-select chart-select" onchange="updateChartItems()"></select>
+          <select id="chartItemSel" class="form-select chart-select" onchange="renderChart()"></select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="chart-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      <div class="card" id="barChartCard">
+        <div class="card-title">최신값 vs 정상범위</div>
+        <div class="chart-container" style="height:200px;">
+          <canvas id="rangeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RECORDS ===== -->
+    <div id="panel-records" class="tab-panel">
+      <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;" id="recordsPersonTabs"></div>
+      <div id="recordsList"></div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div id="panel-settings" class="tab-panel">
+
+      <!-- 대상자 -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span>👤 대상자 관리</span>
+          <button class="btn btn-primary btn-sm" onclick="openPersonModal()">+ 추가</button>
+        </div>
+        <div id="personList"></div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- 그룹 & 항목 -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span>🗂️ 검사 그룹 & 항목</span>
+          <button class="btn btn-primary btn-sm" onclick="openGroupModal()">+ 그룹 추가</button>
+        </div>
+        <div id="groupItemList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- 대상자 추가/편집 -->
+<div class="modal-overlay" id="personModal" onclick="if(event.target===this)closeModal('personModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="personModalTitle">대상자 추가</div>
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input type="text" id="personName" class="form-input" placeholder="홍길동">
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모 (선택)</label>
+      <input type="text" id="personMemo" class="form-input" placeholder="관계 등">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('personModal')">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="savePerson()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 그룹 추가/편집 -->
+<div class="modal-overlay" id="groupModal" onclick="if(event.target===this)closeModal('groupModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="groupModalTitle">검사 그룹 추가</div>
+    <div class="form-group">
+      <label class="form-label">그룹명</label>
+      <input type="text" id="groupName" class="form-input" placeholder="예: 간기능, 신장기능">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('groupModal')">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveGroup()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 항목 추가/편집 -->
+<div class="modal-overlay" id="itemModal" onclick="if(event.target===this)closeModal('itemModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="itemModalTitle">항목 추가</div>
+    <div class="form-group">
+      <label class="form-label">그룹</label>
+      <select id="itemGroupSel" class="form-select"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">항목명</label>
+      <input type="text" id="itemName" class="form-input" placeholder="예: AST, ALT, 공복혈당">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">단위</label>
+        <input type="text" id="itemUnit" class="form-input" placeholder="U/L, mg/dL">
+      </div>
+      <div class="form-group">
+        <label class="form-label">정상 최솟값</label>
+        <input type="number" id="itemMin" class="form-input" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">정상 최댓값</label>
+        <input type="number" id="itemMax" class="form-input" placeholder="40">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('itemModal')">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 기록 편집 -->
+<div class="modal-overlay" id="recordEditModal" onclick="if(event.target===this)closeModal('recordEditModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">기록 편집</div>
+    <input type="hidden" id="editRecordId">
+    <div class="form-group">
+      <label class="form-label">대상자</label>
+      <select id="editPerson" class="form-select"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">검사 날짜</label>
+        <input type="date" id="editDate" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">병원명</label>
+        <input type="text" id="editHospital" class="form-input">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모</label>
+      <textarea id="editMemo" class="form-textarea"></textarea>
+    </div>
+    <div class="card-title" style="margin-top:12px;">검사 수치</div>
+    <div id="editValueArea"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('recordEditModal')">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="updateRecord()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 삭제 확인 -->
+<div class="modal-overlay center" id="confirmModal" onclick="if(event.target===this)closeModal('confirmModal')">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <div class="modal-title" id="confirmTitle">삭제 확인</div>
+    <p style="font-size:14px;color:var(--text-soft);margin-bottom:20px;" id="confirmMsg">정말 삭제하시겠습니까?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('confirmModal')">취소</button>
+      <button class="btn btn-danger" style="flex:1" id="confirmOkBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   혈액검사 기록 — single-file + Supabase
+   ===================================================== */
+
+const SB_URL  = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+const AK_KEY    = 'BLOOD69_ak';
+const CACHE_KEY = 'BLOOD69_data';
+
+/* ---------- 상태 ---------- */
+let db = { persons: [], groups: [], items: [], records: [], values: [] };
+let authFailCount = 0;
+const AUTH_FAIL_MAX = 3;
+let syncTimer = null, syncing = false;
+let currentTab = 'dashboard';
+let dashPersonId = null;
+let chartPersonId = null;
+let recordsPersonId = null;
+let editingPersonId = null;
+let editingGroupId = null;
+let editingItemId = null;
+let trendChartInst = null;
+let rangeChartInst = null;
+let pendingConfirmFn = null;
+
+/* ---------- 유틸 ---------- */
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function getAK() { return localStorage.getItem(AK_KEY); }
+function setAK(k) { localStorage.setItem(AK_KEY, k); }
+function setSyncBar(t) { const el = document.getElementById('syncBar'); if(el) el.textContent = t; }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+/* ---------- RPC ---------- */
+async function rpc(fn, args) {
+  return fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+}
+
+/* ---------- 로그인 ---------- */
+async function doLogin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('loginBtn');
+  if (!/^\d{4}$/.test(pin)) { msg.className='login-msg err'; msg.textContent='PIN 4자리 숫자를 입력하세요'; return; }
+  btn.disabled = true; msg.className='login-msg'; msg.textContent='확인 중...';
+  try {
+    const r = await rpc('blood69_login', { p_pin: pin });
+    if (!r.ok) { msg.className='login-msg err'; msg.textContent='서버 오류 ('+r.status+')'; btn.disabled=false; return; }
+    const data = await r.json();
+    if (data.ok) {
+      setAK(data.key);
+      document.getElementById('pinInput').value = '';
+      msg.className='login-msg ok'; msg.textContent='로그인 성공';
+      document.getElementById('loginOverlay').classList.remove('active');
+      await pullFromServer();
+    } else if (data.reason === 'wrong_pin') {
+      msg.className='login-msg err'; msg.textContent=`PIN 불일치 (남은 시도: ${data.remaining}회)`;
+      document.getElementById('pinInput').value=''; btn.disabled=false;
+    } else if (data.reason === 'locked') {
+      const until = new Date(data.until).toLocaleTimeString('ko-KR');
+      msg.className='login-msg err'; msg.textContent=`잠금 상태 (${until}까지)`; btn.disabled=false;
+    } else {
+      msg.className='login-msg err'; msg.textContent='로그인 실패'; btn.disabled=false;
+    }
+  } catch(e) { msg.className='login-msg err'; msg.textContent='네트워크 오류'; btn.disabled=false; }
+}
+
+async function doLogout() {
+  const key = getAK();
+  if (key) { try { await rpc('blood69_logout', { p_key: key }); } catch(e){} }
+  localStorage.removeItem(AK_KEY); localStorage.removeItem(CACHE_KEY);
+  db = { persons:[], groups:[], items:[], records:[], values:[] };
+  authFailCount = 0; setSyncBar('');
+  document.getElementById('loginOverlay').classList.add('active');
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginMsg').textContent = '';
+  document.getElementById('pinInput').value = '';
+  setTimeout(() => document.getElementById('pinInput').focus(), 50);
+}
+
+/* ---------- Pull / Push ---------- */
+async function pullFromServer() {
+  const key = getAK(); if (!key) return;
+  setSyncBar('↓ 불러오는 중...');
+  try {
+    const r = await rpc('blood69_pull', { p_key: key });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) { const t=await r.text(); if(t.includes('unauthorized')){registerAuthFail();return;} setSyncBar('⚠ 불러오기 실패'); return; }
+    authFailCount = 0;
+    const data = await r.json();
+    db = Object.assign({ persons:[], groups:[], items:[], records:[], values:[] }, data);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(db));
+    setSyncBar('✓ 동기화됨');
+    renderAll();
+  } catch(e) {
+    setSyncBar('⚠ 네트워크 오류');
+    try { const c=localStorage.getItem(CACHE_KEY); if(c){ db=JSON.parse(c); renderAll(); } } catch(_){}
+  }
+}
+
+function queueSync() {
+  if (!getAK()) return;
+  setSyncBar('● 변경됨');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToServer, 1200);
+}
+
+async function pushToServer() {
+  const key = getAK(); if (!key) return;
+  if (syncing) { syncTimer = setTimeout(pushToServer, 800); return; }
+  syncing = true; setSyncBar('↑ 저장 중...');
+  try {
+    const r = await rpc('blood69_push', { p_key: key, p_data: db });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) { const t=await r.text(); if(t.includes('unauthorized')){registerAuthFail();return;} setSyncBar('⚠ 저장 실패'); return; }
+    authFailCount = 0;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(db));
+    setSyncBar('✓ 저장됨');
+  } catch(e) { setSyncBar('⚠ 네트워크 오류'); }
+  finally { syncing = false; }
+}
+
+function registerAuthFail() {
+  authFailCount++;
+  setSyncBar(`⚠ 인증 오류 (${authFailCount}/${AUTH_FAIL_MAX})`);
+  if (authFailCount >= AUTH_FAIL_MAX) doLogout();
+}
+
+/* ---------- 탭 전환 ---------- */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'input') renderInputForm();
+  if (tab === 'chart') renderChartTab();
+  if (tab === 'records') renderRecords();
+  if (tab === 'settings') renderSettings();
+}
+
+/* ---------- 전체 렌더 ---------- */
+function renderAll() {
+  if (!dashPersonId && db.persons.length > 0) dashPersonId = db.persons[0].id;
+  if (!chartPersonId && db.persons.length > 0) chartPersonId = db.persons[0].id;
+  if (!recordsPersonId && db.persons.length > 0) recordsPersonId = db.persons[0].id;
+  const panels = { dashboard: renderDashboard, input: renderInputForm, chart: renderChartTab, records: renderRecords, settings: renderSettings };
+  if (panels[currentTab]) panels[currentTab]();
+}
+
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
+function renderDashboard() {
+  renderPersonTabs('dashPersonTabs', dashPersonId, (id)=>{ dashPersonId=id; renderDashboard(); });
+
+  const pid = dashPersonId;
+  const personRecords = db.records.filter(r => r.person_id === pid).sort((a,b) => b.test_date.localeCompare(a.test_date));
+
+  // 요약 통계
+  const allValues = db.values.filter(v => personRecords.some(r=>r.id===v.record_id));
+  const abnormalCount = allValues.filter(v => {
+    const item = db.items.find(i=>i.id===v.item_id);
+    if (!item || (!item.normal_min && !item.normal_max)) return false;
+    const val = parseFloat(v.value);
+    if (isNaN(val)) return false;
+    if (item.normal_min !== null && item.normal_min !== '' && val < parseFloat(item.normal_min)) return true;
+    if (item.normal_max !== null && item.normal_max !== '' && val > parseFloat(item.normal_max)) return true;
+    return false;
+  }).length;
+
+  document.getElementById('dashSummary').innerHTML = `
+    <div class="dash-stat"><div class="dash-stat-val">${personRecords.length}</div><div class="dash-stat-label">총 검사 횟수</div></div>
+    <div class="dash-stat"><div class="dash-stat-val">${personRecords.length > 0 ? personRecords[0].test_date : '-'}</div><div class="dash-stat-label">최근 검사일</div></div>
+    <div class="dash-stat"><div class="dash-stat-val" style="color:${abnormalCount>0?'var(--warn)':'var(--ok)'}">${abnormalCount}</div><div class="dash-stat-label">비정상 항목</div></div>
+  `;
+
+  if (personRecords.length === 0) {
+    document.getElementById('dashContent').innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">검사 기록이 없습니다<br>검사 입력 탭에서 추가하세요</div></div>`;
+    return;
+  }
+
+  const latest = personRecords[0];
+  const latestValues = db.values.filter(v => v.record_id === latest.id);
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+
+  let html = `<div class="card"><div class="flex-between" style="margin-bottom:10px;">
+    <div><div class="record-date">📅 ${latest.test_date}</div><div class="record-hospital">🏥 ${latest.hospital}</div></div>
+    <span style="font-size:12px;color:var(--text-mute);">최근 기록</span>
+  </div><div class="value-grid">`;
+
+  let hasAny = false;
+  sortedGroups.forEach(g => {
+    const groupItems = db.items.filter(i=>i.group_id===g.id).sort((a,b)=>a.order_index-b.order_index);
+    const groupVals = latestValues.filter(v => groupItems.some(i=>i.id===v.item_id));
+    if (groupVals.length === 0) return;
+    html += `</div><div class="group-label">${g.name}</div><div class="value-grid">`;
+    groupItems.forEach(item => {
+      const val = latestValues.find(v=>v.item_id===item.id);
+      if (!val) return;
+      hasAny = true;
+      const { badge, color } = getValueBadge(parseFloat(val.value), item);
+      html += `<div class="value-row">
+        <span class="value-name">${item.name}</span>
+        <span class="value-unit">${item.unit||''}</span>
+        <span class="value-num" style="color:${color}">${val.value}</span>
+        <span class="value-badge ${badge.cls}">${badge.text}</span>
+      </div>`;
+    });
+  });
+
+  html += `</div></div>`;
+  document.getElementById('dashContent').innerHTML = hasAny ? html : `<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">수치 데이터가 없습니다</div></div>`;
+}
+
+function getValueBadge(val, item) {
+  if (isNaN(val) || (!item.normal_min && !item.normal_max && item.normal_min !== 0 && item.normal_max !== 0)) {
+    return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
+  }
+  const min = item.normal_min !== '' && item.normal_min !== null ? parseFloat(item.normal_min) : null;
+  const max = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
+  if (max !== null && val > max) return { badge:{cls:'badge-high',text:'↑높음'}, color:'var(--warn)' };
+  if (min !== null && val < min) return { badge:{cls:'badge-low',text:'↓낮음'}, color:'var(--accent)' };
+  return { badge:{cls:'badge-ok',text:'정상'}, color:'var(--ok)' };
+}
+
+/* =====================================================
+   INPUT FORM
+   ===================================================== */
+function renderInputForm() {
+  // 대상자 셀렉트
+  const personSel = document.getElementById('inputPerson');
+  personSel.innerHTML = db.persons.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  if (!personSel.value && db.persons.length > 0) personSel.value = db.persons[0].id;
+
+  // 날짜 기본값
+  const dateEl = document.getElementById('inputDate');
+  if (!dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+
+  // 수치 입력 영역
+  renderValueInputArea('valueInputArea', 'input');
+}
+
+function renderValueInputArea(containerId, prefix) {
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  let html = '';
+  sortedGroups.forEach(g => {
+    const groupItems = db.items.filter(i=>i.group_id===g.id).sort((a,b)=>a.order_index-b.order_index);
+    if (groupItems.length === 0) return;
+    html += `<div class="value-input-group">
+      <div class="value-input-group-title">${g.name}</div>`;
+    groupItems.forEach(item => {
+      const rangeText = (item.normal_min!==''&&item.normal_min!==null&&item.normal_max!==''&&item.normal_max!==null)
+        ? `${item.normal_min}~${item.normal_max}` : '';
+      html += `<div class="value-input-row">
+        <div style="flex:1">
+          <div class="value-input-name">${item.name}</div>
+          ${rangeText?`<div class="value-input-range">정상: ${rangeText} ${item.unit||''}</div>`:''}
+        </div>
+        <input type="number" step="any" class="value-input-field" id="${prefix}_item_${item.id}" placeholder="-">
+        <span class="value-input-unit">${item.unit||''}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  if (!html) html = `<div class="empty-state" style="padding:30px 0"><div class="empty-state-icon">⚙️</div><div class="empty-state-text">설정 탭에서 그룹과 항목을 먼저 추가하세요</div></div>`;
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function clearInputForm() {
+  document.getElementById('inputHospital').value = '';
+  document.getElementById('inputMemo').value = '';
+  document.getElementById('inputDate').value = new Date().toISOString().slice(0,10);
+  db.items.forEach(item => {
+    const el = document.getElementById(`input_item_${item.id}`);
+    if (el) el.value = '';
+  });
+}
+
+function saveRecord() {
+  const personId = document.getElementById('inputPerson').value;
+  const date = document.getElementById('inputDate').value;
+  const hospital = document.getElementById('inputHospital').value.trim();
+  if (!personId) { toast('대상자를 선택하세요'); return; }
+  if (!date) { toast('날짜를 입력하세요'); return; }
+  if (!hospital) { toast('병원명을 입력하세요'); return; }
+
+  const recordId = genId();
+  const record = { id: recordId, person_id: personId, test_date: date, hospital, memo: document.getElementById('inputMemo').value.trim(), created_at: new Date().toISOString() };
+  db.records.push(record);
+
+  db.items.forEach(item => {
+    const el = document.getElementById(`input_item_${item.id}`);
+    if (el && el.value.trim() !== '') {
+      db.values.push({ id: genId(), record_id: recordId, item_id: item.id, value: el.value.trim() });
+    }
+  });
+
+  queueSync();
+  clearInputForm();
+  toast('✅ 저장되었습니다');
+  switchTab('records');
+}
+
+/* =====================================================
+   CHART
+   ===================================================== */
+function renderChartTab() {
+  renderPersonTabs('chartPersonTabs', chartPersonId, (id)=>{ chartPersonId=id; populateChartSelects(); renderChart(); });
+  populateChartSelects();
+  renderChart();
+}
+
+function populateChartSelects() {
+  const groupSel = document.getElementById('chartGroupSel');
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  groupSel.innerHTML = sortedGroups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  updateChartItems();
+}
+
+function updateChartItems() {
+  const groupId = document.getElementById('chartGroupSel').value;
+  const itemSel = document.getElementById('chartItemSel');
+  const groupItems = db.items.filter(i=>i.group_id===groupId).sort((a,b)=>a.order_index-b.order_index);
+  itemSel.innerHTML = groupItems.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+  renderChart();
+}
+
+function renderChart() {
+  const itemId = document.getElementById('chartItemSel').value;
+  const item = db.items.find(i=>i.id===itemId);
+  if (!item || !chartPersonId) return;
+
+  const personRecords = db.records.filter(r=>r.person_id===chartPersonId).sort((a,b)=>a.test_date.localeCompare(b.test_date));
+  const labels = [], dataPoints = [];
+  personRecords.forEach(rec => {
+    const val = db.values.find(v=>v.record_id===rec.id && v.item_id===itemId);
+    if (val && val.value !== '') { labels.push(rec.test_date); dataPoints.push(parseFloat(val.value)); }
+  });
+
+  // Trend chart
+  if (trendChartInst) trendChartInst.destroy();
+  const ctx1 = document.getElementById('trendChart').getContext('2d');
+  const minVal = item.normal_min !== '' && item.normal_min !== null ? parseFloat(item.normal_min) : null;
+  const maxVal = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
+
+  const datasets = [{
+    label: item.name,
+    data: dataPoints,
+    borderColor: '#2E86DE',
+    backgroundColor: 'rgba(46,134,222,0.1)',
+    borderWidth: 2.5,
+    pointRadius: 5,
+    pointBackgroundColor: dataPoints.map(v => {
+      if (maxVal !== null && v > maxVal) return '#E67E22';
+      if (minVal !== null && v < minVal) return '#3498DB';
+      return '#27AE60';
+    }),
+    tension: 0.3, fill: true
+  }];
+
+  if (minVal !== null) datasets.push({ label:'정상 최솟값', data: labels.map(()=>minVal), borderColor:'rgba(46,134,222,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
+  if (maxVal !== null) datasets.push({ label:'정상 최댓값', data: labels.map(()=>maxVal), borderColor:'rgba(230,126,34,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
+
+  trendChartInst = new Chart(ctx1, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font:{size:11}, boxWidth:20 } } },
+      scales: {
+        x: { ticks:{font:{size:11}}, grid:{color:'rgba(184,220,255,0.4)'} },
+        y: { ticks:{font:{size:11}}, grid:{color:'rgba(184,220,255,0.4)'} }
+      }
+    }
+  });
+
+  // Range bar chart (최신값)
+  if (rangeChartInst) rangeChartInst.destroy();
+  const ctx2 = document.getElementById('rangeChart').getContext('2d');
+  const latestVal = dataPoints.length > 0 ? dataPoints[dataPoints.length-1] : null;
+
+  if (latestVal !== null && (minVal !== null || maxVal !== null)) {
+    document.getElementById('barChartCard').classList.remove('hidden');
+    const barData = [latestVal, minVal||0, maxVal||0];
+    rangeChartInst = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: ['현재값', '정상 최솟값', '정상 최댓값'],
+        datasets: [{
+          data: barData,
+          backgroundColor: [
+            (maxVal!==null&&latestVal>maxVal||minVal!==null&&latestVal<minVal)?'rgba(230,126,34,0.7)':'rgba(39,174,96,0.7)',
+            'rgba(46,134,222,0.4)', 'rgba(230,126,34,0.4)'
+          ],
+          borderRadius: 6, borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend:{display:false} },
+        scales: {
+          x: { ticks:{font:{size:11}}, grid:{display:false} },
+          y: { ticks:{font:{size:11}}, grid:{color:'rgba(184,220,255,0.4)'} }
+        }
+      }
+    });
+  } else {
+    document.getElementById('barChartCard').classList.add('hidden');
+  }
+}
+
+/* =====================================================
+   RECORDS
+   ===================================================== */
+function renderRecords() {
+  renderPersonTabs('recordsPersonTabs', recordsPersonId, (id)=>{ recordsPersonId=id; renderRecords(); });
+  const listEl = document.getElementById('recordsList');
+  const personRecords = db.records.filter(r=>r.person_id===recordsPersonId).sort((a,b)=>b.test_date.localeCompare(a.test_date));
+
+  if (personRecords.length === 0) {
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">기록이 없습니다</div></div>`;
+    return;
+  }
+
+  listEl.innerHTML = personRecords.map(rec => {
+    const recValues = db.values.filter(v=>v.record_id===rec.id);
+    const abnormal = recValues.filter(v=>{
+      const item=db.items.find(i=>i.id===v.item_id);
+      if(!item) return false;
+      const val=parseFloat(v.value);
+      if(isNaN(val)) return false;
+      if(item.normal_max!==''&&item.normal_max!==null&&val>parseFloat(item.normal_max)) return true;
+      if(item.normal_min!==''&&item.normal_min!==null&&val<parseFloat(item.normal_min)) return true;
+      return false;
+    }).length;
+
+    return `<div class="record-card">
+      <div class="record-card-header" onclick="toggleRecord('${rec.id}')">
+        <div>
+          <div class="record-date">📅 ${rec.test_date}</div>
+          <div class="record-hospital">🏥 ${rec.hospital} · ${recValues.length}개 항목${abnormal>0?` · <span style="color:var(--warn)">⚠ ${abnormal}개 비정상</span>`:''}</div>
+        </div>
+        <span style="color:var(--text-mute);font-size:18px;" id="arrow_${rec.id}">›</span>
+      </div>
+      <div class="record-card-body" id="body_${rec.id}">
+        ${renderRecordValues(recValues)}
+        ${rec.memo?`<p style="font-size:12px;color:var(--text-mute);margin-top:8px;">📝 ${rec.memo}</p>`:''}
+        <div class="record-card-actions">
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openRecordEdit('${rec.id}')">✏️ 편집</button>
+          <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmDeleteRecord('${rec.id}')">🗑️ 삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecordValues(recValues) {
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  let html = '';
+  sortedGroups.forEach(g => {
+    const groupItems = db.items.filter(i=>i.group_id===g.id).sort((a,b)=>a.order_index-b.order_index);
+    const groupVals = recValues.filter(v=>groupItems.some(i=>i.id===v.item_id));
+    if (groupVals.length === 0) return;
+    html += `<div class="group-label">${g.name}</div><div class="value-grid">`;
+    groupItems.forEach(item => {
+      const val = recValues.find(v=>v.item_id===item.id);
+      if (!val) return;
+      const { badge, color } = getValueBadge(parseFloat(val.value), item);
+      html += `<div class="value-row">
+        <span class="value-name">${item.name}</span>
+        <span class="value-unit">${item.unit||''}</span>
+        <span class="value-num" style="color:${color}">${val.value}</span>
+        <span class="value-badge ${badge.cls}">${badge.text}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  return html || '<p style="color:var(--text-mute);font-size:13px;">수치 없음</p>';
+}
+
+function toggleRecord(id) {
+  const body = document.getElementById('body_'+id);
+  const arrow = document.getElementById('arrow_'+id);
+  const open = body.classList.toggle('open');
+  arrow.textContent = open ? '⌄' : '›';
+  arrow.style.transform = open ? 'rotate(0deg)' : '';
+}
+
+function openRecordEdit(recordId) {
+  const rec = db.records.find(r=>r.id===recordId);
+  if (!rec) return;
+  document.getElementById('editRecordId').value = recordId;
+  const personSel = document.getElementById('editPerson');
+  personSel.innerHTML = db.persons.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  personSel.value = rec.person_id;
+  document.getElementById('editDate').value = rec.test_date;
+  document.getElementById('editHospital').value = rec.hospital;
+  document.getElementById('editMemo').value = rec.memo || '';
+  renderValueInputArea('editValueArea', 'edit');
+  // 기존 값 채우기
+  db.items.forEach(item => {
+    const el = document.getElementById(`edit_item_${item.id}`);
+    if (!el) return;
+    const val = db.values.find(v=>v.record_id===recordId&&v.item_id===item.id);
+    if (val) el.value = val.value;
+  });
+  openModal('recordEditModal');
+}
+
+function updateRecord() {
+  const recordId = document.getElementById('editRecordId').value;
+  const rec = db.records.find(r=>r.id===recordId);
+  if (!rec) return;
+  rec.person_id = document.getElementById('editPerson').value;
+  rec.test_date = document.getElementById('editDate').value;
+  rec.hospital = document.getElementById('editHospital').value.trim();
+  rec.memo = document.getElementById('editMemo').value.trim();
+
+  // 기존 values 제거 후 재입력
+  db.values = db.values.filter(v=>v.record_id!==recordId);
+  db.items.forEach(item => {
+    const el = document.getElementById(`edit_item_${item.id}`);
+    if (el && el.value.trim() !== '') {
+      db.values.push({ id: genId(), record_id: recordId, item_id: item.id, value: el.value.trim() });
+    }
+  });
+
+  queueSync();
+  closeModal('recordEditModal');
+  renderRecords();
+  toast('✅ 수정되었습니다');
+}
+
+function confirmDeleteRecord(recordId) {
+  document.getElementById('confirmTitle').textContent = '기록 삭제';
+  document.getElementById('confirmMsg').textContent = '이 검사 기록과 모든 수치를 삭제합니다. 되돌릴 수 없습니다.';
+  document.getElementById('confirmOkBtn').onclick = () => { deleteRecord(recordId); closeModal('confirmModal'); };
+  openModal('confirmModal');
+}
+
+function deleteRecord(recordId) {
+  db.records = db.records.filter(r=>r.id!==recordId);
+  db.values = db.values.filter(v=>v.record_id!==recordId);
+  queueSync(); renderRecords(); toast('🗑️ 삭제되었습니다');
+}
+
+/* =====================================================
+   SETTINGS
+   ===================================================== */
+function renderSettings() {
+  renderPersonList();
+  renderGroupItemList();
+}
+
+/* -- 대상자 -- */
+function renderPersonList() {
+  const el = document.getElementById('personList');
+  if (db.persons.length === 0) { el.innerHTML = `<div class="text-mute" style="padding:10px 0">대상자가 없습니다. 추가해주세요.</div>`; return; }
+  el.innerHTML = db.persons.map((p,i) => `
+    <div class="person-list-item">
+      <div style="flex:1">
+        <div class="list-item-name">👤 ${p.name}</div>
+        ${p.memo?`<div class="list-item-sub">${p.memo}</div>`:''}
+      </div>
+      <div class="order-btns">
+        <button class="order-btn" onclick="movePerson(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="order-btn" onclick="movePerson(${i},1)" ${i===db.persons.length-1?'disabled':''}>▼</button>
+      </div>
+      <button class="icon-btn icon-btn-edit" onclick="openPersonModal('${p.id}')">✏️</button>
+      <button class="icon-btn icon-btn-del" onclick="confirmDeletePerson('${p.id}')">🗑️</button>
+    </div>`).join('');
+}
+
+function movePerson(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= db.persons.length) return;
+  [db.persons[idx], db.persons[newIdx]] = [db.persons[newIdx], db.persons[idx]];
+  queueSync(); renderPersonList();
+}
+
+function openPersonModal(id) {
+  editingPersonId = id || null;
+  document.getElementById('personModalTitle').textContent = id ? '대상자 편집' : '대상자 추가';
+  if (id) {
+    const p = db.persons.find(x=>x.id===id);
+    document.getElementById('personName').value = p.name;
+    document.getElementById('personMemo').value = p.memo || '';
+  } else {
+    document.getElementById('personName').value = '';
+    document.getElementById('personMemo').value = '';
+  }
+  openModal('personModal');
+}
+
+function savePerson() {
+  const name = document.getElementById('personName').value.trim();
+  if (!name) { toast('이름을 입력하세요'); return; }
+  if (editingPersonId) {
+    const p = db.persons.find(x=>x.id===editingPersonId);
+    p.name = name; p.memo = document.getElementById('personMemo').value.trim();
+  } else {
+    db.persons.push({ id: genId(), name, memo: document.getElementById('personMemo').value.trim() });
+  }
+  queueSync(); closeModal('personModal'); renderPersonList();
+  if (!dashPersonId && db.persons.length > 0) dashPersonId = db.persons[0].id;
+  toast('✅ 저장되었습니다');
+}
+
+function confirmDeletePerson(id) {
+  const p = db.persons.find(x=>x.id===id);
+  document.getElementById('confirmTitle').textContent = '대상자 삭제';
+  document.getElementById('confirmMsg').textContent = `'${p.name}'의 모든 기록과 수치가 함께 삭제됩니다.`;
+  document.getElementById('confirmOkBtn').onclick = () => { deletePerson(id); closeModal('confirmModal'); };
+  openModal('confirmModal');
+}
+
+function deletePerson(id) {
+  db.persons = db.persons.filter(p=>p.id!==id);
+  const recIds = db.records.filter(r=>r.person_id===id).map(r=>r.id);
+  db.records = db.records.filter(r=>r.person_id!==id);
+  db.values = db.values.filter(v=>!recIds.includes(v.record_id));
+  if (dashPersonId===id) dashPersonId = db.persons[0]?.id||null;
+  if (chartPersonId===id) chartPersonId = db.persons[0]?.id||null;
+  if (recordsPersonId===id) recordsPersonId = db.persons[0]?.id||null;
+  queueSync(); renderPersonList(); toast('🗑️ 삭제되었습니다');
+}
+
+/* -- 그룹 & 항목 -- */
+function renderGroupItemList() {
+  const el = document.getElementById('groupItemList');
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  if (sortedGroups.length === 0) { el.innerHTML = `<div class="text-mute" style="padding:10px 0">그룹이 없습니다. 추가해주세요.</div>`; return; }
+
+  el.innerHTML = sortedGroups.map((g,gi) => {
+    const groupItems = db.items.filter(i=>i.group_id===g.id).sort((a,b)=>a.order_index-b.order_index);
+    const itemsHtml = groupItems.length === 0 ? `<div class="text-mute" style="padding:6px 0 6px 4px">항목 없음</div>` :
+      groupItems.map((item,ii) => `
+        <div class="item-list-item">
+          <div style="flex:1">
+            <div class="list-item-name">${item.name}</div>
+            <div class="list-item-sub">${item.unit||''} ${(item.normal_min!==''&&item.normal_min!==null&&item.normal_max!==''&&item.normal_max!==null)?`· 정상: ${item.normal_min}~${item.normal_max}`:''}</div>
+          </div>
+          <div class="order-btns">
+            <button class="order-btn" onclick="moveItem('${g.id}',${ii},-1)" ${ii===0?'disabled':''}>▲</button>
+            <button class="order-btn" onclick="moveItem('${g.id}',${ii},1)" ${ii===groupItems.length-1?'disabled':''}>▼</button>
+          </div>
+          <button class="icon-btn icon-btn-edit" onclick="openItemModal('${item.id}')">✏️</button>
+          <button class="icon-btn icon-btn-del" onclick="confirmDeleteItem('${item.id}')">🗑️</button>
+        </div>`).join('');
+
+    return `<div class="group-block">
+      <div class="group-block-header">
+        <div class="group-block-name">🗂️ ${g.name}</div>
+        <div class="order-btns" style="flex-direction:row;gap:4px;">
+          <button class="order-btn" onclick="moveGroup(${gi},-1)" ${gi===0?'disabled':''}>▲</button>
+          <button class="order-btn" onclick="moveGroup(${gi},1)" ${gi===sortedGroups.length-1?'disabled':''}>▼</button>
+        </div>
+        <button class="icon-btn icon-btn-edit" onclick="openGroupModal('${g.id}')">✏️</button>
+        <button class="icon-btn icon-btn-del" onclick="confirmDeleteGroup('${g.id}')">🗑️</button>
+        <button class="btn btn-primary btn-sm" onclick="openItemModal(null,'${g.id}')">+ 항목</button>
+      </div>
+      <div class="group-items-list">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function moveGroup(idx, dir) {
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= sortedGroups.length) return;
+  const tmp = sortedGroups[idx].order_index;
+  sortedGroups[idx].order_index = sortedGroups[newIdx].order_index;
+  sortedGroups[newIdx].order_index = tmp;
+  queueSync(); renderGroupItemList();
+}
+
+function moveItem(groupId, idx, dir) {
+  const groupItems = db.items.filter(i=>i.group_id===groupId).sort((a,b)=>a.order_index-b.order_index);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= groupItems.length) return;
+  const tmp = groupItems[idx].order_index;
+  groupItems[idx].order_index = groupItems[newIdx].order_index;
+  groupItems[newIdx].order_index = tmp;
+  queueSync(); renderGroupItemList();
+}
+
+function openGroupModal(id) {
+  editingGroupId = id || null;
+  document.getElementById('groupModalTitle').textContent = id ? '그룹 편집' : '검사 그룹 추가';
+  document.getElementById('groupName').value = id ? db.groups.find(g=>g.id===id).name : '';
+  openModal('groupModal');
+}
+
+function saveGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  if (!name) { toast('그룹명을 입력하세요'); return; }
+  if (editingGroupId) {
+    db.groups.find(g=>g.id===editingGroupId).name = name;
+  } else {
+    const maxOrder = db.groups.length > 0 ? Math.max(...db.groups.map(g=>g.order_index)) : -1;
+    db.groups.push({ id: genId(), name, order_index: maxOrder + 1 });
+  }
+  queueSync(); closeModal('groupModal'); renderGroupItemList(); toast('✅ 저장되었습니다');
+}
+
+function confirmDeleteGroup(id) {
+  const g = db.groups.find(x=>x.id===id);
+  document.getElementById('confirmTitle').textContent = '그룹 삭제';
+  document.getElementById('confirmMsg').textContent = `'${g.name}' 그룹과 모든 항목 및 수치가 삭제됩니다.`;
+  document.getElementById('confirmOkBtn').onclick = () => { deleteGroup(id); closeModal('confirmModal'); };
+  openModal('confirmModal');
+}
+
+function deleteGroup(id) {
+  db.groups = db.groups.filter(g=>g.id!==id);
+  const itemIds = db.items.filter(i=>i.group_id===id).map(i=>i.id);
+  db.items = db.items.filter(i=>i.group_id!==id);
+  db.values = db.values.filter(v=>!itemIds.includes(v.item_id));
+  queueSync(); renderGroupItemList(); toast('🗑️ 삭제되었습니다');
+}
+
+function openItemModal(id, defaultGroupId) {
+  editingItemId = id || null;
+  document.getElementById('itemModalTitle').textContent = id ? '항목 편집' : '항목 추가';
+  const groupSel = document.getElementById('itemGroupSel');
+  const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  groupSel.innerHTML = sortedGroups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  if (id) {
+    const item = db.items.find(i=>i.id===id);
+    groupSel.value = item.group_id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemUnit').value = item.unit || '';
+    document.getElementById('itemMin').value = item.normal_min !== null ? item.normal_min : '';
+    document.getElementById('itemMax').value = item.normal_max !== null ? item.normal_max : '';
+  } else {
+    if (defaultGroupId) groupSel.value = defaultGroupId;
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemUnit').value = '';
+    document.getElementById('itemMin').value = '';
+    document.getElementById('itemMax').value = '';
+  }
+  openModal('itemModal');
+}
+
+function saveItem() {
+  const name = document.getElementById('itemName').value.trim();
+  const groupId = document.getElementById('itemGroupSel').value;
+  if (!name) { toast('항목명을 입력하세요'); return; }
+  if (!groupId) { toast('그룹을 선택하세요'); return; }
+  const unit = document.getElementById('itemUnit').value.trim();
+  const minVal = document.getElementById('itemMin').value;
+  const maxVal = document.getElementById('itemMax').value;
+
+  if (editingItemId) {
+    const item = db.items.find(i=>i.id===editingItemId);
+    Object.assign(item, { group_id: groupId, name, unit, normal_min: minVal===''?null:minVal, normal_max: maxVal===''?null:maxVal });
+  } else {
+    const groupItems = db.items.filter(i=>i.group_id===groupId);
+    const maxOrder = groupItems.length > 0 ? Math.max(...groupItems.map(i=>i.order_index)) : -1;
+    db.items.push({ id: genId(), group_id: groupId, name, unit, normal_min: minVal===''?null:minVal, normal_max: maxVal===''?null:maxVal, order_index: maxOrder+1 });
+  }
+  queueSync(); closeModal('itemModal'); renderGroupItemList(); toast('✅ 저장되었습니다');
+}
+
+function confirmDeleteItem(id) {
+  const item = db.items.find(i=>i.id===id);
+  document.getElementById('confirmTitle').textContent = '항목 삭제';
+  document.getElementById('confirmMsg').textContent = `'${item.name}' 항목과 모든 수치가 삭제됩니다.`;
+  document.getElementById('confirmOkBtn').onclick = () => { deleteItem(id); closeModal('confirmModal'); };
+  openModal('confirmModal');
+}
+
+function deleteItem(id) {
+  db.items = db.items.filter(i=>i.id!==id);
+  db.values = db.values.filter(v=>v.item_id!==id);
+  queueSync(); renderGroupItemList(); toast('🗑️ 삭제되었습니다');
+}
+
+/* =====================================================
+   공통 유틸
+   ===================================================== */
+function renderPersonTabs(containerId, activeId, onSelect) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (db.persons.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = db.persons.map(p =>
+    `<button class="person-chip ${p.id===activeId?'active':''}" onclick="(${onSelect.toString()})('${p.id}')">${p.name}</button>`
+  ).join('');
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+/* =====================================================
+   INIT
+   ===================================================== */
+// PIN 입력 자동 로그인
+const pinEl = document.getElementById('pinInput');
+pinEl.addEventListener('input', e => { if (e.target.value.length === 4) doLogin(); });
+pinEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+setTimeout(() => pinEl.focus(), 50);
+
+// 캐시 우선 렌더
+try {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    db = JSON.parse(cached);
+    if (!dashPersonId && db.persons.length > 0) dashPersonId = db.persons[0].id;
+    if (!chartPersonId && db.persons.length > 0) chartPersonId = db.persons[0].id;
+    if (!recordsPersonId && db.persons.length > 0) recordsPersonId = db.persons[0].id;
+  }
+} catch(_) {}
+
+// 저장된 세션 있으면 자동 로그인
+if (getAK()) {
+  document.getElementById('loginOverlay').classList.remove('active');
+  renderAll();
+  pullFromServer();
+}
+</script>
+</body>
+</html>

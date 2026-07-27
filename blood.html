@@ -607,12 +607,12 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
       <label class="form-label">그룹</label>
       <select id="itemGroupSel" class="form-select"></select>
     </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:2">
+    <div class="form-row" style="grid-template-columns: 3fr 1fr;">
+      <div class="form-group">
         <label class="form-label">항목명</label>
         <input type="text" id="itemName" class="form-input" placeholder="예: AST, ALT, 공복혈당">
       </div>
-      <div class="form-group" style="flex:1">
+      <div class="form-group">
         <label class="form-label">단위 <span style="font-weight:400;color:var(--text-mute)">(선택)</span></label>
         <input type="text" id="itemUnit" class="form-input" placeholder="U/L">
       </div>

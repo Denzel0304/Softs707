@@ -1544,14 +1544,8 @@ function addRangeRow(data) {
     <div style="display:flex;align-items:center;gap:6px;">
       <select class="range-color-select" id="${rid}_color" style="width:48px;flex-shrink:0;text-align:center;">${optHtml}</select>
       <input type="text" class="range-label-input" id="${rid}_label" placeholder="레이블 (예: 충분, 부족)" value="${label}" style="flex:2;min-width:0;">
-      <div style="flex:1;min-width:0;">
-        <span class="range-mini-label">최솟값</span>
-        <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="이상" value="${min}" style="text-align:center;">
-      </div>
-      <div style="flex:1;min-width:0;">
-        <span class="range-mini-label">최댓값</span>
-        <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="이하" value="${max}" style="text-align:center;">
-      </div>
+      <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="최솟값" value="${min}" style="flex:1;min-width:0;text-align:center;">
+      <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="최댓값" value="${max}" style="flex:1;min-width:0;text-align:center;">
       <button class="range-del-btn" onclick="removeRangeRow('${rid}')" style="flex-shrink:0;">✕</button>
     </div>`;
   document.getElementById('rangeRowsContainer').appendChild(div);

@@ -361,7 +361,7 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
 /* ===== RANGE ROWS ===== */
 .range-row {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
 }
 .range-row-top {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
@@ -1541,20 +1541,18 @@ function addRangeRow(data) {
   div.className = 'range-row';
   div.id = rid;
   div.innerHTML = `
-    <div class="range-row-top">
-      <div>
-        <span class="range-mini-label">최솟값 <span style="font-weight:400">(이상)</span></span>
-        <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="비워두면 무제한" value="${min}">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <select class="range-color-select" id="${rid}_color" style="width:48px;flex-shrink:0;text-align:center;">${optHtml}</select>
+      <input type="text" class="range-label-input" id="${rid}_label" placeholder="레이블 (예: 충분, 부족)" value="${label}" style="flex:2;min-width:0;">
+      <div style="flex:1;min-width:0;">
+        <span class="range-mini-label">최솟값</span>
+        <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="이상" value="${min}" style="text-align:center;">
       </div>
-      <div>
-        <span class="range-mini-label">최댓값 <span style="font-weight:400">(이하)</span></span>
-        <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="비워두면 무제한" value="${max}">
+      <div style="flex:1;min-width:0;">
+        <span class="range-mini-label">최댓값</span>
+        <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="이하" value="${max}" style="text-align:center;">
       </div>
-    </div>
-    <div class="range-row-bottom">
-      <select class="range-color-select" id="${rid}_color" style="width:52px;text-align:center;">${optHtml}</select>
-      <input type="text" class="range-label-input" id="${rid}_label" placeholder="레이블 입력 (예: 충분, 부족, 위험)" value="${label}">
-      <button class="range-del-btn" onclick="removeRangeRow('${rid}')">✕</button>
+      <button class="range-del-btn" onclick="removeRangeRow('${rid}')" style="flex-shrink:0;">✕</button>
     </div>`;
   document.getElementById('rangeRowsContainer').appendChild(div);
 }

@@ -1622,24 +1622,34 @@ function collectRanges() {
     return { min: minV, max: maxV, label, color, gender };
   }).filter(r => r.min !== null || r.max !== null);
 
-  // min 기준 정렬 (min 없는 건 맨 앞)
-  raw.sort((a, b) => {
-    if (a.min == null) return -1;
-    if (b.min == null) return 1;
-    return a.min - b.min;
+  // 성별 그룹('', 'M', 'F')별로 분리해서 각각 정렬 + 경계 조정 후 합산
+  // → 입력 순서 무관, 다른 성별 행끼리 경계 간섭 없음
+  const result = [];
+  [''  , 'M', 'F'].forEach(pg => {
+    const group = raw.filter(r => (r.gender || '') === pg);
+    if (group.length === 0) return;
+
+    // min 기준 정렬 (min 없는 건 맨 앞)
+    group.sort((a, b) => {
+      if (a.min == null) return -1;
+      if (b.min == null) return 1;
+      return a.min - b.min;
+    });
+
+    // 같은 성별 그룹 내에서만 경계값 겹침 자동 처리
+    // 예: [max=100, min=100] → cur.max = 99.9
+    for (let i = 0; i < group.length - 1; i++) {
+      const cur  = group[i];
+      const next = group[i + 1];
+      if (cur.max != null && next.min != null && cur.max >= next.min) {
+        cur.max = next.min - 0.1;
+      }
+    }
+
+    result.push(...group);
   });
 
-  // 인접 범위 경계값 겹침 자동 처리
-  // 예: [max=200, min=200] → 위 범위 max를 199.9999로 조정
-  for (let i = 0; i < raw.length - 1; i++) {
-    const cur  = raw[i];
-    const next = raw[i + 1];
-    if (cur.max != null && next.min != null && cur.max >= next.min) {
-      cur.max = next.min - 0.1;
-    }
-  }
-
-  return raw;
+  return result;
 }
 
 function openItemModal(id, defaultGroupId) {

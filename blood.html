@@ -572,6 +572,14 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
       <input type="text" id="personName" class="form-input" placeholder="홍길동">
     </div>
     <div class="form-group">
+      <label class="form-label">성별</label>
+      <select id="personGender" class="form-select">
+        <option value="">미지정</option>
+        <option value="M">남성</option>
+        <option value="F">여성</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">메모 (선택)</label>
       <input type="text" id="personMemo" class="form-input" placeholder="관계 등">
     </div>
@@ -625,7 +633,8 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
     </div>
     <div style="font-size:11.5px;color:var(--text-mute);margin-bottom:10px;line-height:1.5;">
       최솟값만 입력 → 이상이 정상 &nbsp;|&nbsp; 최댓값만 입력 → 미만이 정상<br>
-      범위를 여러 개 추가하면 단계별 상태를 표시합니다.
+      범위를 여러 개 추가하면 단계별 상태를 표시합니다.<br>
+      <span style="color:var(--accent)">성별을 지정하면 해당 성별 대상자에게만 적용됩니다.</span>
     </div>
     <div id="rangeRowsContainer"></div>
 
@@ -852,6 +861,7 @@ function renderDashboard() {
   renderPersonTabs('dashPersonTabs', dashPersonId, (id)=>{ dashPersonId=id; renderDashboard(); });
 
   const pid = dashPersonId;
+  const personGender = (db.persons.find(p=>p.id===pid)||{}).gender || '';
   const personRecords = db.records.filter(r => r.person_id === pid).sort((a,b) => b.test_date.localeCompare(a.test_date));
 
   // 요약 통계
@@ -861,7 +871,7 @@ function renderDashboard() {
     if (!item) return false;
     const val = parseFloat(v.value);
     if (isNaN(val)) return false;
-    const { badge } = getValueBadge(val, item);
+    const { badge } = getValueBadge(val, item, personGender);
     return badge.cls !== 'badge-ok' && badge.cls !== 'badge-none';
   }).length;
 
@@ -895,7 +905,7 @@ function renderDashboard() {
       const val = latestValues.find(v=>v.item_id===item.id);
       if (!val) return;
       hasAny = true;
-      const { badge, color } = getValueBadge(parseFloat(val.value), item);
+      const { badge, color } = getValueBadge(parseFloat(val.value), item, personGender);
       html += `<div class="value-row">
         <span class="value-name">${item.name}</span>
         <span class="value-unit">${item.unit||''}</span>
@@ -917,9 +927,14 @@ const COLOR_MAP = {
   danger:  { var: 'var(--danger)',  cls: 'badge-danger'   },
 };
 
-function matchRange(val, ranges) {
-  /* 주어진 수치가 속하는 첫 번째 범위를 반환 */
+function matchRange(val, ranges, personGender) {
+  /* 주어진 수치가 속하는 첫 번째 범위를 반환 (성별 필터링 포함) */
+  // personGender: 'M' | 'F' | '' | undefined
+  const pg = personGender || '';
   for (const r of ranges) {
+    // 범위의 gender가 '' 이면 공통, 아니면 대상자 성별과 일치해야 함
+    const rg = r.gender || '';
+    if (rg !== '' && pg !== '' && rg !== pg) continue;
     const minOk = (r.min == null) || (val >= r.min);
     const maxOk = (r.max == null) || (val <= r.max);
     if (minOk && maxOk) return r;
@@ -927,10 +942,14 @@ function matchRange(val, ranges) {
   return null;
 }
 
-function getRangeDisplayText(ranges) {
-  /* 정상 범위를 "80 이상", "40 이하", "80~120" 등으로 표현 */
+function getRangeDisplayText(ranges, personGender) {
+  /* 정상 범위를 "80 이상", "40 이하", "80~120" 등으로 표현 (성별 필터 적용) */
   if (!ranges || ranges.length === 0) return '';
-  const okR = ranges.find(r=>r.color==='ok') || ranges[0];
+  const pg = personGender || '';
+  // 성별 필터링
+  const filtered = ranges.filter(r => { const rg = r.gender||''; return rg==='' || pg==='' || rg===pg; });
+  const pool = filtered.length > 0 ? filtered : ranges;
+  const okR = pool.find(r=>r.color==='ok') || pool[0];
   if (!okR) return '';
   const label = okR.label || '정상';
   if (okR.min != null && okR.max != null) return `${label} : ${okR.min}~${okR.max}`;
@@ -939,13 +958,13 @@ function getRangeDisplayText(ranges) {
   return label;
 }
 
-function getValueBadge(val, item) {
+function getValueBadge(val, item, personGender) {
   if (isNaN(val)) return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
 
   // 다중 범위 우선
   const ranges = item.ranges || [];
   if (ranges.length > 0) {
-    const matched = matchRange(val, ranges);
+    const matched = matchRange(val, ranges, personGender);
     if (matched) {
       const cm = COLOR_MAP[matched.color] || COLOR_MAP.ok;
       const badgeText = matched.label || matched.color;
@@ -979,11 +998,19 @@ function renderInputForm() {
   const dateEl = document.getElementById('inputDate');
   if (!dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
 
-  // 수치 입력 영역
-  renderValueInputArea('valueInputArea', 'input');
+  // 수치 입력 영역 (대상자 성별 전달)
+  const selPid = personSel.value;
+  const selGender = (db.persons.find(p=>p.id===selPid)||{}).gender || '';
+  renderValueInputArea('valueInputArea', 'input', selGender);
+  // 대상자 변경 시 범위 텍스트 갱신
+  personSel.onchange = function() {
+    const pg = (db.persons.find(p=>p.id===this.value)||{}).gender || '';
+    renderValueInputArea('valueInputArea', 'input', pg);
+  };
 }
 
-function renderValueInputArea(containerId, prefix) {
+function renderValueInputArea(containerId, prefix, personGender) {
+  const pg = personGender || '';
   const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
   let html = '';
   sortedGroups.forEach(g => {
@@ -992,7 +1019,7 @@ function renderValueInputArea(containerId, prefix) {
     html += `<div class="value-input-group">
       <div class="value-input-group-title">${g.name}</div>`;
     groupItems.forEach(item => {
-      const rangeText = getRangeDisplayText(item.ranges || []);
+      const rangeText = getRangeDisplayText(item.ranges || [], pg);
       const fallbackText = (!rangeText && (item.normal_min!=null&&item.normal_min!=='' || item.normal_max!=null&&item.normal_max!==''))
         ? (() => {
             const min = item.normal_min!=null&&item.normal_min!=='' ? parseFloat(item.normal_min) : null;
@@ -1081,6 +1108,7 @@ function renderChart() {
   const item = db.items.find(i=>i.id===itemId);
   if (!item || !chartPersonId) return;
 
+  const chartPg = (db.persons.find(p=>p.id===chartPersonId)||{}).gender || '';
   const personRecords = db.records.filter(r=>r.person_id===chartPersonId).sort((a,b)=>a.test_date.localeCompare(b.test_date));
   const labels = [], dataPoints = [];
   personRecords.forEach(rec => {
@@ -1092,8 +1120,9 @@ function renderChart() {
   if (trendChartInst) trendChartInst.destroy();
   const ctx1 = document.getElementById('trendChart').getContext('2d');
 
-  // 범위 정보 계산
-  const ranges = item.ranges || [];
+  // 범위 정보 계산 (성별 필터 적용)
+  const allRanges = item.ranges || [];
+  const ranges = allRanges.filter(r => { const rg = r.gender||''; return rg==='' || chartPg==='' || rg===chartPg; });
   let minVal = null, maxVal = null;
   if (ranges.length > 0) {
     const okR = ranges.find(r=>r.color==='ok') || ranges[0];
@@ -1113,7 +1142,7 @@ function renderChart() {
     borderWidth: 2.5,
     pointRadius: 5,
     pointBackgroundColor: dataPoints.map(v => {
-      const { badge } = getValueBadge(v, item);
+      const { badge } = getValueBadge(v, item, chartPg);
       if (badge.cls === 'badge-danger')  return '#E74C3C';
       if (badge.cls === 'badge-orange')  return '#E67E22';
       if (badge.cls === 'badge-warning') return '#F0B429';
@@ -1123,7 +1152,7 @@ function renderChart() {
     tension: 0.3, fill: true
   }];
 
-  // 다중 범위: 각 범위의 경계선 표시
+  // 다중 범위: 각 범위의 경계선 표시 (성별 필터 적용된 ranges 사용)
   if (ranges.length > 0) {
     ranges.forEach(r => {
       const hex = rangeColorToHex[r.color] || '#8AAFC8';
@@ -1149,7 +1178,7 @@ function renderChart() {
     }
   });
 
-  // Range bar chart (최신값 vs 범위 경계)
+  // Range bar chart (최신값 vs 범위 경계) - 성별 필터 적용된 ranges 사용
   if (rangeChartInst) rangeChartInst.destroy();
   const ctx2 = document.getElementById('rangeChart').getContext('2d');
   const latestVal = dataPoints.length > 0 ? dataPoints[dataPoints.length-1] : null;
@@ -1168,7 +1197,7 @@ function renderChart() {
 
   if (latestVal !== null && allBounds.length > 0) {
     document.getElementById('barChartCard').classList.remove('hidden');
-    const { badge } = getValueBadge(latestVal, item);
+    const { badge } = getValueBadge(latestVal, item, chartPg);
     const currentColor = badge.cls==='badge-danger' ? 'rgba(231,76,60,0.75)'
       : badge.cls==='badge-orange'  ? 'rgba(230,126,34,0.75)'
       : badge.cls==='badge-warning' ? 'rgba(240,180,41,0.75)'
@@ -1202,6 +1231,8 @@ function renderChart() {
 function renderRecords() {
   renderPersonTabs('recordsPersonTabs', recordsPersonId, (id)=>{ recordsPersonId=id; renderRecords(); });
   const listEl = document.getElementById('recordsList');
+  const recPerson = db.persons.find(p=>p.id===recordsPersonId) || {};
+  const recPersonGender = recPerson.gender || '';
   const personRecords = db.records.filter(r=>r.person_id===recordsPersonId).sort((a,b)=>b.test_date.localeCompare(a.test_date));
 
   if (personRecords.length === 0) {
@@ -1216,7 +1247,7 @@ function renderRecords() {
       if(!item) return false;
       const val=parseFloat(v.value);
       if(isNaN(val)) return false;
-      const { badge } = getValueBadge(val, item);
+      const { badge } = getValueBadge(val, item, recPersonGender);
       return badge.cls !== 'badge-ok' && badge.cls !== 'badge-none';
     }).length;
 
@@ -1229,7 +1260,7 @@ function renderRecords() {
         <span style="color:var(--text-mute);font-size:18px;" id="arrow_${rec.id}">›</span>
       </div>
       <div class="record-card-body" id="body_${rec.id}">
-        ${renderRecordValues(recValues)}
+        ${renderRecordValues(recValues, recPersonGender)}
         ${rec.memo?`<p style="font-size:12px;color:var(--text-mute);margin-top:8px;">📝 ${rec.memo}</p>`:''}
         <div class="record-card-actions">
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openRecordEdit('${rec.id}')">✏️ 편집</button>
@@ -1240,8 +1271,9 @@ function renderRecords() {
   }).join('');
 }
 
-function renderRecordValues(recValues) {
+function renderRecordValues(recValues, personGender) {
   const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
+  const pg = personGender || '';
   let html = '';
   sortedGroups.forEach(g => {
     const groupItems = db.items.filter(i=>i.group_id===g.id).sort((a,b)=>a.order_index-b.order_index);
@@ -1251,7 +1283,7 @@ function renderRecordValues(recValues) {
     groupItems.forEach(item => {
       const val = recValues.find(v=>v.item_id===item.id);
       if (!val) return;
-      const { badge, color } = getValueBadge(parseFloat(val.value), item);
+      const { badge, color } = getValueBadge(parseFloat(val.value), item, pg);
       html += `<div class="value-row">
         <span class="value-name">${item.name}</span>
         <span class="value-unit">${item.unit||''}</span>
@@ -1282,7 +1314,8 @@ function openRecordEdit(recordId) {
   document.getElementById('editDate').value = rec.test_date;
   document.getElementById('editHospital').value = rec.hospital;
   document.getElementById('editMemo').value = rec.memo || '';
-  renderValueInputArea('editValueArea', 'edit');
+  const editPg = (db.persons.find(p=>p.id===rec.person_id)||{}).gender || '';
+  renderValueInputArea('editValueArea', 'edit', editPg);
   // 기존 값 채우기
   db.items.forEach(item => {
     const el = document.getElementById(`edit_item_${item.id}`);
@@ -1342,10 +1375,13 @@ function renderSettings() {
 function renderPersonList() {
   const el = document.getElementById('personList');
   if (db.persons.length === 0) { el.innerHTML = `<div class="text-mute" style="padding:10px 0">대상자가 없습니다. 추가해주세요.</div>`; return; }
-  el.innerHTML = db.persons.map((p,i) => `
+  el.innerHTML = db.persons.map((p,i) => {
+    const gIcon = p.gender==='M' ? '👨' : p.gender==='F' ? '👩' : '👤';
+    const gLabel = p.gender==='M' ? ' · 남성' : p.gender==='F' ? ' · 여성' : '';
+    return `
     <div class="person-list-item">
       <div style="flex:1">
-        <div class="list-item-name">👤 ${p.name}</div>
+        <div class="list-item-name">${gIcon} ${p.name}<span style="font-size:11px;color:var(--text-mute);font-weight:400">${gLabel}</span></div>
         ${p.memo?`<div class="list-item-sub">${p.memo}</div>`:''}
       </div>
       <div class="order-btns">
@@ -1354,7 +1390,8 @@ function renderPersonList() {
       </div>
       <button class="icon-btn icon-btn-edit" onclick="openPersonModal('${p.id}')">✏️</button>
       <button class="icon-btn icon-btn-del" onclick="confirmDeletePerson('${p.id}')">🗑️</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function movePerson(idx, dir) {
@@ -1370,9 +1407,11 @@ function openPersonModal(id) {
   if (id) {
     const p = db.persons.find(x=>x.id===id);
     document.getElementById('personName').value = p.name;
+    document.getElementById('personGender').value = p.gender || '';
     document.getElementById('personMemo').value = p.memo || '';
   } else {
     document.getElementById('personName').value = '';
+    document.getElementById('personGender').value = '';
     document.getElementById('personMemo').value = '';
   }
   openModal('personModal');
@@ -1381,11 +1420,13 @@ function openPersonModal(id) {
 function savePerson() {
   const name = document.getElementById('personName').value.trim();
   if (!name) { toast('이름을 입력하세요'); return; }
+  const gender = document.getElementById('personGender').value;
+  const memo = document.getElementById('personMemo').value.trim();
   if (editingPersonId) {
     const p = db.persons.find(x=>x.id===editingPersonId);
-    p.name = name; p.memo = document.getElementById('personMemo').value.trim();
+    p.name = name; p.gender = gender; p.memo = memo;
   } else {
-    db.persons.push({ id: genId(), name, memo: document.getElementById('personMemo').value.trim() });
+    db.persons.push({ id: genId(), name, gender, memo });
   }
   queueSync(); closeModal('personModal'); renderPersonList();
   if (!dashPersonId && db.persons.length > 0) dashPersonId = db.persons[0].id;
@@ -1427,8 +1468,10 @@ function renderGroupItemList() {
             <div class="list-item-sub">${item.unit?item.unit+' ':''}${(() => {
               const ranges = item.ranges || [];
               if (ranges.length > 0) {
+                const hasGender = ranges.some(r=>r.gender==='M'||r.gender==='F');
                 const txt = getRangeDisplayText(ranges);
-                return txt ? '· ' + txt : (ranges.length > 1 ? `· ${ranges.length}개 범위` : '');
+                const gTag = hasGender ? ' <span style="color:var(--accent);font-size:10px;">[남/여 구분]</span>' : '';
+                return (txt ? '· ' + txt : (ranges.length > 1 ? `· ${ranges.length}개 범위` : '')) + gTag;
               }
               const min = item.normal_min!=null&&item.normal_min!=='' ? parseFloat(item.normal_min) : null;
               const max = item.normal_max!=null&&item.normal_max!=='' ? parseFloat(item.normal_max) : null;
@@ -1521,13 +1564,14 @@ function deleteGroup(id) {
 let _rangeRowCount = 0;
 
 function addRangeRow(data) {
-  // data: { label, color, min, max } or undefined
+  // data: { label, color, min, max, gender } or undefined
   _rangeRowCount++;
   const rid = 'rr_' + _rangeRowCount;
-  const label = data?.label || '';
-  const color = data?.color || 'ok';
-  const min   = data?.min != null ? data.min : '';
-  const max   = data?.max != null ? data.max : '';
+  const label  = data?.label || '';
+  const color  = data?.color || 'ok';
+  const min    = data?.min != null ? data.min : '';
+  const max    = data?.max != null ? data.max : '';
+  const gender = data?.gender || '';
 
   const colorOptions = [
     { val:'ok',      txt:'🟢' },
@@ -1536,6 +1580,11 @@ function addRangeRow(data) {
     { val:'danger',  txt:'🔴' },
   ];
   const optHtml = colorOptions.map(o=>`<option value="${o.val}" ${color===o.val?'selected':''}>${o.txt}</option>`).join('');
+  const genderOptHtml = [
+    { val:'',  txt:'공통' },
+    { val:'M', txt:'남성' },
+    { val:'F', txt:'여성' },
+  ].map(o=>`<option value="${o.val}" ${gender===o.val?'selected':''}>${o.txt}</option>`).join('');
 
   const div = document.createElement('div');
   div.className = 'range-row';
@@ -1543,6 +1592,7 @@ function addRangeRow(data) {
   div.innerHTML = `
     <div style="display:flex;align-items:center;gap:6px;">
       <select class="range-color-select" id="${rid}_color" style="width:48px;flex-shrink:0;text-align:center;">${optHtml}</select>
+      <select class="range-color-select" id="${rid}_gender" style="width:52px;flex-shrink:0;text-align:center;font-size:11px;">${genderOptHtml}</select>
       <input type="text" class="range-label-input" id="${rid}_label" placeholder="레이블 (예: 충분, 부족)" value="${label}" style="flex:2;min-width:0;">
       <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="최솟값" value="${min}" style="flex:1;min-width:0;text-align:center;">
       <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="최댓값" value="${max}" style="flex:1;min-width:0;text-align:center;">
@@ -1566,9 +1616,10 @@ function collectRanges() {
     const maxRaw = document.getElementById(rid+'_max').value;
     const label  = document.getElementById(rid+'_label').value.trim();
     const color  = document.getElementById(rid+'_color').value;
+    const gender = document.getElementById(rid+'_gender').value;
     const minV   = minRaw === '' ? null : parseFloat(minRaw);
     const maxV   = maxRaw === '' ? null : parseFloat(maxRaw);
-    return { min: minV, max: maxV, label, color };
+    return { min: minV, max: maxV, label, color, gender };
   }).filter(r => r.min !== null || r.max !== null);
 
   // min 기준 정렬 (min 없는 건 맨 앞)

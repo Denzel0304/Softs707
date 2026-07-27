@@ -357,6 +357,49 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
 .mt-8 { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 .hidden { display: none !important; }
+
+/* ===== RANGE ROWS ===== */
+.range-row {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+}
+.range-row-top {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
+}
+.range-row-bottom {
+  display: flex; align-items: center; gap: 8px;
+}
+.range-label-input {
+  flex: 1; padding: 7px 10px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 13px; outline: none;
+  background: var(--surface); transition: border-color 0.15s; color: var(--text);
+}
+.range-label-input:focus { border-color: var(--accent); }
+.range-color-select {
+  padding: 7px 8px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 12px; outline: none;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.range-del-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--danger-bg); color: var(--danger);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.range-num-input {
+  width: 100%; padding: 7px 10px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 14px; text-align: right; outline: none;
+  background: var(--surface); transition: border-color 0.15s;
+}
+.range-num-input:focus { border-color: var(--accent); }
+.range-mini-label { font-size: 11px; color: var(--text-mute); display: block; margin-bottom: 3px; }
+
+/* 다중 범위 배지 */
+.badge-danger  { background: #fdecea; color: #e74c3c; }
+.badge-warning { background: var(--warn-bg); color: var(--warn); }
+.badge-ok      { background: var(--ok-bg); color: var(--ok); }
+.badge-info    { background: var(--accent-soft); color: var(--accent); }
+.badge-none    { background: var(--surface2); color: var(--text-mute); }
 </style>
 </head>
 <body>
@@ -564,24 +607,28 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
       <label class="form-label">그룹</label>
       <select id="itemGroupSel" class="form-select"></select>
     </div>
-    <div class="form-group">
-      <label class="form-label">항목명</label>
-      <input type="text" id="itemName" class="form-input" placeholder="예: AST, ALT, 공복혈당">
-    </div>
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">단위</label>
-        <input type="text" id="itemUnit" class="form-input" placeholder="U/L, mg/dL">
+      <div class="form-group" style="flex:2">
+        <label class="form-label">항목명</label>
+        <input type="text" id="itemName" class="form-input" placeholder="예: AST, ALT, 공복혈당">
       </div>
-      <div class="form-group">
-        <label class="form-label">정상 최솟값</label>
-        <input type="number" id="itemMin" class="form-input" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">정상 최댓값</label>
-        <input type="number" id="itemMax" class="form-input" placeholder="40">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">단위 <span style="font-weight:400;color:var(--text-mute)">(선택)</span></label>
+        <input type="text" id="itemUnit" class="form-input" placeholder="U/L">
       </div>
     </div>
+
+    <!-- 범위 설정 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-soft)">정상 범위 설정</div>
+      <button class="btn btn-secondary btn-sm" onclick="addRangeRow()">+ 범위 추가</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-mute);margin-bottom:10px;line-height:1.5;">
+      최솟값만 입력 → 이상이 정상 &nbsp;|&nbsp; 최댓값만 입력 → 미만이 정상<br>
+      범위를 여러 개 추가하면 단계별 상태를 표시합니다.
+    </div>
+    <div id="rangeRowsContainer"></div>
+
     <div class="modal-actions">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('itemModal')">취소</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveItem()">저장</button>
@@ -811,12 +858,11 @@ function renderDashboard() {
   const allValues = db.values.filter(v => personRecords.some(r=>r.id===v.record_id));
   const abnormalCount = allValues.filter(v => {
     const item = db.items.find(i=>i.id===v.item_id);
-    if (!item || (!item.normal_min && !item.normal_max)) return false;
+    if (!item) return false;
     const val = parseFloat(v.value);
     if (isNaN(val)) return false;
-    if (item.normal_min !== null && item.normal_min !== '' && val < parseFloat(item.normal_min)) return true;
-    if (item.normal_max !== null && item.normal_max !== '' && val > parseFloat(item.normal_max)) return true;
-    return false;
+    const { badge } = getValueBadge(val, item);
+    return badge.cls === 'badge-warning' || badge.cls === 'badge-danger';
   }).length;
 
   document.getElementById('dashSummary').innerHTML = `
@@ -863,14 +909,60 @@ function renderDashboard() {
   document.getElementById('dashContent').innerHTML = hasAny ? html : `<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">수치 데이터가 없습니다</div></div>`;
 }
 
-function getValueBadge(val, item) {
-  if (isNaN(val) || (!item.normal_min && !item.normal_max && item.normal_min !== 0 && item.normal_max !== 0)) {
-    return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
+/* 색상 코드 → CSS 변수 매핑 */
+const COLOR_MAP = {
+  ok:      { var: 'var(--ok)',      cls: 'badge-ok'      },
+  warning: { var: 'var(--warn)',    cls: 'badge-warning'  },
+  danger:  { var: 'var(--danger)',  cls: 'badge-danger'   },
+  info:    { var: 'var(--accent)',  cls: 'badge-info'     },
+};
+
+function matchRange(val, ranges) {
+  /* 주어진 수치가 속하는 첫 번째 범위를 반환 */
+  for (const r of ranges) {
+    const minOk = (r.min == null) || (val >= r.min);
+    const maxOk = (r.max == null) || (val <= r.max);
+    if (minOk && maxOk) return r;
   }
-  const min = item.normal_min !== '' && item.normal_min !== null ? parseFloat(item.normal_min) : null;
-  const max = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
-  if (max !== null && val > max) return { badge:{cls:'badge-high',text:'↑높음'}, color:'var(--warn)' };
-  if (min !== null && val < min) return { badge:{cls:'badge-low',text:'↓낮음'}, color:'var(--accent)' };
+  return null;
+}
+
+function getRangeDisplayText(ranges) {
+  /* 정상 범위를 "80 이상", "40 이하", "80~120" 등으로 표현 */
+  if (!ranges || ranges.length === 0) return '';
+  const okR = ranges.find(r=>r.color==='ok') || ranges[0];
+  if (!okR) return '';
+  const label = okR.label || '정상';
+  if (okR.min != null && okR.max != null) return `${label} : ${okR.min}~${okR.max}`;
+  if (okR.min != null) return `${label} : ${okR.min} 이상`;
+  if (okR.max != null) return `${label} : ${okR.max} 이하`;
+  return label;
+}
+
+function getValueBadge(val, item) {
+  if (isNaN(val)) return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
+
+  // 다중 범위 우선
+  const ranges = item.ranges || [];
+  if (ranges.length > 0) {
+    const matched = matchRange(val, ranges);
+    if (matched) {
+      const cm = COLOR_MAP[matched.color] || COLOR_MAP.ok;
+      const badgeText = matched.label || (matched.color === 'ok' ? '정상' : matched.color === 'warning' ? '경계' : matched.color === 'danger' ? '위험' : '참고');
+      return { badge:{cls:cm.cls, text:badgeText}, color:cm.var };
+    }
+    // 어떤 범위에도 해당 안 됨
+    return { badge:{cls:'badge-none',text:'범위 외'}, color:'var(--text-soft)' };
+  }
+
+  // 하위호환: normal_min/max 단일 범위
+  const hasMin = item.normal_min !== '' && item.normal_min !== null;
+  const hasMax = item.normal_max !== '' && item.normal_max !== null;
+  if (!hasMin && !hasMax) return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
+  const min = hasMin ? parseFloat(item.normal_min) : null;
+  const max = hasMax ? parseFloat(item.normal_max) : null;
+  if (max !== null && val > max) return { badge:{cls:'badge-warning',text:'↑높음'}, color:'var(--warn)' };
+  if (min !== null && val < min) return { badge:{cls:'badge-info',text:'↓낮음'}, color:'var(--accent)' };
   return { badge:{cls:'badge-ok',text:'정상'}, color:'var(--ok)' };
 }
 
@@ -900,12 +992,21 @@ function renderValueInputArea(containerId, prefix) {
     html += `<div class="value-input-group">
       <div class="value-input-group-title">${g.name}</div>`;
     groupItems.forEach(item => {
-      const rangeText = (item.normal_min!==''&&item.normal_min!==null&&item.normal_max!==''&&item.normal_max!==null)
-        ? `${item.normal_min}~${item.normal_max}` : '';
+      const rangeText = getRangeDisplayText(item.ranges || []);
+      const fallbackText = (!rangeText && (item.normal_min!=null&&item.normal_min!=='' || item.normal_max!=null&&item.normal_max!==''))
+        ? (() => {
+            const min = item.normal_min!=null&&item.normal_min!=='' ? parseFloat(item.normal_min) : null;
+            const max = item.normal_max!=null&&item.normal_max!=='' ? parseFloat(item.normal_max) : null;
+            if (min!=null && max!=null) return `정상 : ${min}~${max}`;
+            if (min!=null) return `정상 : ${min} 이상`;
+            if (max!=null) return `정상 : ${max} 이하`;
+            return '';
+          })()
+        : rangeText;
       html += `<div class="value-input-row">
         <div style="flex:1">
           <div class="value-input-name">${item.name}</div>
-          ${rangeText?`<div class="value-input-range">정상: ${rangeText} ${item.unit||''}</div>`:''}
+          ${fallbackText?`<div class="value-input-range">${fallbackText}${item.unit?' '+item.unit:''}</div>`:''}
         </div>
         <input type="number" step="any" class="value-input-field" id="${prefix}_item_${item.id}" placeholder="-">
         <span class="value-input-unit">${item.unit||''}</span>
@@ -990,8 +1091,19 @@ function renderChart() {
   // Trend chart
   if (trendChartInst) trendChartInst.destroy();
   const ctx1 = document.getElementById('trendChart').getContext('2d');
-  const minVal = item.normal_min !== '' && item.normal_min !== null ? parseFloat(item.normal_min) : null;
-  const maxVal = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
+
+  // 범위 정보 계산
+  const ranges = item.ranges || [];
+  let minVal = null, maxVal = null;
+  if (ranges.length > 0) {
+    const okR = ranges.find(r=>r.color==='ok') || ranges[0];
+    if (okR) { minVal = okR.min; maxVal = okR.max; }
+  } else {
+    minVal = item.normal_min !== '' && item.normal_min !== null ? parseFloat(item.normal_min) : null;
+    maxVal = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
+  }
+
+  const rangeColorToHex = { ok:'#27AE60', warning:'#E67E22', danger:'#E74C3C', info:'#2E86DE' };
 
   const datasets = [{
     label: item.name,
@@ -1001,15 +1113,27 @@ function renderChart() {
     borderWidth: 2.5,
     pointRadius: 5,
     pointBackgroundColor: dataPoints.map(v => {
-      if (maxVal !== null && v > maxVal) return '#E67E22';
-      if (minVal !== null && v < minVal) return '#3498DB';
-      return '#27AE60';
+      const { badge } = getValueBadge(v, item);
+      if (badge.cls === 'badge-danger') return '#E74C3C';
+      if (badge.cls === 'badge-warning') return '#E67E22';
+      if (badge.cls === 'badge-ok') return '#27AE60';
+      return '#2E86DE';
     }),
     tension: 0.3, fill: true
   }];
 
-  if (minVal !== null) datasets.push({ label:'정상 최솟값', data: labels.map(()=>minVal), borderColor:'rgba(46,134,222,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
-  if (maxVal !== null) datasets.push({ label:'정상 최댓값', data: labels.map(()=>maxVal), borderColor:'rgba(230,126,34,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
+  // 다중 범위: 각 범위의 경계선 표시
+  if (ranges.length > 0) {
+    ranges.forEach(r => {
+      const hex = rangeColorToHex[r.color] || '#8AAFC8';
+      const lbl = r.label || r.color;
+      if (r.min != null) datasets.push({ label:`${lbl} 최솟값`, data: labels.map(()=>r.min), borderColor: hex+'88', borderWidth:1, borderDash:[5,4], pointRadius:0, fill:false });
+      if (r.max != null) datasets.push({ label:`${lbl} 최댓값`, data: labels.map(()=>r.max), borderColor: hex+'88', borderWidth:1, borderDash:[5,4], pointRadius:0, fill:false });
+    });
+  } else {
+    if (minVal !== null) datasets.push({ label:'정상 최솟값', data: labels.map(()=>minVal), borderColor:'rgba(46,134,222,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
+    if (maxVal !== null) datasets.push({ label:'정상 최댓값', data: labels.map(()=>maxVal), borderColor:'rgba(230,126,34,0.4)', borderWidth:1, borderDash:[6,4], pointRadius:0, fill:false });
+  }
 
   trendChartInst = new Chart(ctx1, {
     type: 'line',
@@ -1024,32 +1148,41 @@ function renderChart() {
     }
   });
 
-  // Range bar chart (최신값)
+  // Range bar chart (최신값 vs 범위 경계)
   if (rangeChartInst) rangeChartInst.destroy();
   const ctx2 = document.getElementById('rangeChart').getContext('2d');
   const latestVal = dataPoints.length > 0 ? dataPoints[dataPoints.length-1] : null;
 
-  if (latestVal !== null && (minVal !== null || maxVal !== null)) {
+  const allBounds = [];
+  if (ranges.length > 0) {
+    ranges.forEach(r => {
+      const hex = rangeColorToHex[r.color] || '#8AAFC8';
+      if (r.min != null) allBounds.push({ label: (r.label||r.color)+' 최솟값', val: r.min, color: hex+'99' });
+      if (r.max != null) allBounds.push({ label: (r.label||r.color)+' 최댓값', val: r.max, color: hex+'99' });
+    });
+  } else {
+    if (minVal !== null) allBounds.push({ label:'정상 최솟값', val: minVal, color:'rgba(46,134,222,0.5)' });
+    if (maxVal !== null) allBounds.push({ label:'정상 최댓값', val: maxVal, color:'rgba(230,126,34,0.5)' });
+  }
+
+  if (latestVal !== null && allBounds.length > 0) {
     document.getElementById('barChartCard').classList.remove('hidden');
-    const barData = [latestVal, minVal||0, maxVal||0];
+    const { badge } = getValueBadge(latestVal, item);
+    const currentColor = badge.cls==='badge-danger'?'rgba(231,76,60,0.75)':badge.cls==='badge-warning'?'rgba(230,126,34,0.75)':'rgba(39,174,96,0.75)';
+    const barLabels = ['현재값', ...allBounds.map(b=>b.label)];
+    const barData   = [latestVal, ...allBounds.map(b=>b.val)];
+    const barColors = [currentColor, ...allBounds.map(b=>b.color)];
     rangeChartInst = new Chart(ctx2, {
       type: 'bar',
       data: {
-        labels: ['현재값', '정상 최솟값', '정상 최댓값'],
-        datasets: [{
-          data: barData,
-          backgroundColor: [
-            (maxVal!==null&&latestVal>maxVal||minVal!==null&&latestVal<minVal)?'rgba(230,126,34,0.7)':'rgba(39,174,96,0.7)',
-            'rgba(46,134,222,0.4)', 'rgba(230,126,34,0.4)'
-          ],
-          borderRadius: 6, borderWidth: 0
-        }]
+        labels: barLabels,
+        datasets: [{ data: barData, backgroundColor: barColors, borderRadius: 6, borderWidth: 0 }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend:{display:false} },
         scales: {
-          x: { ticks:{font:{size:11}}, grid:{display:false} },
+          x: { ticks:{font:{size:10}}, grid:{display:false} },
           y: { ticks:{font:{size:11}}, grid:{color:'rgba(184,220,255,0.4)'} }
         }
       }
@@ -1079,9 +1212,8 @@ function renderRecords() {
       if(!item) return false;
       const val=parseFloat(v.value);
       if(isNaN(val)) return false;
-      if(item.normal_max!==''&&item.normal_max!==null&&val>parseFloat(item.normal_max)) return true;
-      if(item.normal_min!==''&&item.normal_min!==null&&val<parseFloat(item.normal_min)) return true;
-      return false;
+      const { badge } = getValueBadge(val, item);
+      return badge.cls === 'badge-warning' || badge.cls === 'badge-danger';
     }).length;
 
     return `<div class="record-card">
@@ -1288,7 +1420,19 @@ function renderGroupItemList() {
         <div class="item-list-item">
           <div style="flex:1">
             <div class="list-item-name">${item.name}</div>
-            <div class="list-item-sub">${item.unit||''} ${(item.normal_min!==''&&item.normal_min!==null&&item.normal_max!==''&&item.normal_max!==null)?`· 정상: ${item.normal_min}~${item.normal_max}`:''}</div>
+            <div class="list-item-sub">${item.unit?item.unit+' ':''}${(() => {
+              const ranges = item.ranges || [];
+              if (ranges.length > 0) {
+                const txt = getRangeDisplayText(ranges);
+                return txt ? '· ' + txt : (ranges.length > 1 ? `· ${ranges.length}개 범위` : '');
+              }
+              const min = item.normal_min!=null&&item.normal_min!=='' ? parseFloat(item.normal_min) : null;
+              const max = item.normal_max!=null&&item.normal_max!=='' ? parseFloat(item.normal_max) : null;
+              if (min!=null && max!=null) return `· 정상 : ${min}~${max}`;
+              if (min!=null) return `· 정상 : ${min} 이상`;
+              if (max!=null) return `· 정상 : ${max} 이하`;
+              return '';
+            })()}</div>
           </div>
           <div class="order-btns">
             <button class="order-btn" onclick="moveItem('${g.id}',${ii},-1)" ${ii===0?'disabled':''}>▲</button>
@@ -1369,25 +1513,95 @@ function deleteGroup(id) {
   queueSync(); renderGroupItemList(); toast('🗑️ 삭제되었습니다');
 }
 
+/* ===== 범위 행 관리 ===== */
+let _rangeRowCount = 0;
+
+function addRangeRow(data) {
+  // data: { label, color, min, max } or undefined
+  _rangeRowCount++;
+  const rid = 'rr_' + _rangeRowCount;
+  const label = data?.label || '';
+  const color = data?.color || 'ok';
+  const min   = data?.min != null ? data.min : '';
+  const max   = data?.max != null ? data.max : '';
+
+  const colorOptions = [
+    { val:'ok',      txt:'🟢 정상' },
+    { val:'warning', txt:'🟡 경계' },
+    { val:'danger',  txt:'🔴 위험' },
+    { val:'info',    txt:'🔵 참고' },
+  ];
+  const optHtml = colorOptions.map(o=>`<option value="${o.val}" ${color===o.val?'selected':''}>${o.txt}</option>`).join('');
+
+  const div = document.createElement('div');
+  div.className = 'range-row';
+  div.id = rid;
+  div.innerHTML = `
+    <div class="range-row-top">
+      <div>
+        <span class="range-mini-label">최솟값 <span style="font-weight:400">(이상)</span></span>
+        <input type="number" step="any" class="range-num-input" id="${rid}_min" placeholder="비워두면 무제한" value="${min}">
+      </div>
+      <div>
+        <span class="range-mini-label">최댓값 <span style="font-weight:400">(이하)</span></span>
+        <input type="number" step="any" class="range-num-input" id="${rid}_max" placeholder="비워두면 무제한" value="${max}">
+      </div>
+    </div>
+    <div class="range-row-bottom">
+      <select class="range-color-select" id="${rid}_color">${optHtml}</select>
+      <input type="text" class="range-label-input" id="${rid}_label" placeholder="설명 예: 정상, 경계, 위험" value="${label}">
+      <button class="range-del-btn" onclick="removeRangeRow('${rid}')">✕</button>
+    </div>`;
+  document.getElementById('rangeRowsContainer').appendChild(div);
+}
+
+function removeRangeRow(rid) {
+  const el = document.getElementById(rid);
+  if (el) el.remove();
+}
+
+function getRangeRowIds() {
+  return [...document.querySelectorAll('#rangeRowsContainer .range-row')].map(el=>el.id);
+}
+
+function collectRanges() {
+  return getRangeRowIds().map(rid => {
+    const minRaw = document.getElementById(rid+'_min').value;
+    const maxRaw = document.getElementById(rid+'_max').value;
+    const label  = document.getElementById(rid+'_label').value.trim();
+    const color  = document.getElementById(rid+'_color').value;
+    const minV   = minRaw === '' ? null : parseFloat(minRaw);
+    const maxV   = maxRaw === '' ? null : parseFloat(maxRaw);
+    return { min: minV, max: maxV, label, color };
+  }).filter(r => r.min !== null || r.max !== null);
+}
+
 function openItemModal(id, defaultGroupId) {
   editingItemId = id || null;
+  _rangeRowCount = 0;
   document.getElementById('itemModalTitle').textContent = id ? '항목 편집' : '항목 추가';
   const groupSel = document.getElementById('itemGroupSel');
   const sortedGroups = [...db.groups].sort((a,b)=>a.order_index-b.order_index);
   groupSel.innerHTML = sortedGroups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  document.getElementById('rangeRowsContainer').innerHTML = '';
+
   if (id) {
     const item = db.items.find(i=>i.id===id);
     groupSel.value = item.group_id;
     document.getElementById('itemName').value = item.name;
     document.getElementById('itemUnit').value = item.unit || '';
-    document.getElementById('itemMin').value = item.normal_min !== null ? item.normal_min : '';
-    document.getElementById('itemMax').value = item.normal_max !== null ? item.normal_max : '';
+    // 기존 ranges 로드 (하위호환: normal_min/max → 단일 범위)
+    const ranges = item.ranges || [];
+    if (ranges.length === 0 && (item.normal_min != null || item.normal_max != null)) {
+      addRangeRow({ label:'정상', color:'ok', min: item.normal_min!=null&&item.normal_min!==''?parseFloat(item.normal_min):null, max: item.normal_max!=null&&item.normal_max!==''?parseFloat(item.normal_max):null });
+    } else {
+      ranges.forEach(r => addRangeRow(r));
+    }
   } else {
     if (defaultGroupId) groupSel.value = defaultGroupId;
     document.getElementById('itemName').value = '';
     document.getElementById('itemUnit').value = '';
-    document.getElementById('itemMin').value = '';
-    document.getElementById('itemMax').value = '';
+    addRangeRow({ label:'정상', color:'ok' });
   }
   openModal('itemModal');
 }
@@ -1398,16 +1612,20 @@ function saveItem() {
   if (!name) { toast('항목명을 입력하세요'); return; }
   if (!groupId) { toast('그룹을 선택하세요'); return; }
   const unit = document.getElementById('itemUnit').value.trim();
-  const minVal = document.getElementById('itemMin').value;
-  const maxVal = document.getElementById('itemMax').value;
+  const ranges = collectRanges();
+
+  // 하위호환용 normal_min/max 계산 (정상(ok) 범위 기준)
+  const okRange = ranges.find(r=>r.color==='ok') || ranges[0] || null;
+  const normal_min = okRange?.min != null ? String(okRange.min) : null;
+  const normal_max = okRange?.max != null ? String(okRange.max) : null;
 
   if (editingItemId) {
     const item = db.items.find(i=>i.id===editingItemId);
-    Object.assign(item, { group_id: groupId, name, unit, normal_min: minVal===''?null:minVal, normal_max: maxVal===''?null:maxVal });
+    Object.assign(item, { group_id: groupId, name, unit, ranges, normal_min, normal_max });
   } else {
     const groupItems = db.items.filter(i=>i.group_id===groupId);
     const maxOrder = groupItems.length > 0 ? Math.max(...groupItems.map(i=>i.order_index)) : -1;
-    db.items.push({ id: genId(), group_id: groupId, name, unit, normal_min: minVal===''?null:minVal, normal_max: maxVal===''?null:maxVal, order_index: maxOrder+1 });
+    db.items.push({ id: genId(), group_id: groupId, name, unit, ranges, normal_min, normal_max, order_index: maxOrder+1 });
   }
   queueSync(); closeModal('itemModal'); renderGroupItemList(); toast('✅ 저장되었습니다');
 }

@@ -396,9 +396,9 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
 
 /* 다중 범위 배지 */
 .badge-danger  { background: #fdecea; color: #e74c3c; }
-.badge-warning { background: var(--warn-bg); color: var(--warn); }
+.badge-orange  { background: #fef5e7; color: #e67e22; }
+.badge-warning { background: #fffde7; color: #f0b429; }
 .badge-ok      { background: var(--ok-bg); color: var(--ok); }
-.badge-info    { background: var(--accent-soft); color: var(--accent); }
 .badge-none    { background: var(--surface2); color: var(--text-mute); }
 </style>
 </head>
@@ -862,7 +862,7 @@ function renderDashboard() {
     const val = parseFloat(v.value);
     if (isNaN(val)) return false;
     const { badge } = getValueBadge(val, item);
-    return badge.cls === 'badge-warning' || badge.cls === 'badge-danger';
+    return badge.cls !== 'badge-ok' && badge.cls !== 'badge-none';
   }).length;
 
   document.getElementById('dashSummary').innerHTML = `
@@ -913,8 +913,8 @@ function renderDashboard() {
 const COLOR_MAP = {
   ok:      { var: 'var(--ok)',      cls: 'badge-ok'      },
   warning: { var: 'var(--warn)',    cls: 'badge-warning'  },
+  orange:  { var: '#E67E22',        cls: 'badge-orange'   },
   danger:  { var: 'var(--danger)',  cls: 'badge-danger'   },
-  info:    { var: 'var(--accent)',  cls: 'badge-info'     },
 };
 
 function matchRange(val, ranges) {
@@ -948,7 +948,7 @@ function getValueBadge(val, item) {
     const matched = matchRange(val, ranges);
     if (matched) {
       const cm = COLOR_MAP[matched.color] || COLOR_MAP.ok;
-      const badgeText = matched.label || (matched.color === 'ok' ? '정상' : matched.color === 'warning' ? '경계' : matched.color === 'danger' ? '위험' : '참고');
+      const badgeText = matched.label || matched.color;
       return { badge:{cls:cm.cls, text:badgeText}, color:cm.var };
     }
     // 어떤 범위에도 해당 안 됨
@@ -961,8 +961,8 @@ function getValueBadge(val, item) {
   if (!hasMin && !hasMax) return { badge:{cls:'badge-none',text:'-'}, color:'var(--text)' };
   const min = hasMin ? parseFloat(item.normal_min) : null;
   const max = hasMax ? parseFloat(item.normal_max) : null;
-  if (max !== null && val > max) return { badge:{cls:'badge-warning',text:'↑높음'}, color:'var(--warn)' };
-  if (min !== null && val < min) return { badge:{cls:'badge-info',text:'↓낮음'}, color:'var(--accent)' };
+  if (max !== null && val > max) return { badge:{cls:'badge-orange',text:'↑높음'}, color:'#E67E22' };
+  if (min !== null && val < min) return { badge:{cls:'badge-warning',text:'↓낮음'}, color:'var(--warn)' };
   return { badge:{cls:'badge-ok',text:'정상'}, color:'var(--ok)' };
 }
 
@@ -1103,7 +1103,7 @@ function renderChart() {
     maxVal = item.normal_max !== '' && item.normal_max !== null ? parseFloat(item.normal_max) : null;
   }
 
-  const rangeColorToHex = { ok:'#27AE60', warning:'#E67E22', danger:'#E74C3C', info:'#2E86DE' };
+  const rangeColorToHex = { ok:'#27AE60', warning:'#F0B429', orange:'#E67E22', danger:'#E74C3C' };
 
   const datasets = [{
     label: item.name,
@@ -1114,10 +1114,11 @@ function renderChart() {
     pointRadius: 5,
     pointBackgroundColor: dataPoints.map(v => {
       const { badge } = getValueBadge(v, item);
-      if (badge.cls === 'badge-danger') return '#E74C3C';
-      if (badge.cls === 'badge-warning') return '#E67E22';
-      if (badge.cls === 'badge-ok') return '#27AE60';
-      return '#2E86DE';
+      if (badge.cls === 'badge-danger')  return '#E74C3C';
+      if (badge.cls === 'badge-orange')  return '#E67E22';
+      if (badge.cls === 'badge-warning') return '#F0B429';
+      if (badge.cls === 'badge-ok')      return '#27AE60';
+      return '#8AAFC8';
     }),
     tension: 0.3, fill: true
   }];
@@ -1168,7 +1169,10 @@ function renderChart() {
   if (latestVal !== null && allBounds.length > 0) {
     document.getElementById('barChartCard').classList.remove('hidden');
     const { badge } = getValueBadge(latestVal, item);
-    const currentColor = badge.cls==='badge-danger'?'rgba(231,76,60,0.75)':badge.cls==='badge-warning'?'rgba(230,126,34,0.75)':'rgba(39,174,96,0.75)';
+    const currentColor = badge.cls==='badge-danger' ? 'rgba(231,76,60,0.75)'
+      : badge.cls==='badge-orange'  ? 'rgba(230,126,34,0.75)'
+      : badge.cls==='badge-warning' ? 'rgba(240,180,41,0.75)'
+      : 'rgba(39,174,96,0.75)';
     const barLabels = ['현재값', ...allBounds.map(b=>b.label)];
     const barData   = [latestVal, ...allBounds.map(b=>b.val)];
     const barColors = [currentColor, ...allBounds.map(b=>b.color)];
@@ -1213,7 +1217,7 @@ function renderRecords() {
       const val=parseFloat(v.value);
       if(isNaN(val)) return false;
       const { badge } = getValueBadge(val, item);
-      return badge.cls === 'badge-warning' || badge.cls === 'badge-danger';
+      return badge.cls !== 'badge-ok' && badge.cls !== 'badge-none';
     }).length;
 
     return `<div class="record-card">
@@ -1526,10 +1530,10 @@ function addRangeRow(data) {
   const max   = data?.max != null ? data.max : '';
 
   const colorOptions = [
-    { val:'ok',      txt:'🟢 정상' },
-    { val:'warning', txt:'🟡 경계' },
-    { val:'danger',  txt:'🔴 위험' },
-    { val:'info',    txt:'🔵 참고' },
+    { val:'ok',      txt:'🟢' },
+    { val:'warning', txt:'🟡' },
+    { val:'orange',  txt:'🟠' },
+    { val:'danger',  txt:'🔴' },
   ];
   const optHtml = colorOptions.map(o=>`<option value="${o.val}" ${color===o.val?'selected':''}>${o.txt}</option>`).join('');
 
@@ -1548,8 +1552,8 @@ function addRangeRow(data) {
       </div>
     </div>
     <div class="range-row-bottom">
-      <select class="range-color-select" id="${rid}_color">${optHtml}</select>
-      <input type="text" class="range-label-input" id="${rid}_label" placeholder="설명 예: 정상, 경계, 위험" value="${label}">
+      <select class="range-color-select" id="${rid}_color" style="width:52px;text-align:center;">${optHtml}</select>
+      <input type="text" class="range-label-input" id="${rid}_label" placeholder="레이블 입력 (예: 충분, 부족, 위험)" value="${label}">
       <button class="range-del-btn" onclick="removeRangeRow('${rid}')">✕</button>
     </div>`;
   document.getElementById('rangeRowsContainer').appendChild(div);

@@ -943,19 +943,47 @@ function matchRange(val, ranges, personGender) {
 }
 
 function getRangeDisplayText(ranges, personGender) {
-  /* 정상 범위를 "80 이상", "40 이하", "80~120" 등으로 표현 (성별 필터 적용) */
+  /* 정상(ok) 범위를 텍스트로 표현
+     personGender 없음 → 항목 자체 표시용: 남/여 구분 있으면 둘 다 표시
+     personGender 있음 → 검사 입력 힌트: 해당 성별 범위만 표시
+  */
   if (!ranges || ranges.length === 0) return '';
-  const pg = personGender || '';
-  // 성별 필터링
-  const filtered = ranges.filter(r => { const rg = r.gender||''; return rg==='' || pg==='' || rg===pg; });
-  const pool = filtered.length > 0 ? filtered : ranges;
-  const okR = pool.find(r=>r.color==='ok') || pool[0];
-  if (!okR) return '';
-  const label = okR.label || '정상';
-  if (okR.min != null && okR.max != null) return `${label} : ${okR.min}~${okR.max}`;
-  if (okR.min != null) return `${label} : ${okR.min} 이상`;
-  if (okR.max != null) return `${label} : ${okR.max} 이하`;
-  return label;
+
+  const okRanges = ranges.filter(r => r.color === 'ok');
+  const pool = okRanges.length > 0 ? okRanges : ranges.slice(0, 1);
+
+  function rangeText(r) {
+    const label = r.label || '정상';
+    if (r.min != null && r.max != null) return `${label} : ${r.min}~${r.max}`;
+    if (r.min != null) return `${label} : ${r.min} 이상`;
+    if (r.max != null) return `${label} : ${r.max} 이하`;
+    return label;
+  }
+
+  const hasGenderRange = pool.some(r => r.gender === 'M' || r.gender === 'F');
+
+  if (!hasGenderRange) {
+    // 공통 범위만 → 단일 텍스트
+    const r = pool.find(r2 => (r2.gender || '') === '') || pool[0];
+    return r ? rangeText(r) : '';
+  }
+
+  if (personGender) {
+    // 검사 입력 힌트: 대상자 성별에 맞는 범위만
+    const r = pool.find(r2 => (r2.gender || '') === personGender)
+           || pool.find(r2 => (r2.gender || '') === '');
+    return r ? rangeText(r) : '';
+  }
+
+  // 설정 탭 등 항목 자체 표시: 남성 정상 / 여성 정상 둘 다
+  const parts = [];
+  const mR = pool.find(r2 => r2.gender === 'M');
+  const fR = pool.find(r2 => r2.gender === 'F');
+  const cR = pool.find(r2 => (r2.gender || '') === '');
+  if (mR) parts.push('남) ' + rangeText(mR));
+  if (fR) parts.push('여) ' + rangeText(fR));
+  if (cR) parts.push(rangeText(cR));
+  return parts.join(' / ');
 }
 
 function getValueBadge(val, item, personGender) {
@@ -1468,10 +1496,8 @@ function renderGroupItemList() {
             <div class="list-item-sub">${item.unit?item.unit+' ':''}${(() => {
               const ranges = item.ranges || [];
               if (ranges.length > 0) {
-                const hasGender = ranges.some(r=>r.gender==='M'||r.gender==='F');
                 const txt = getRangeDisplayText(ranges);
-                const gTag = hasGender ? ' <span style="color:var(--accent);font-size:10px;">[남/여 구분]</span>' : '';
-                return (txt ? '· ' + txt : (ranges.length > 1 ? `· ${ranges.length}개 범위` : '')) + gTag;
+                return txt ? '· ' + txt : (ranges.length > 1 ? `· ${ranges.length}개 범위` : '');
               }
               const min = item.normal_min!=null&&item.normal_min!=='' ? parseFloat(item.normal_min) : null;
               const max = item.normal_max!=null&&item.normal_max!=='' ? parseFloat(item.normal_max) : null;

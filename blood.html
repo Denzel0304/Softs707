@@ -443,11 +443,11 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: inher
     <button class="tab-btn active" onclick="switchTab('dashboard')" id="tab-dashboard">
       <span class="tab-icon">📊</span>대시보드
     </button>
-    <button class="tab-btn" onclick="switchTab('input')" id="tab-input">
-      <span class="tab-icon">➕</span>검사 입력
-    </button>
     <button class="tab-btn" onclick="switchTab('chart')" id="tab-chart">
       <span class="tab-icon">📈</span>추이 차트
+    </button>
+    <button class="tab-btn" onclick="switchTab('input')" id="tab-input">
+      <span class="tab-icon">➕</span>검사 입력
     </button>
     <button class="tab-btn" onclick="switchTab('records')" id="tab-records">
       <span class="tab-icon">📋</span>기록 목록
@@ -839,6 +839,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
+  // 탭 전환 시 스크롤 최상단으로 초기화
+  const contentEl = document.querySelector('.content');
+  if (contentEl) contentEl.scrollTop = 0;
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'input') renderInputForm();
   if (tab === 'chart') renderChartTab();
@@ -996,7 +999,8 @@ function getValueBadge(val, item, personGender) {
     const matched = matchRange(val, ranges, personGender);
     if (matched) {
       const cm = COLOR_MAP[matched.color] || COLOR_MAP.ok;
-      const badgeText = matched.label || matched.color;
+      const defaultLabel = matched.color === 'ok' ? '정상' : matched.color === 'warning' ? '주의' : matched.color === 'orange' ? '높음' : matched.color === 'danger' ? '위험' : matched.color;
+      const badgeText = matched.label || defaultLabel;
       return { badge:{cls:cm.cls, text:badgeText}, color:cm.var };
     }
     // 어떤 범위에도 해당 안 됨

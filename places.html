@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#faf7f2">
+<title>Places</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-2: #f3efe7;
+    --text: #2d2a26;
+    --text-soft: #6b655d;
+    --text-mute: #a09a91;
+    --border: #ebe5da;
+    --accent: #5b7a6a;
+    --accent-soft: #e8efeb;
+    --shadow-sm: 0 1px 2px rgba(60, 50, 35, 0.04);
+    --shadow-md: 0 4px 14px rgba(60, 50, 35, 0.08);
+    --shadow-lg: 0 12px 32px rgba(60, 50, 35, 0.14);
+
+    --header-h: 108px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
+  input, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+
+  /* === Header === */
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--bg);
+    padding-top: var(--safe-top);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top {
+    display: grid;
+    grid-template-columns: 38px 1fr 38px;
+    align-items: center;
+    padding: 12px 16px 8px;
+  }
+  .title-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .title-icon {
+    width: 22px; height: 22px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .title {
+    font-size: 19px; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .gear-btn {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+    justify-self: end;
+  }
+  .gear-btn:active { background: var(--surface-2); transform: scale(0.94); }
+  .gear-btn svg { width: 20px; height: 20px; color: var(--text-soft); }
+
+  .search-bar {
+    margin: 0 16px 10px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .search-bar svg { width: 18px; height: 18px; color: var(--text-mute); flex-shrink: 0; }
+  .search-bar input {
+    flex: 1; border: none; outline: none; background: none;
+    font-size: 15px; padding: 4px 0;
+  }
+  .search-clear {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--text-mute);
+    color: white;
+    display: none;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .search-clear.visible { display: flex; }
+  .search-clear svg { width: 12px; height: 12px; color: white; }
+
+  .filters {
+    display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .filter-chip.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .filter-chip.city-active {
+    color: white;
+  }
+
+  /* === List === */
+  .list-container {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    padding-top: var(--header-h);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .list {
+    padding: 12px 16px calc(96px + var(--safe-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .empty {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--text-mute);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-text { font-size: 14px; }
+
+  .card {
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    transition: transform 0.1s;
+  }
+  .card:active { transform: scale(0.99); }
+  .card-stripe { width: 5px; flex-shrink: 0; }
+
+  .card-body {
+    flex: 1;
+    padding: 12px 6px 12px 14px;
+    min-width: 0;
+    display: flex; flex-direction: column;
+    cursor: pointer;
+  }
+  .card-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 5px;
+  }
+  .card-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    color: white;
+  }
+  .card-time {
+    font-size: 11px;
+    color: var(--text-mute);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-stars {
+    font-size: 13px;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .card-content {
+    font-size: 14px;
+    color: var(--text-soft);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .card-x {
+    flex-shrink: 0;
+    width: 38px;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 12px;
+    color: var(--text-mute);
+  }
+  .card-x svg { width: 16px; height: 16px; }
+  .card-x:active { color: var(--text); }
+
+  /* === FAB === */
+  .fab {
+    position: fixed;
+    right: 18px;
+    bottom: calc(20px + var(--safe-bottom));
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: var(--text);
+    color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 20;
+    transition: transform 0.12s;
+  }
+  .fab:active { transform: scale(0.92); }
+  .fab svg { width: 26px; height: 26px; }
+
+  /* === PC Layout === */
+  @media (min-width: 768px) {
+    :root { --pc-w: 720px; --pc-left: calc(50% - 360px); }
+    body { background: #e8e3db; }
+    .header {
+      left: var(--pc-left); right: auto; width: var(--pc-w);
+      border-radius: 0 0 16px 16px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(60,50,35,0.10);
+    }
+    .list-container { left: var(--pc-left); right: auto; width: var(--pc-w); }
+    .fab { right: auto; left: calc(var(--pc-left) + var(--pc-w) - 76px); }
+    .card-content { font-size: 15px; }
+    .card-body { padding: 14px 8px 14px 18px; }
+    .list { padding: 16px 20px calc(100px + var(--safe-bottom)); gap: 12px; }
+    .search-bar { margin: 0 20px 12px; }
+    .filters { padding: 0 20px 12px; }
+    .header-top { padding: 16px 20px 10px; }
+    .title { font-size: 21px; }
+    #editorModal { align-items: center; padding: 24px; }
+    .sheet {
+      border-radius: 18px !important;
+      max-width: 560px;
+      max-height: 90vh;
+      height: auto;
+      padding-bottom: 24px;
+      animation: popIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .editor-links { max-height: 18vh; overflow-y: auto; }
+  }
+  @media (min-width: 1100px) {
+    :root { --pc-w: 860px; --pc-left: calc(50% - 430px); }
+    .fab { left: calc(var(--pc-left) + var(--pc-w) - 76px); }
+  }
+
+  /* === Modal === */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(45, 42, 38, 0.4);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.18s ease;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-overlay.center { align-items: center; padding: 24px; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .sheet {
+    background: var(--bg);
+    width: 100%;
+    max-width: 520px;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px calc(20px + var(--safe-bottom));
+    animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    max-height: 90vh;
+    height: auto;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .dialog {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 22px 20px 16px;
+    width: 100%;
+    max-width: 340px;
+    animation: popIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Editor */
+  .editor-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .editor-cancel, .editor-save {
+    font-size: 14px; font-weight: 600;
+    border-radius: 10px; transition: all 0.15s;
+  }
+  .editor-cancel {
+    color: var(--text); padding: 8px 14px;
+    background: #e0d8c8; border: 1px solid #c9bea8;
+  }
+  .editor-cancel:active { background: #cfc4af; }
+  .editor-save {
+    color: white; background: var(--accent);
+    padding: 8px 18px; box-shadow: var(--shadow-sm);
+  }
+  .editor-save:active { background: #4a6557; transform: scale(0.96); }
+  .editor-save:disabled { opacity: 0.5; }
+
+  /* 제목 입력 */
+  .editor-title-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .editor-title-input:focus { border-color: var(--accent); }
+  .editor-title-input::placeholder { font-weight: 400; color: var(--text-mute); }
+
+  /* 별점 */
+  .editor-stars {
+    display: flex; gap: 6px; margin-bottom: 14px; align-items: center;
+  }
+  .editor-stars-label {
+    font-size: 13px; color: var(--text-soft); font-weight: 500; margin-right: 4px;
+  }
+  .star-btn {
+    font-size: 26px; line-height: 1;
+    transition: transform 0.1s;
+    color: #d4cfc8;
+  }
+  .star-btn.on { color: #f5a623; }
+  .star-btn:active { transform: scale(0.88); }
+
+  /* 카테고리 선택 (도시) */
+  .city-select-wrap {
+    margin-bottom: 14px;
+  }
+  .city-select-label {
+    font-size: 12px; color: var(--text-mute); font-weight: 500;
+    margin-bottom: 6px; letter-spacing: 0.02em;
+  }
+  .city-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .city-chip {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-soft);
+    transition: all 0.15s;
+  }
+  .city-chip.selected {
+    color: white;
+  }
+  .city-chip-add {
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    border: 1.5px dashed var(--border);
+    background: var(--surface);
+    color: var(--text-mute);
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .city-chip-add:active { background: var(--surface-2); }
+
+  /* 새 도시 입력 인라인 */
+  .city-new-input-wrap {
+    display: none;
+    align-items: center; gap: 6px;
+    margin-top: 8px;
+  }
+  .city-new-input-wrap.show { display: flex; }
+  .city-new-input {
+    flex: 1;
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    background: var(--surface);
+  }
+  .city-new-confirm {
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 13px; font-weight: 600;
+  }
+  .city-new-confirm:active { background: #4a6557; }
+
+  .editor-textarea {
+    width: 100%;
+    min-height: 100px;
+    max-height: 28vh;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+    font-size: 16px;
+    line-height: 1.55;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 0;
+  }
+  .editor-textarea:focus { border-color: var(--accent); }
+
+  .editor-links {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-top: 10px;
+    max-height: 25vh; overflow-y: auto;
+  }
+  .editor-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-size: 13px; font-weight: 600;
+    text-decoration: none;
+    word-break: break-all; line-height: 1.4;
+  }
+  .editor-link:active { background: var(--surface-2); }
+  .editor-link svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  .editor-actions {
+    display: flex; gap: 10px; margin-top: 14px;
+  }
+  .btn-delete {
+    flex: 1; padding: 12px; border-radius: 10px;
+    background: #fdecea; border: 1px solid #f5c4be;
+    color: #c0392b; font-size: 14px; font-weight: 500;
+  }
+  .btn-delete:active { background: #f9d5d1; }
+
+  /* Confirm dialog */
+  .dialog-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .dialog-msg { font-size: 14px; color: var(--text-soft); margin-bottom: 18px; line-height: 1.5; }
+  .dialog-actions { display: flex; gap: 8px; }
+  .dialog-btn { flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+  .dialog-btn.cancel { background: var(--surface-2); color: var(--text); }
+  .dialog-btn.confirm { background: #c25a45; color: white; }
+  .dialog-btn:active { opacity: 0.85; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%;
+    bottom: calc(96px + var(--safe-bottom));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg);
+    padding: 11px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500;
+    z-index: 1000; opacity: 0;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none; box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Search highlight */
+  mark { background: #fff3a8; color: inherit; border-radius: 2px; padding: 0 1px; }
+
+  /* === Login overlay === */
+  .login-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: none; align-items: center; justify-content: center; z-index: 500;
+  }
+  .login-overlay.active { display: flex; }
+  .login-box {
+    width: 280px; padding: 32px 28px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+  .login-sub { font-size: 12.5px; color: var(--text-soft); margin-bottom: 22px; }
+  .pin-input {
+    width: 100%; padding: 12px; font-size: 22px; text-align: center;
+    letter-spacing: 10px; border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); margin-bottom: 14px; outline: none; color: var(--text);
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+    background: var(--accent); color: #fff; border: none; border-radius: 10px; cursor: pointer;
+  }
+  .login-btn:active { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-msg { font-size: 12px; margin-top: 12px; min-height: 14px; color: var(--text-soft); }
+  .login-msg.err { color: #c0392b; }
+  .login-msg.ok  { color: #2e7d32; }
+
+  /* Sync bar */
+  .sync-bar {
+    font-size: 10.5px; color: var(--text-mute);
+    text-align: center; padding: 3px 0 0; letter-spacing: 0.01em;
+  }
+
+  /* 섹션 구분 레이블 */
+  .editor-field-label {
+    font-size: 12px; color: var(--text-mute); font-weight: 500;
+    margin-bottom: 6px; letter-spacing: 0.02em;
+  }
+  .editor-field-wrap { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 오버레이 -->
+<div id="login-overlay" class="login-overlay active">
+  <div class="login-box">
+    <div class="login-title">📍 Places</div>
+    <div class="login-sub">PIN 4자리를 입력하세요</div>
+    <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    <button id="login-btn" class="login-btn" onclick="doLogin()">로그인</button>
+    <div id="login-msg" class="login-msg"></div>
+  </div>
+</div>
+
+<header class="header" id="header">
+  <div class="header-top">
+    <div></div>
+    <div class="title-wrap">
+      <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+      <div class="title">Places</div>
+    </div>
+    <button class="gear-btn" id="gearBtn" aria-label="로그아웃">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="장소 검색" autocomplete="off">
+    <button class="search-clear" id="searchClear" aria-label="검색 지우기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-chip active" data-filter="all">전체</button>
+  </div>
+  <div class="sync-bar" id="sync-bar"></div>
+</header>
+
+<div class="list-container">
+  <div class="list" id="list"></div>
+</div>
+
+<button class="fab" id="fab" aria-label="장소 추가">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<!-- Editor Modal -->
+<div class="modal-overlay" id="editorModal" data-modal="editor">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="editor-head">
+      <button class="editor-cancel" id="editorCancel">취소</button>
+      <button class="editor-save" id="editorSave">저장</button>
+    </div>
+
+    <!-- 제목 -->
+    <div class="editor-field-wrap">
+      <div class="editor-field-label">장소 이름 *</div>
+      <input type="text" class="editor-title-input" id="editorTitle" placeholder="예) 거제 해녀촌" autocomplete="off">
+    </div>
+
+    <!-- 내용 (선택) -->
+    <div class="editor-field-wrap">
+      <div class="editor-field-label">내용 (선택)</div>
+      <textarea class="editor-textarea" id="editorText" placeholder="방문 후기, 메모..." enterkeyhint="enter"></textarea>
+      <div class="editor-links" id="editorLinks"></div>
+    </div>
+
+    <!-- 도시(카테고리) 선택 -->
+    <div class="editor-field-wrap">
+      <div class="editor-field-label">도시 *</div>
+      <div class="city-chips" id="editorCityChips"></div>
+      <div class="city-new-input-wrap" id="cityNewWrap">
+        <input type="text" class="city-new-input" id="cityNewInput" placeholder="도시 이름 입력" maxlength="10" autocomplete="off">
+        <button class="city-new-confirm" id="cityNewConfirm">추가</button>
+      </div>
+    </div>
+
+    <!-- 별점 -->
+    <div class="editor-field-wrap">
+      <div class="editor-field-label">별점 *</div>
+      <div class="editor-stars" id="editorStars">
+        <span class="star-btn" data-star="1">★</span>
+        <span class="star-btn" data-star="2">★</span>
+        <span class="star-btn" data-star="3">★</span>
+        <span class="star-btn" data-star="4">★</span>
+        <span class="star-btn" data-star="5">★</span>
+      </div>
+    </div>
+
+    <div class="editor-actions" id="editorActions" style="display:none;">
+      <button class="btn-delete" id="editorDelete">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay center" id="confirmModal" data-modal="confirm">
+  <div class="dialog" onclick="event.stopPropagation()">
+    <div class="dialog-title">장소 삭제</div>
+    <div class="dialog-msg">이 장소를 삭제할까요? 삭제하면 되돌릴 수 없습니다.</div>
+    <div class="dialog-actions">
+      <button class="dialog-btn cancel" id="confirmCancel">취소</button>
+      <button class="dialog-btn confirm" id="confirmDelete">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   Places — single-file app + Supabase 동기화
+   ========================================================= */
+
+const SB_URL  = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+const PL79_AK    = 'PL79_ak';
+const PL79_CACHE = 'PL79_data';
+const PL79_CITIES = 'PL79_cities';
+
+/* ---------- 도시 색상 자동 배정 ---------- */
+const CITY_PALETTE = [
+  '#5b7a6a','#7a6a5b','#6a5b7a','#5b6a7a','#7a5b6a',
+  '#4e7a5b','#7a4e5b','#5b4e7a','#4e5b7a','#7a7a4e',
+  '#6b8e6b','#8e6b6b','#6b6b8e','#8e7a6b','#6b8e8e',
+  '#5c7a8a','#8a5c7a','#7a8a5c','#5c8a7a','#8a7a5c'
+];
+const cityColorMap = {};
+let colorIdx = 0;
+
+function getCityColor(city) {
+  if (!cityColorMap[city]) {
+    cityColorMap[city] = CITY_PALETTE[colorIdx % CITY_PALETTE.length];
+    colorIdx++;
+  }
+  return cityColorMap[city];
+}
+
+/* ---------- State ---------- */
+let places = [];
+let cities = [];           // 사용자가 추가한 도시 목록
+let currentFilter = 'all';
+let currentSearch = '';
+let editingId = null;
+let editingCity = null;
+let editingStars = 0;
+let pendingDeleteId = null;
+let syncTimer = null, syncing = false;
+let authFailCount = 0;
+const AUTH_FAIL_MAX = 3;
+
+/* ---------- 유틸 ---------- */
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function getAK() { return localStorage.getItem(PL79_AK); }
+function setAK(k) { localStorage.setItem(PL79_AK, k); }
+function clearAK() { localStorage.removeItem(PL79_AK); }
+function setSyncBar(text) {
+  const el = document.getElementById('sync-bar');
+  if (el) el.textContent = text;
+}
+function saveCities() {
+  localStorage.setItem(PL79_CITIES, JSON.stringify(cities));
+}
+function loadCities() {
+  try {
+    const c = localStorage.getItem(PL79_CITIES);
+    if (c) cities = JSON.parse(c);
+  } catch(_) {}
+  // places에서 도시 추출해서 누락된 것 보완
+  places.forEach(p => {
+    if (p.city && !cities.includes(p.city)) cities.push(p.city);
+  });
+}
+
+/* =========================================================
+   Supabase RPC
+   ========================================================= */
+async function rpc(fn, args) {
+  return fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_ANON,
+      'Authorization': 'Bearer ' + SB_ANON,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(args)
+  });
+}
+
+async function doLogin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  const msg = document.getElementById('login-msg');
+  const btn = document.getElementById('login-btn');
+  if (!/^\d{4}$/.test(pin)) {
+    msg.className = 'login-msg err'; msg.textContent = 'PIN 4자리 숫자를 입력하세요'; return;
+  }
+  btn.disabled = true; msg.className = 'login-msg'; msg.textContent = '확인 중...';
+  try {
+    const r = await rpc('Places79_login', { p_pin: pin });
+    if (!r.ok) { msg.className = 'login-msg err'; msg.textContent = '서버 오류 (' + r.status + ')'; btn.disabled = false; return; }
+    const data = await r.json();
+    if (data.ok) {
+      setAK(data.key);
+      document.getElementById('pin-input').value = '';
+      msg.className = 'login-msg ok'; msg.textContent = '로그인 성공';
+      await afterLogin();
+    } else if (data.reason === 'wrong_pin') {
+      msg.className = 'login-msg err'; msg.textContent = `PIN 불일치 (남은 시도: ${data.remaining}회)`;
+      document.getElementById('pin-input').value = ''; btn.disabled = false;
+    } else if (data.reason === 'locked') {
+      const until = new Date(data.until).toLocaleTimeString('ko-KR');
+      msg.className = 'login-msg err'; msg.textContent = `잠금 상태 (${until}까지)`; btn.disabled = false;
+    } else if (data.reason === 'no_pin') {
+      msg.className = 'login-msg err'; msg.textContent = 'PIN이 등록되지 않았습니다'; btn.disabled = false;
+    } else {
+      msg.className = 'login-msg err'; msg.textContent = '로그인 실패'; btn.disabled = false;
+    }
+  } catch(e) {
+    msg.className = 'login-msg err'; msg.textContent = '네트워크 오류'; btn.disabled = false;
+  }
+}
+
+async function afterLogin() {
+  document.getElementById('login-overlay').classList.remove('active');
+  await pullFromServer();
+}
+
+async function doLogout() {
+  modalStack.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  modalStack.length = 0;
+  const key = getAK();
+  if (key) { try { await rpc('Places79_logout', { p_key: key }); } catch(e) {} }
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('PL79_')) localStorage.removeItem(k); });
+  places = []; cities = [];
+  render(); renderFilters();
+  document.getElementById('login-overlay').classList.add('active');
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-msg').textContent = '';
+  authFailCount = 0;
+  setSyncBar('');
+  setTimeout(() => document.getElementById('pin-input').focus(), 50);
+}
+
+async function pullFromServer() {
+  const key = getAK();
+  if (!key) return;
+  setSyncBar('↓ 불러오는 중...');
+  try {
+    const r = await rpc('Places79_pull', { p_key: key });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) { registerAuthFail(); return; }
+      setSyncBar('⚠ 불러오기 실패'); return;
+    }
+    authFailCount = 0;
+    const data = await r.json();
+    places = Array.isArray(data) ? data : [];
+    localStorage.setItem(PL79_CACHE, JSON.stringify(places));
+    loadCities();
+    saveCities();
+    setSyncBar('✓ 동기화됨');
+    renderFilters();
+    render();
+  } catch(e) {
+    setSyncBar('⚠ 네트워크 오류');
+    try {
+      const cached = localStorage.getItem(PL79_CACHE);
+      if (cached) { places = JSON.parse(cached); }
+    } catch(_) {}
+    loadCities();
+    renderFilters();
+    render();
+  }
+}
+
+function queueSync() {
+  if (!getAK()) return;
+  setSyncBar('● 변경됨');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToServer, 1200);
+}
+
+async function pushToServer() {
+  const key = getAK();
+  if (!key) return;
+  if (syncing) { syncTimer = setTimeout(pushToServer, 800); return; }
+  syncing = true;
+  setSyncBar('↑ 저장 중...');
+  try {
+    const r = await rpc('Places79_push', { p_key: key, p_data: places });
+    if (r.status === 401 || r.status === 403) { registerAuthFail(); return; }
+    if (!r.ok) {
+      const t = await r.text();
+      if (t.includes('unauthorized')) { registerAuthFail(); return; }
+      setSyncBar('⚠ 저장 실패'); return;
+    }
+    authFailCount = 0;
+    localStorage.setItem(PL79_CACHE, JSON.stringify(places));
+    setSyncBar('✓ 저장됨');
+  } catch(e) {
+    setSyncBar('⚠ 네트워크 오류');
+  } finally {
+    syncing = false;
+  }
+}
+
+function registerAuthFail() {
+  authFailCount++;
+  setSyncBar(`⚠ 인증 오류 (${authFailCount}/${AUTH_FAIL_MAX})`);
+  if (authFailCount >= AUTH_FAIL_MAX) doLogout();
+}
+
+/* =========================================================
+   MODAL SYSTEM
+   ========================================================= */
+const modalStack = [];
+let _savedScrollTop = 0;
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (modalStack.length === 0) {
+    const lc = document.querySelector('.list-container');
+    if (lc) _savedScrollTop = lc.scrollTop;
+  }
+  el.classList.add('show');
+  modalStack.push(id);
+  history.pushState({ modalDepth: modalStack.length }, '');
+}
+
+function closeModal() {
+  if (modalStack.length === 0) return;
+  history.back();
+}
+
+window.addEventListener('popstate', () => {
+  if (modalStack.length === 0) return;
+  const id = modalStack.pop();
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+  onModalClosed(id);
+  if (modalStack.length === 0) {
+    const lc = document.querySelector('.list-container');
+    if (lc) requestAnimationFrame(() => { lc.scrollTop = _savedScrollTop; });
+  }
+});
+
+history.replaceState({ modalDepth: 0 }, '');
+
+function onModalClosed(id) {
+  if (id === 'editorModal') {
+    document.getElementById('editorTitle').value = '';
+    document.getElementById('editorText').value = '';
+    document.getElementById('editorText')._listType = null;
+    document.getElementById('editorText')._listNum = null;
+    document.getElementById('editorLinks').innerHTML = '';
+    editingId = null;
+    editingCity = null;
+    editingStars = 0;
+    refreshStarsUI();
+    document.getElementById('editorActions').style.display = 'none';
+    hideCityNewInput();
+    renderEditorCityChips();
+  } else if (id === 'confirmModal') {
+    pendingDeleteId = null;
+  }
+}
+
+function bindOverlayClicks() {
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+  });
+}
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* ---------- 시간 포맷 ---------- */
+function relTime(ts) {
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 30) return '방금 전';
+  if (sec < 60) return `${sec}초 전`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}일 전`;
+  const d = new Date(ts);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function highlight(text, q) {
+  const safe = escapeHtml(text);
+  if (!q) return safe;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+
+function starsHtml(n) {
+  let s = '';
+  for (let i = 1; i <= 5; i++) s += i <= n ? '★' : '☆';
+  return s;
+}
+
+/* ---------- Filters 렌더링 ---------- */
+function renderFilters() {
+  const wrap = document.getElementById('filters');
+  const counts = {};
+  places.forEach(p => { counts[p.city] = (counts[p.city] || 0) + 1; });
+
+  let html = `<button class="filter-chip${currentFilter === 'all' ? ' active' : ''}" data-filter="all">전체</button>`;
+  cities.forEach(city => {
+    const color = getCityColor(city);
+    const isActive = currentFilter === city;
+    const cnt = counts[city] || 0;
+    html += `<button class="filter-chip${isActive ? ' city-active' : ''}" data-filter="${escapeHtml(city)}"
+      style="${isActive ? `background:${color};border-color:${color};` : ''}"
+    >${escapeHtml(city)}(${cnt})</button>`;
+  });
+  wrap.innerHTML = html;
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const list = document.getElementById('list');
+  const q = currentSearch.trim().toLowerCase();
+
+  let filtered = places.slice();
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(p => p.city === currentFilter);
+  }
+  if (q) {
+    filtered = filtered.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.content || '').toLowerCase().includes(q) ||
+      (p.city || '').toLowerCase().includes(q)
+    );
+  }
+  filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📍</div>
+        <div class="empty-text">${places.length === 0 ? '아직 장소가 없습니다' : '결과가 없습니다'}</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => {
+    const color = getCityColor(p.city);
+    const contentHtml = p.content ? `<div class="card-content">${highlight(p.content, q)}</div>` : '';
+    return `
+    <div class="card" data-id="${p.id}" style="--card-color:${color}">
+      <div class="card-stripe" style="background:${color}"></div>
+      <div class="card-body" data-action="edit" data-id="${p.id}">
+        <div class="card-meta">
+          <span class="card-tag" style="background:${color}">${escapeHtml(p.city)}</span>
+          <span class="card-time">${relTime(p.updatedAt)}</span>
+        </div>
+        <div class="card-title">${highlight(p.title, q)}</div>
+        <div class="card-stars">${starsHtml(p.stars)}</div>
+        ${contentHtml}
+      </div>
+      <button class="card-x" data-action="delete" data-id="${p.id}" aria-label="삭제">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+        </svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 별점 UI ---------- */
+function refreshStarsUI() {
+  document.querySelectorAll('#editorStars .star-btn').forEach(btn => {
+    btn.classList.toggle('on', Number(btn.dataset.star) <= editingStars);
+  });
+}
+
+/* ---------- 에디터 도시 칩 ---------- */
+function renderEditorCityChips() {
+  const wrap = document.getElementById('editorCityChips');
+  let html = '';
+  cities.forEach(city => {
+    const color = getCityColor(city);
+    const sel = editingCity === city;
+    html += `<button class="city-chip${sel ? ' selected' : ''}" data-city="${escapeHtml(city)}"
+      style="${sel ? `background:${color};border-color:${color};` : `border-color:${color};color:${color};`}"
+    >${escapeHtml(city)}</button>`;
+  });
+  html += `<button class="city-chip-add" id="cityAddBtn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>새 도시
+  </button>`;
+  wrap.innerHTML = html;
+
+  // 이벤트
+  wrap.querySelectorAll('.city-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingCity = btn.dataset.city;
+      renderEditorCityChips();
+    });
+  });
+  document.getElementById('cityAddBtn').addEventListener('click', showCityNewInput);
+}
+
+function showCityNewInput() {
+  document.getElementById('cityNewWrap').classList.add('show');
+  document.getElementById('cityNewInput').focus();
+}
+function hideCityNewInput() {
+  document.getElementById('cityNewWrap').classList.remove('show');
+  document.getElementById('cityNewInput').value = '';
+}
+
+function confirmNewCity() {
+  const val = document.getElementById('cityNewInput').value.trim();
+  if (!val) { toast('도시 이름을 입력해주세요'); return; }
+  if (cities.includes(val)) {
+    editingCity = val;
+    hideCityNewInput();
+    renderEditorCityChips();
+    return;
+  }
+  cities.push(val);
+  saveCities();
+  editingCity = val;
+  hideCityNewInput();
+  renderEditorCityChips();
+  renderFilters();
+}
+
+/* ---------- URL 자동 추출 ---------- */
+function extractUrls(text) {
+  const regex = /https?:\/\/[^\s]+/g;
+  const found = text.match(regex) || [];
+  const cleaned = found.map(u => u.replace(/[)\]}>,.!?;:'"]+$/, ''));
+  const seen = new Set(); const result = [];
+  cleaned.forEach(u => { if (u && !seen.has(u)) { seen.add(u); result.push(u); } });
+  return result;
+}
+
+function updateEditorLinks() {
+  const et = document.getElementById('editorText');
+  const box = document.getElementById('editorLinks');
+  const urls = extractUrls(et.value);
+  if (urls.length === 0) { box.innerHTML = ''; return; }
+  box.innerHTML = urls.map(u => `
+    <a class="editor-link" href="${u.replace(/"/g,'&quot;')}" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+      <span>${u}</span>
+    </a>`).join('');
+}
+
+/* ---------- Editor open/save ---------- */
+function openNewPlace() {
+  editingId = null; editingCity = null; editingStars = 0;
+  document.getElementById('editorTitle').value = '';
+  document.getElementById('editorText').value = '';
+  document.getElementById('editorText')._listType = null;
+  document.getElementById('editorText')._listNum = null;
+  document.getElementById('editorLinks').innerHTML = '';
+  refreshStarsUI();
+  renderEditorCityChips();
+  hideCityNewInput();
+  openModal('editorModal');
+  setTimeout(() => document.getElementById('editorTitle').focus(), 50);
+}
+
+function openEditPlace(id) {
+  const p = places.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  editingCity = p.city;
+  editingStars = p.stars || 0;
+  document.getElementById('editorTitle').value = p.title;
+  document.getElementById('editorText').value = p.content || '';
+  document.getElementById('editorText')._listType = null;
+  document.getElementById('editorText')._listNum = null;
+  document.getElementById('editorActions').style.display = 'flex';
+  refreshStarsUI();
+  renderEditorCityChips();
+  updateEditorLinks();
+  hideCityNewInput();
+  openModal('editorModal');
+  setTimeout(() => document.getElementById('editorText').scrollTop = 0, 50);
+}
+
+function trySave() {
+  const title = document.getElementById('editorTitle').value.trim();
+  const content = document.getElementById('editorText').value.trim();
+
+  if (!title) { toast('장소 이름을 입력해주세요'); document.getElementById('editorTitle').focus(); return; }
+  if (!editingCity) { toast('도시를 선택해주세요'); return; }
+  if (!editingStars) { toast('별점을 선택해주세요'); return; }
+
+  const now = Date.now();
+  if (editingId) {
+    const p = places.find(x => x.id === editingId);
+    if (p) { p.title = title; p.content = content; p.city = editingCity; p.stars = editingStars; p.updatedAt = now; }
+  } else {
+    places.push({ id: genId(), title, content, city: editingCity, stars: editingStars, createdAt: now, updatedAt: now });
+    const lc = document.querySelector('.list-container');
+    if (lc) lc.scrollTop = 0;
+  }
+  // 도시 목록에 없으면 추가
+  if (!cities.includes(editingCity)) { cities.push(editingCity); saveCities(); }
+  queueSync();
+  renderFilters();
+  render();
+  closeModal();
+}
+
+/* ---------- Delete ---------- */
+function askDelete(id) { pendingDeleteId = id; openModal('confirmModal'); }
+function doDelete() {
+  const id = pendingDeleteId;
+  if (!id) { closeModal(); return; }
+  places = places.filter(p => p.id !== id);
+  queueSync();
+  renderFilters();
+  render();
+  const count = modalStack.length;
+  for (let i = 0; i < count; i++) {
+    const mid = modalStack.pop();
+    const el = document.getElementById(mid);
+    if (el) el.classList.remove('show');
+    onModalClosed(mid);
+  }
+  if (count > 0) history.go(-count);
+  toast('삭제되었습니다');
+}
+
+/* ---------- Auto-numbering & bullet ---------- */
+function scrollCursorIntoView(ta) {
+  const style = window.getComputedStyle(ta);
+  const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const pos = ta.selectionStart;
+  const textBefore = ta.value.substring(0, pos);
+  const linesBefore = textBefore.split('\n').length;
+  const cursorY = paddingTop + (linesBefore - 1) * lineHeight;
+  const visibleBottom = ta.scrollTop + ta.clientHeight;
+  if (cursorY + lineHeight > visibleBottom) {
+    ta.scrollTop = cursorY + lineHeight - ta.clientHeight + lineHeight;
+  } else if (cursorY < ta.scrollTop) {
+    ta.scrollTop = cursorY - paddingTop;
+  }
+}
+
+/* ---------- Event bindings ---------- */
+function bindEvents() {
+  document.getElementById('gearBtn').addEventListener('click', doLogout);
+  document.getElementById('fab').addEventListener('click', openNewPlace);
+
+  // 카드 액션
+  document.getElementById('list').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('[data-action="delete"]');
+    if (delBtn) { e.stopPropagation(); askDelete(delBtn.dataset.id); return; }
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) openEditPlace(editBtn.dataset.id);
+  });
+
+  // 에디터 버튼
+  document.getElementById('editorCancel').addEventListener('click', () => closeModal());
+  document.getElementById('editorSave').addEventListener('click', trySave);
+  document.getElementById('editorDelete').addEventListener('click', () => { if (editingId) askDelete(editingId); });
+
+  // 별점
+  document.getElementById('editorStars').addEventListener('click', (e) => {
+    const btn = e.target.closest('.star-btn');
+    if (!btn) return;
+    editingStars = Number(btn.dataset.star);
+    refreshStarsUI();
+  });
+
+  // 도시 새로 추가 확인
+  document.getElementById('cityNewConfirm').addEventListener('click', confirmNewCity);
+  document.getElementById('cityNewInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmNewCity(); }
+  });
+
+  // 텍스트 입력: URL 추출 + 자동 리스트
+  const editorText = document.getElementById('editorText');
+  editorText.addEventListener('input', function(e) {
+    updateEditorLinks();
+    const ta = this;
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const charBefore = val[pos - 1];
+    const lineText = val.substring(lineStart, pos);
+
+    if (charBefore === ' ') {
+      const textBeforeSpace = lineText.substring(0, lineText.length - 1);
+      if (textBeforeSpace === '*') {
+        const newVal = val.substring(0, lineStart) + '• ' + val.substring(pos);
+        ta.value = newVal;
+        ta.selectionStart = ta.selectionEnd = lineStart + 2;
+        ta._listType = 'bullet'; ta._listNum = null;
+        scrollCursorIntoView(ta); return;
+      }
+      const numMatch = textBeforeSpace.match(/^(\d+)\.$/);
+      if (numMatch) {
+        const startNum = parseInt(numMatch[1], 10);
+        const prefix = startNum + '. ';
+        const newVal = val.substring(0, lineStart) + prefix + val.substring(pos);
+        ta.value = newVal;
+        ta.selectionStart = ta.selectionEnd = lineStart + prefix.length;
+        ta._listType = 'number'; ta._listNum = startNum;
+        scrollCursorIntoView(ta); return;
+      }
+    }
+    if (charBefore === '\n') {
+      if (!ta._listType) return;
+      const prevLineEnd = pos - 1;
+      const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
+      const prevLine = val.substring(prevLineStart, prevLineEnd);
+      if (ta._listType === 'number') {
+        const numLine = prevLine.match(/^(\d+)\. (.*)$/);
+        if (!numLine) { ta._listType = null; return; }
+        if (numLine[2].trim() === '') {
+          ta.value = val.substring(0, prevLineStart) + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = prevLineStart;
+          ta._listType = null; ta._listNum = null;
+        } else {
+          const nextNum = ta._listNum + 1; ta._listNum = nextNum;
+          const prefix = nextNum + '. ';
+          const newVal = val.substring(0, pos) + prefix + val.substring(pos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = pos + prefix.length;
+        }
+        scrollCursorIntoView(ta); return;
+      }
+      if (ta._listType === 'bullet') {
+        const bulletLine = prevLine.match(/^• (.*)$/);
+        if (!bulletLine) { ta._listType = null; return; }
+        if (bulletLine[1].trim() === '') {
+          ta.value = val.substring(0, prevLineStart) + val.substring(pos);
+          ta.selectionStart = ta.selectionEnd = prevLineStart;
+          ta._listType = null;
+        } else {
+          const newVal = val.substring(0, pos) + '• ' + val.substring(pos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = pos + 2;
+        }
+        scrollCursorIntoView(ta); return;
+      }
+    }
+    scrollCursorIntoView(ta);
+  });
+
+  // Confirm modal
+  document.getElementById('confirmCancel').addEventListener('click', () => closeModal());
+  document.getElementById('confirmDelete').addEventListener('click', doDelete);
+
+  // Search
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+  searchInput.addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    searchClear.classList.toggle('visible', currentSearch.length > 0);
+    render();
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = ''; currentSearch = '';
+    searchClear.classList.remove('visible');
+    render(); searchInput.blur();
+  });
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+
+  // Filters
+  document.getElementById('filters').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-chip');
+    if (!btn) return;
+    currentFilter = btn.dataset.filter;
+    renderFilters();
+    render();
+  });
+
+  bindOverlayClicks();
+}
+
+/* ---------- Header height sync ---------- */
+function syncHeaderHeight() {
+  const h = document.getElementById('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+
+/* ---------- 키보드 대응 ---------- */
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    const vv = window.visualViewport;
+    const keyboardHeight = window.innerHeight - vv.height;
+    document.querySelectorAll('.sheet').forEach(sheet => {
+      if (keyboardHeight > 0) {
+        sheet.style.paddingBottom = keyboardHeight + 'px';
+        sheet.style.maxHeight = (vv.height - 24) + 'px';
+      } else {
+        sheet.style.paddingBottom = '';
+        sheet.style.maxHeight = '';
+      }
+    });
+  });
+}
+
+/* ---------- Init ---------- */
+bindEvents();
+syncHeaderHeight();
+window.addEventListener('resize', syncHeaderHeight);
+window.addEventListener('orientationchange', syncHeaderHeight);
+if (window.ResizeObserver) {
+  new ResizeObserver(syncHeaderHeight).observe(document.getElementById('header'));
+}
+
+setInterval(() => { if (modalStack.length === 0) render(); }, 60000);
+
+const pinEl = document.getElementById('pin-input');
+pinEl.addEventListener('input', (e) => { if (e.target.value.length === 4) doLogin(); });
+pinEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+setTimeout(() => pinEl.focus(), 50);
+
+// 캐시 우선 렌더
+try {
+  const cached = localStorage.getItem(PL79_CACHE);
+  if (cached) { places = JSON.parse(cached); }
+} catch(_) {}
+loadCities();
+renderFilters();
+
+if (getAK()) {
+  document.getElementById('login-overlay').classList.remove('active');
+  render();
+  pullFromServer();
+}
+</script>
+</body>
+</html>

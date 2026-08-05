@@ -83,13 +83,13 @@
     padding: 6px 10px 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
     background: var(--surface); border: 1px solid var(--border);
     color: var(--text-soft); white-space: nowrap; transition: all 0.15s;
-    display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 96px;
+    display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 120px;
   }
   .city-dropdown-btn.city-active { color: white; }
   .city-dropdown-btn svg { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.15s; }
   .city-dropdown-btn.open svg { transform: rotate(180deg); }
   .city-dropdown-menu {
-    position: absolute; top: calc(100% + 6px); left: 0; min-width: 96px;
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 180px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     box-shadow: var(--shadow-lg); z-index: 50; display: none; overflow: hidden;
     animation: popIn 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -97,7 +97,7 @@
   .city-dropdown-menu.open { display: block; }
   .city-dropdown-item {
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+    padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
     color: var(--text-soft); transition: background 0.1s; white-space: nowrap;
   }
   .city-dropdown-item:hover { background: var(--surface-2); }

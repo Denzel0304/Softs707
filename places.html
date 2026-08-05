@@ -244,11 +244,21 @@
   }
   .city-new-confirm:active { background: #4a6557; }
 
-  /* 별점 */
+  /* 별점 + 날짜 한 줄 */
+  .stars-date-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .stars-date-row .editor-field-wrap { margin-bottom: 0; }
+  .stars-col { display: flex; flex-direction: column; }
+  .date-col { display: flex; flex-direction: column; flex: 1; }
   .editor-stars { display: flex; gap: 6px; align-items: center; }
   .star-btn { font-size: 28px; line-height: 1; transition: transform 0.1s; color: #d4cfc8; }
   .star-btn.on { color: #f5a623; }
   .star-btn:active { transform: scale(0.88); }
+  .editor-date-input {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; background: var(--surface); font-size: 14px;
+    outline: none; transition: border-color 0.15s; color: var(--text);
+  }
+  .editor-date-input:focus { border-color: var(--accent); }
 
   /* 장소 이름 */
   .editor-title-input {
@@ -469,15 +479,21 @@
       </div>
     </div>
 
-    <!-- 2. 별점 -->
-    <div class="editor-field-wrap">
-      <div class="editor-field-label">별점 *</div>
-      <div class="editor-stars" id="editorStars">
-        <span class="star-btn" data-star="1">★</span>
-        <span class="star-btn" data-star="2">★</span>
-        <span class="star-btn" data-star="3">★</span>
-        <span class="star-btn" data-star="4">★</span>
-        <span class="star-btn" data-star="5">★</span>
+    <!-- 2. 별점 + 날짜 한 줄 -->
+    <div class="stars-date-row">
+      <div class="stars-col">
+        <div class="editor-field-label">별점 *</div>
+        <div class="editor-stars" id="editorStars">
+          <span class="star-btn" data-star="1">★</span>
+          <span class="star-btn" data-star="2">★</span>
+          <span class="star-btn" data-star="3">★</span>
+          <span class="star-btn" data-star="4">★</span>
+          <span class="star-btn" data-star="5">★</span>
+        </div>
+      </div>
+      <div class="date-col">
+        <div class="editor-field-label">날짜</div>
+        <input type="date" class="editor-date-input" id="editorDate">
       </div>
     </div>
 
@@ -846,7 +862,10 @@ function render() {
   if (q) filtered = filtered.filter(p =>
     p.title.toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q) || (p.city||'').toLowerCase().includes(q)
   );
-  filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+  filtered.sort((a, b) => {
+    const da = a.visitDate || ''; const db = b.visitDate || '';
+    if (da > db) return -1; if (da < db) return 1; return b.updatedAt - a.updatedAt;
+  });
 
   if (filtered.length === 0) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">📍</div><div class="empty-text">${places.length===0?'아직 장소가 없습니다':'결과가 없습니다'}</div></div>`;
@@ -872,7 +891,7 @@ function render() {
       <div class="card-body" data-action="edit" data-id="${p.id}">
         <div class="card-meta">
           <span class="card-tag" style="background:${color}">${escapeHtml(p.city)}</span>
-          <span class="card-time">${relTime(p.updatedAt)}</span>
+          <span class="card-time">${p.visitDate || relTime(p.updatedAt)}</span>
         </div>
         <div class="card-title">${highlight(p.title, q)}</div>
         <div class="card-stars">${starsHtml(p.stars)}</div>
@@ -950,6 +969,11 @@ function updateEditorLinks() {
 }
 
 /* Editor */
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function openNewPlace() {
   editingId = null; editingCity = null; editingStars = 0; editingPhotos = [];
   document.getElementById('editorTitle').value = '';
@@ -957,6 +981,7 @@ function openNewPlace() {
   document.getElementById('editorText')._listType = null;
   document.getElementById('editorText')._listNum = null;
   document.getElementById('editorLinks').innerHTML = '';
+  document.getElementById('editorDate').value = todayStr();
   refreshStarsUI(); renderEditorCityChips(); renderEditorPhotos(); hideCityNewInput();
   openModal('editorModal');
   setTimeout(() => document.getElementById('editorTitle').focus(), 50);
@@ -970,6 +995,7 @@ function openEditPlace(id) {
   document.getElementById('editorText').value = p.content || '';
   document.getElementById('editorText')._listType = null;
   document.getElementById('editorText')._listNum = null;
+  document.getElementById('editorDate').value = p.visitDate || todayStr();
   document.getElementById('editorActions').style.display = 'flex';
   refreshStarsUI(); renderEditorCityChips(); renderEditorPhotos(); updateEditorLinks(); hideCityNewInput();
   openModal('editorModal');
@@ -979,15 +1005,16 @@ function openEditPlace(id) {
 function trySave() {
   const title = document.getElementById('editorTitle').value.trim();
   const content = document.getElementById('editorText').value.trim();
+  const visitDate = document.getElementById('editorDate').value || todayStr();
   if (!title) { toast('장소 이름을 입력해주세요'); document.getElementById('editorTitle').focus(); return; }
   if (!editingCity) { toast('도시를 선택해주세요'); return; }
   if (!editingStars) { toast('별점을 선택해주세요'); return; }
   const now = Date.now();
   if (editingId) {
     const p = places.find(x => x.id === editingId);
-    if (p) { p.title = title; p.content = content; p.city = editingCity; p.stars = editingStars; p.photos = [...editingPhotos]; p.updatedAt = now; }
+    if (p) { p.title = title; p.content = content; p.city = editingCity; p.stars = editingStars; p.photos = [...editingPhotos]; p.visitDate = visitDate; p.updatedAt = now; }
   } else {
-    places.push({ id: genId(), title, content, city: editingCity, stars: editingStars, photos: [...editingPhotos], createdAt: now, updatedAt: now });
+    places.push({ id: genId(), title, content, city: editingCity, stars: editingStars, photos: [...editingPhotos], visitDate, createdAt: now, updatedAt: now });
     const lc = document.querySelector('.list-container'); if (lc) lc.scrollTop = 0;
   }
   if (!cities.includes(editingCity)) { cities.push(editingCity); saveCities(); }

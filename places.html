@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#faf7f2">
+<meta name="theme-color" content="#f0f5f1">
 <title>Places</title>
 <style>
   :root {
-    --bg: #faf7f2;
+    --bg: #f0f5f1;
     --surface: #ffffff;
-    --surface-2: #f3efe7;
-    --text: #2d2a26;
-    --text-soft: #6b655d;
-    --text-mute: #a09a91;
-    --border: #ebe5da;
+    --surface-2: #e6eeea;
+    --text: #2a2d2a;
+    --text-soft: #5d6b5f;
+    --text-mute: #91a094;
+    --border: #d8e5db;
     --accent: #5b7a6a;
     --accent-soft: #e8efeb;
     --shadow-sm: 0 1px 2px rgba(60, 50, 35, 0.04);
@@ -69,15 +69,40 @@
   .search-clear.visible { display: flex; }
   .search-clear svg { width: 12px; height: 12px; color: white; }
 
-  .filters { display: flex; gap: 6px; padding: 0 16px 10px; overflow-x: auto; scrollbar-width: none; }
-  .filters::-webkit-scrollbar { display: none; }
+  .filters { display: flex; gap: 6px; padding: 0 16px 10px; align-items: center; }
   .filter-chip {
     padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
     background: var(--surface); border: 1px solid var(--border);
-    color: var(--text-soft); white-space: nowrap; transition: all 0.15s;
+    color: var(--text-soft); white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
   }
   .filter-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .filter-chip.city-active { color: white; }
+
+  /* 도시 드랍다운 (헤더) */
+  .city-dropdown-wrap { position: relative; flex-shrink: 0; }
+  .city-dropdown-btn {
+    padding: 6px 10px 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-soft); white-space: nowrap; transition: all 0.15s;
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+  }
+  .city-dropdown-btn.city-active { color: white; }
+  .city-dropdown-btn svg { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.15s; }
+  .city-dropdown-btn.open svg { transform: rotate(180deg); }
+  .city-dropdown-menu {
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 130px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow-lg); z-index: 50; display: none; overflow: hidden;
+    animation: popIn 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .city-dropdown-menu.open { display: block; }
+  .city-dropdown-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+    color: var(--text-soft); transition: background 0.1s; white-space: nowrap;
+  }
+  .city-dropdown-item:hover { background: var(--surface-2); }
+  .city-dropdown-item.selected { color: var(--text); font-weight: 700; }
+  .city-dropdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
   /* === List === */
   .list-container {
@@ -147,7 +172,7 @@
   /* === PC Layout === */
   @media (min-width: 768px) {
     :root { --pc-w: 720px; --pc-left: calc(50% - 360px); }
-    body { background: #e8e3db; }
+    body { background: #d8e5db; }
     .header {
       left: var(--pc-left); right: auto; width: var(--pc-w);
       border-radius: 0 0 16px 16px; border-left: 1px solid var(--border);
@@ -218,20 +243,47 @@
   }
   .editor-field-wrap { margin-bottom: 12px; }
 
-  /* 도시 칩 */
-  .city-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .city-chip {
-    padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  /* 도시 드랍다운 (에디터) */
+  .editor-city-row { display: flex; align-items: center; gap: 8px; }
+  .editor-city-select-wrap { position: relative; flex: 1; }
+  .editor-city-select-btn {
+    width: 100%; padding: 10px 36px 10px 14px; border-radius: 12px; font-size: 14px; font-weight: 600;
     border: 1.5px solid var(--border); background: var(--surface);
-    color: var(--text-soft); transition: all 0.15s;
+    color: var(--text-soft); text-align: left; transition: all 0.15s; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
   }
-  .city-chip.selected { color: white; }
-  .city-chip-add {
-    padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  .editor-city-select-btn:focus { border-color: var(--accent); outline: none; }
+  .editor-city-select-btn.has-value { color: var(--text); }
+  .editor-city-select-btn .select-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: none; }
+  .editor-city-select-btn.has-value .select-dot { display: inline-block; }
+  .editor-city-select-arrow {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--text-mute); pointer-events: none; transition: transform 0.15s;
+  }
+  .editor-city-select-wrap.open .editor-city-select-arrow { transform: translateY(-50%) rotate(180deg); }
+  .editor-city-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow-lg); z-index: 200; display: none; overflow: hidden;
+    animation: popIn 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); max-height: 200px; overflow-y: auto;
+  }
+  .editor-city-dropdown.open { display: block; }
+  .editor-city-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; font-size: 14px; font-weight: 500; cursor: pointer;
+    color: var(--text-soft); transition: background 0.1s;
+  }
+  .editor-city-option:hover { background: var(--surface-2); }
+  .editor-city-option.selected { color: var(--text); font-weight: 700; }
+  .editor-city-option-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .editor-city-add-btn {
+    padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
     border: 1.5px dashed var(--border); background: var(--surface);
-    color: var(--text-mute); transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+    color: var(--text-mute); transition: all 0.15s; display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+    white-space: nowrap;
   }
-  .city-chip-add:active { background: var(--surface-2); }
+  .editor-city-add-btn:active { background: var(--surface-2); }
+  .editor-city-add-btn svg { width: 13px; height: 13px; }
   .city-new-input-wrap { display: none; align-items: center; gap: 6px; margin-top: 8px; }
   .city-new-input-wrap.show { display: flex; }
   .city-new-input {
@@ -439,7 +491,16 @@
     </button>
   </div>
   <div class="filters" id="filters">
-    <button class="filter-chip active" data-filter="all">전체</button>
+    <button class="filter-chip active" data-filter="all" id="filterAll">전체</button>
+    <div class="city-dropdown-wrap" id="cityDropdownWrap">
+      <button class="city-dropdown-btn" id="cityDropdownBtn">
+        <span id="cityDropdownLabel">도시 선택</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="city-dropdown-menu" id="cityDropdownMenu"></div>
+    </div>
   </div>
   <div class="sync-bar" id="sync-bar"></div>
 </header>
@@ -472,7 +533,23 @@
     <!-- 1. 도시(카테고리) -->
     <div class="editor-field-wrap">
       <div class="editor-field-label">도시 *</div>
-      <div class="city-chips" id="editorCityChips"></div>
+      <div class="editor-city-row">
+        <div class="editor-city-select-wrap" id="editorCitySelectWrap">
+          <button type="button" class="editor-city-select-btn" id="editorCitySelectBtn">
+            <span class="select-dot" id="editorCityDot"></span>
+            <span id="editorCityLabel">도시를 선택하세요</span>
+          </button>
+          <svg class="editor-city-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <div class="editor-city-dropdown" id="editorCityDropdown"></div>
+        </div>
+        <button type="button" class="editor-city-add-btn" id="cityAddBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>새 도시
+        </button>
+      </div>
       <div class="city-new-input-wrap" id="cityNewWrap">
         <input type="text" class="city-new-input" id="cityNewInput" placeholder="도시 이름 입력" maxlength="10" autocomplete="off">
         <button class="city-new-confirm" id="cityNewConfirm">추가</button>
@@ -735,6 +812,7 @@ function onModalClosed(id) {
     document.getElementById('editorText')._listNum = null;
     document.getElementById('editorLinks').innerHTML = '';
     editingId = null; editingCity = null; editingStars = 0; editingPhotos = [];
+    closeEditorCityDropdown();
     refreshStarsUI(); renderEditorCityChips(); renderEditorPhotos();
     document.getElementById('editorActions').style.display = 'none';
     hideCityNewInput();
@@ -838,19 +916,81 @@ function closeViewer() {
 
 /* Filters */
 function renderFilters() {
-  const wrap = document.getElementById('filters');
   const counts = {};
   places.forEach(p => { counts[p.city] = (counts[p.city] || 0) + 1; });
-  let html = `<button class="filter-chip${currentFilter==='all'?' active':''}" data-filter="all">전체</button>`;
-  cities.forEach(city => {
-    const color = getCityColor(city);
-    const isActive = currentFilter === city;
-    const cnt = counts[city] || 0;
-    html += `<button class="filter-chip${isActive?' city-active':''}" data-filter="${escapeHtml(city)}"
-      style="${isActive?`background:${color};border-color:${color};`:''}"
-    >${escapeHtml(city)}(${cnt})</button>`;
-  });
-  wrap.innerHTML = html;
+
+  // 전체 버튼
+  const allBtn = document.getElementById('filterAll');
+  if (allBtn) {
+    allBtn.classList.toggle('active', currentFilter === 'all');
+  }
+
+  // 도시 드랍다운 버튼 라벨 & 색상
+  const btn = document.getElementById('cityDropdownBtn');
+  const label = document.getElementById('cityDropdownLabel');
+  if (btn && label) {
+    if (currentFilter !== 'all') {
+      const color = getCityColor(currentFilter);
+      const cnt = counts[currentFilter] || 0;
+      label.textContent = `${currentFilter}(${cnt})`;
+      btn.className = 'city-dropdown-btn city-active';
+      btn.style.background = color;
+      btn.style.borderColor = color;
+    } else {
+      label.textContent = '도시 선택';
+      btn.className = 'city-dropdown-btn';
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }
+  }
+
+  // 드랍다운 메뉴 아이템
+  const menu = document.getElementById('cityDropdownMenu');
+  if (menu) {
+    let html = '';
+    cities.forEach(city => {
+      const color = getCityColor(city);
+      const cnt = counts[city] || 0;
+      const sel = currentFilter === city;
+      html += `<div class="city-dropdown-item${sel?' selected':''}" data-city="${escapeHtml(city)}">
+        <span class="city-dropdown-dot" style="background:${color}"></span>
+        <span>${escapeHtml(city)}(${cnt})</span>
+      </div>`;
+    });
+    menu.innerHTML = html;
+    menu.querySelectorAll('.city-dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        currentFilter = item.dataset.city;
+        closeCityDropdown();
+        renderFilters();
+        render();
+      });
+    });
+  }
+}
+
+function openCityDropdown() {
+  const wrap = document.getElementById('cityDropdownWrap');
+  const menu = document.getElementById('cityDropdownMenu');
+  const btn = document.getElementById('cityDropdownBtn');
+  if (!wrap || !menu || !btn) return;
+  menu.classList.add('open');
+  btn.classList.add('open');
+  wrap._outsideHandler = (e) => {
+    if (!wrap.contains(e.target)) closeCityDropdown();
+  };
+  setTimeout(() => document.addEventListener('click', wrap._outsideHandler), 0);
+}
+function closeCityDropdown() {
+  const wrap = document.getElementById('cityDropdownWrap');
+  const menu = document.getElementById('cityDropdownMenu');
+  const btn = document.getElementById('cityDropdownBtn');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.classList.remove('open');
+  if (wrap && wrap._outsideHandler) {
+    document.removeEventListener('click', wrap._outsideHandler);
+    wrap._outsideHandler = null;
+  }
 }
 
 /* Render */
@@ -914,27 +1054,87 @@ function refreshStarsUI() {
   });
 }
 
-/* 도시 칩 */
+/* 도시 드랍다운 (에디터) */
 function renderEditorCityChips() {
-  const wrap = document.getElementById('editorCityChips');
-  let html = '';
-  cities.forEach(city => {
-    const color = getCityColor(city);
-    const sel = editingCity === city;
-    html += `<button class="city-chip${sel?' selected':''}" data-city="${escapeHtml(city)}"
-      style="${sel?`background:${color};border-color:${color};`:`border-color:${color};color:${color};`}"
-    >${escapeHtml(city)}</button>`;
-  });
-  html += `<button class="city-chip-add" id="cityAddBtn">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>새 도시
-  </button>`;
-  wrap.innerHTML = html;
-  wrap.querySelectorAll('.city-chip').forEach(btn => {
-    btn.addEventListener('click', () => { editingCity = btn.dataset.city; renderEditorCityChips(); });
-  });
-  document.getElementById('cityAddBtn').addEventListener('click', showCityNewInput);
+  // 선택 버튼 라벨/색상 업데이트
+  const selectBtn = document.getElementById('editorCitySelectBtn');
+  const labelEl = document.getElementById('editorCityLabel');
+  const dotEl = document.getElementById('editorCityDot');
+  if (selectBtn && labelEl && dotEl) {
+    if (editingCity) {
+      const color = getCityColor(editingCity);
+      labelEl.textContent = editingCity;
+      dotEl.style.background = color;
+      selectBtn.classList.add('has-value');
+    } else {
+      labelEl.textContent = '도시를 선택하세요';
+      dotEl.style.background = '';
+      selectBtn.classList.remove('has-value');
+    }
+  }
+
+  // 드랍다운 옵션 목록 렌더링
+  const dropdown = document.getElementById('editorCityDropdown');
+  if (dropdown) {
+    let html = '';
+    cities.forEach(city => {
+      const color = getCityColor(city);
+      const sel = editingCity === city;
+      html += `<div class="editor-city-option${sel?' selected':''}" data-city="${escapeHtml(city)}">
+        <span class="editor-city-option-dot" style="background:${color}"></span>
+        <span>${escapeHtml(city)}</span>
+      </div>`;
+    });
+    dropdown.innerHTML = html;
+    dropdown.querySelectorAll('.editor-city-option').forEach(item => {
+      item.addEventListener('click', () => {
+        editingCity = item.dataset.city;
+        closeEditorCityDropdown();
+        renderEditorCityChips();
+      });
+    });
+  }
+
+  // 새 도시 버튼 이벤트 재바인딩
+  const addBtn = document.getElementById('cityAddBtn');
+  if (addBtn) {
+    addBtn.onclick = showCityNewInput;
+  }
+
+  // 선택 버튼 토글 이벤트
+  if (selectBtn) {
+    selectBtn.onclick = (e) => {
+      e.stopPropagation();
+      const wrap = document.getElementById('editorCitySelectWrap');
+      if (wrap && dropdown && dropdown.classList.contains('open')) {
+        closeEditorCityDropdown();
+      } else {
+        openEditorCityDropdown();
+      }
+    };
+  }
+}
+
+function openEditorCityDropdown() {
+  const wrap = document.getElementById('editorCitySelectWrap');
+  const dropdown = document.getElementById('editorCityDropdown');
+  if (!wrap || !dropdown) return;
+  dropdown.classList.add('open');
+  wrap.classList.add('open');
+  wrap._outsideHandler = (e) => {
+    if (!wrap.contains(e.target)) closeEditorCityDropdown();
+  };
+  setTimeout(() => document.addEventListener('click', wrap._outsideHandler), 0);
+}
+function closeEditorCityDropdown() {
+  const wrap = document.getElementById('editorCitySelectWrap');
+  const dropdown = document.getElementById('editorCityDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  if (wrap) wrap.classList.remove('open');
+  if (wrap && wrap._outsideHandler) {
+    document.removeEventListener('click', wrap._outsideHandler);
+    wrap._outsideHandler = null;
+  }
 }
 
 function showCityNewInput() { document.getElementById('cityNewWrap').classList.add('show'); document.getElementById('cityNewInput').focus(); }
@@ -1166,9 +1366,17 @@ function bindEvents() {
   });
   searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
 
-  document.getElementById('filters').addEventListener('click', (e) => {
-    const btn = e.target.closest('.filter-chip'); if (!btn) return;
-    currentFilter = btn.dataset.filter; renderFilters(); render();
+  // 전체 버튼
+  document.getElementById('filterAll').addEventListener('click', () => {
+    currentFilter = 'all'; closeCityDropdown(); renderFilters(); render();
+  });
+
+  // 헤더 도시 드랍다운 토글
+  document.getElementById('cityDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('cityDropdownMenu');
+    if (menu && menu.classList.contains('open')) { closeCityDropdown(); }
+    else { renderFilters(); openCityDropdown(); }
   });
 
   bindOverlayClicks();

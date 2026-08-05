@@ -254,9 +254,10 @@
     #editorModal { align-items: center; padding: 24px; }
     .sheet {
       border-radius: 18px !important; max-width: 560px;
-      max-height: 90vh; height: auto; padding-bottom: 24px;
+      max-height: 90vh; height: auto;
       animation: popIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+    .sheet-scroll { padding-bottom: 24px; }
     .editor-links { max-height: 18vh; overflow-y: auto; }
   }
   @media (min-width: 1100px) {
@@ -280,10 +281,14 @@
   .sheet {
     background: var(--bg); width: 100%; max-width: 520px;
     border-radius: 18px 18px 0 0;
-    padding: 20px 18px calc(20px + var(--safe-bottom));
+    padding: 20px 18px 0;
     animation: slideUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     max-height: 90vh; height: auto; display: flex; flex-direction: column;
-    overflow-y: auto;
+    overflow: hidden;
+  }
+  .sheet-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(20px + var(--safe-bottom));
   }
   .dialog {
     background: var(--surface); border-radius: 16px; padding: 22px 20px 16px;
@@ -604,57 +609,59 @@
       <button class="editor-save" id="editorSave">저장</button>
     </div>
 
-    <!-- 1. 도시(카테고리) -->
-    <div class="editor-field-wrap">
-      <div class="editor-field-label">도시 *</div>
-      <div class="editor-city-select-wrap" id="editorCitySelectWrap">
-        <button type="button" class="editor-city-select-btn" id="editorCitySelectBtn">
-          <span class="select-dot" id="editorCityDot"></span>
-          <span id="editorCityLabel">도시를 선택하세요</span>
-        </button>
-        <svg class="editor-city-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-        <div class="editor-city-dropdown" id="editorCityDropdown"></div>
-      </div>
-    </div>
-
-    <!-- 2. 별점 + 날짜 한 줄 -->
-    <div class="stars-date-row">
-      <div class="stars-col">
-        <div class="editor-field-label">별점 *</div>
-        <div class="editor-stars" id="editorStars">
-          <span class="star-btn" data-star="1">★</span>
-          <span class="star-btn" data-star="2">★</span>
-          <span class="star-btn" data-star="3">★</span>
-          <span class="star-btn" data-star="4">★</span>
-          <span class="star-btn" data-star="5">★</span>
+    <div class="sheet-scroll">
+      <!-- 1. 도시(카테고리) -->
+      <div class="editor-field-wrap">
+        <div class="editor-field-label">도시 *</div>
+        <div class="editor-city-select-wrap" id="editorCitySelectWrap">
+          <button type="button" class="editor-city-select-btn" id="editorCitySelectBtn">
+            <span class="select-dot" id="editorCityDot"></span>
+            <span id="editorCityLabel">도시를 선택하세요</span>
+          </button>
+          <svg class="editor-city-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <div class="editor-city-dropdown" id="editorCityDropdown"></div>
         </div>
       </div>
-      <div class="date-col">
-        <div class="editor-field-label">날짜</div>
-        <input type="date" class="editor-date-input" id="editorDate">
+
+      <!-- 2. 별점 + 날짜 한 줄 -->
+      <div class="stars-date-row">
+        <div class="stars-col">
+          <div class="editor-field-label">별점 *</div>
+          <div class="editor-stars" id="editorStars">
+            <span class="star-btn" data-star="1">★</span>
+            <span class="star-btn" data-star="2">★</span>
+            <span class="star-btn" data-star="3">★</span>
+            <span class="star-btn" data-star="4">★</span>
+            <span class="star-btn" data-star="5">★</span>
+          </div>
+        </div>
+        <div class="date-col">
+          <div class="editor-field-label">날짜</div>
+          <input type="date" class="editor-date-input" id="editorDate">
+        </div>
       </div>
-    </div>
 
-    <!-- 3. 장소 이름 -->
-    <div class="editor-field-wrap">
-      <div class="editor-field-label">장소 이름 *</div>
-      <input type="text" class="editor-title-input" id="editorTitle" placeholder="예) 거제 해녀촌" autocomplete="off">
-    </div>
+      <!-- 3. 장소 이름 -->
+      <div class="editor-field-wrap">
+        <div class="editor-field-label">장소 이름 *</div>
+        <input type="text" class="editor-title-input" id="editorTitle" placeholder="예) 거제 해녀촌" autocomplete="off">
+      </div>
 
-    <!-- 4. 내용 (선택) -->
-    <div class="editor-field-wrap">
-      <div class="editor-field-label">내용 (선택)</div>
-      <textarea class="editor-textarea" id="editorText" placeholder="방문 후기, 메모..." enterkeyhint="enter"></textarea>
-      <div class="editor-links" id="editorLinks"></div>
-    </div>
+      <!-- 4. 내용 (선택) -->
+      <div class="editor-field-wrap">
+        <div class="editor-field-label">내용 (선택)</div>
+        <textarea class="editor-textarea" id="editorText" placeholder="방문 후기, 메모..." enterkeyhint="enter"></textarea>
+        <div class="editor-links" id="editorLinks"></div>
+      </div>
 
-    <!-- 사진 바 -->
-    <div class="editor-photo-bar" id="editorPhotoBar"></div>
+      <!-- 사진 바 -->
+      <div class="editor-photo-bar" id="editorPhotoBar"></div>
 
-    <div class="editor-actions" id="editorActions" style="display:none;">
-      <button class="btn-delete" id="editorDelete">삭제</button>
+      <div class="editor-actions" id="editorActions" style="display:none;">
+        <button class="btn-delete" id="editorDelete">삭제</button>
+      </div>
     </div>
   </div>
 </div>

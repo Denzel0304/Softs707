@@ -104,6 +104,69 @@
   .city-dropdown-item.selected { color: var(--text); font-weight: 700; }
   .city-dropdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
+  /* 헤더 새 도시 버튼 */
+  .header-city-add-btn {
+    padding: 6px 10px 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--surface); border: 1px dashed var(--border);
+    color: var(--text-mute); white-space: nowrap; transition: all 0.15s;
+    display: flex; align-items: center; gap: 3px; cursor: pointer; flex-shrink: 0;
+  }
+  .header-city-add-btn svg { width: 12px; height: 12px; }
+  .header-city-add-btn:active { background: var(--surface-2); }
+
+  /* 헤더 새 도시 인풋 (드랍다운 아래 슬라이드) */
+  .header-city-new-wrap {
+    display: none; align-items: center; gap: 6px;
+    padding: 0 16px 10px; animation: slideDown 0.15s ease;
+  }
+  .header-city-new-wrap.show { display: flex; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .header-city-new-input {
+    flex: 1; border: 1.5px solid var(--accent); border-radius: 10px;
+    padding: 7px 12px; font-size: 14px; outline: none; background: var(--surface);
+  }
+  .header-city-new-confirm {
+    padding: 7px 14px; border-radius: 10px; background: var(--accent);
+    color: white; font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+  .header-city-new-confirm:active { background: #4a6557; }
+  .header-city-new-cancel {
+    padding: 7px 10px; border-radius: 10px; background: var(--surface-2);
+    color: var(--text-soft); font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* 드랍다운 아이템 편집 모드 */
+  .city-dropdown-item { justify-content: space-between; }
+  .city-dropdown-item-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+  .city-dropdown-edit-btn {
+    width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); background: none; flex-shrink: 0; transition: all 0.1s;
+  }
+  .city-dropdown-edit-btn:hover { background: var(--surface-2); color: var(--text-soft); }
+  .city-dropdown-edit-btn svg { width: 13px; height: 13px; }
+  /* 편집 모드 행 */
+  .city-dropdown-edit-row {
+    display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--surface-2); border-bottom: 1px solid var(--border);
+  }
+  .city-dropdown-edit-input {
+    flex: 1; border: 1.5px solid var(--accent); border-radius: 8px;
+    padding: 5px 8px; font-size: 13px; outline: none; background: var(--surface); min-width: 0;
+  }
+  .city-dropdown-edit-save {
+    padding: 5px 10px; border-radius: 8px; background: var(--accent);
+    color: white; font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .city-dropdown-edit-save:active { background: #4a6557; }
+  .city-dropdown-edit-del {
+    width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.1s;
+  }
+  .city-dropdown-edit-del.can-delete { background: #fdecea; color: #c0392b; }
+  .city-dropdown-edit-del.can-delete:active { background: #f9d5d1; }
+  .city-dropdown-edit-del.no-delete { background: var(--surface-2); color: var(--text-mute); cursor: not-allowed; }
+  .city-dropdown-edit-del svg { width: 14px; height: 14px; }
+
   /* === List === */
   .list-container {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -501,6 +564,16 @@
       </button>
       <div class="city-dropdown-menu" id="cityDropdownMenu"></div>
     </div>
+    <button class="header-city-add-btn" id="headerCityAddBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>새 도시
+    </button>
+  </div>
+  <div class="header-city-new-wrap" id="headerCityNewWrap">
+    <input type="text" class="header-city-new-input" id="headerCityNewInput" placeholder="도시 이름 입력" maxlength="10" autocomplete="off">
+    <button class="header-city-new-confirm" id="headerCityNewConfirm">추가</button>
+    <button class="header-city-new-cancel" id="headerCityNewCancel">취소</button>
   </div>
   <div class="sync-bar" id="sync-bar"></div>
 </header>
@@ -533,26 +606,15 @@
     <!-- 1. 도시(카테고리) -->
     <div class="editor-field-wrap">
       <div class="editor-field-label">도시 *</div>
-      <div class="editor-city-row">
-        <div class="editor-city-select-wrap" id="editorCitySelectWrap">
-          <button type="button" class="editor-city-select-btn" id="editorCitySelectBtn">
-            <span class="select-dot" id="editorCityDot"></span>
-            <span id="editorCityLabel">도시를 선택하세요</span>
-          </button>
-          <svg class="editor-city-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-          <div class="editor-city-dropdown" id="editorCityDropdown"></div>
-        </div>
-        <button type="button" class="editor-city-add-btn" id="cityAddBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>새 도시
+      <div class="editor-city-select-wrap" id="editorCitySelectWrap">
+        <button type="button" class="editor-city-select-btn" id="editorCitySelectBtn">
+          <span class="select-dot" id="editorCityDot"></span>
+          <span id="editorCityLabel">도시를 선택하세요</span>
         </button>
-      </div>
-      <div class="city-new-input-wrap" id="cityNewWrap">
-        <input type="text" class="city-new-input" id="cityNewInput" placeholder="도시 이름 입력" maxlength="10" autocomplete="off">
-        <button class="city-new-confirm" id="cityNewConfirm">추가</button>
+        <svg class="editor-city-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        <div class="editor-city-dropdown" id="editorCityDropdown"></div>
       </div>
     </div>
 
@@ -944,26 +1006,47 @@ function renderFilters() {
     }
   }
 
-  // 드랍다운 메뉴 아이템
+  // 드랍다운 메뉴 아이템 (가나다 정렬 + 편집 버튼)
   const menu = document.getElementById('cityDropdownMenu');
   if (menu) {
+    const sorted = [...cities].sort((a, b) => a.localeCompare(b, 'ko'));
     let html = '';
-    cities.forEach(city => {
+    sorted.forEach(city => {
       const color = getCityColor(city);
       const cnt = counts[city] || 0;
       const sel = currentFilter === city;
       html += `<div class="city-dropdown-item${sel?' selected':''}" data-city="${escapeHtml(city)}">
-        <span class="city-dropdown-dot" style="background:${color}"></span>
-        <span>${escapeHtml(city)}(${cnt})</span>
+        <div class="city-dropdown-item-left" data-city="${escapeHtml(city)}">
+          <span class="city-dropdown-dot" style="background:${color}"></span>
+          <span>${escapeHtml(city)}(${cnt})</span>
+        </div>
+        <button class="city-dropdown-edit-btn" data-edit-city="${escapeHtml(city)}" title="편집">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
       </div>`;
     });
     menu.innerHTML = html;
-    menu.querySelectorAll('.city-dropdown-item').forEach(item => {
-      item.addEventListener('click', () => {
-        currentFilter = item.dataset.city;
+
+    // 도시명 클릭 → 필터 적용
+    menu.querySelectorAll('.city-dropdown-item-left').forEach(left => {
+      left.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentFilter = left.dataset.city;
         closeCityDropdown();
         renderFilters();
         render();
+      });
+    });
+
+    // ✏️ 편집 버튼 클릭 → 인라인 편집 모드
+    menu.querySelectorAll('.city-dropdown-edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const city = btn.dataset.editCity;
+        openCityEditRow(city, btn.closest('.city-dropdown-item'), counts);
       });
     });
   }
@@ -991,6 +1074,68 @@ function closeCityDropdown() {
     document.removeEventListener('click', wrap._outsideHandler);
     wrap._outsideHandler = null;
   }
+}
+
+/* 도시 인라인 편집 */
+function openCityEditRow(city, itemEl, counts) {
+  // 기존 편집행 제거
+  document.querySelectorAll('.city-dropdown-edit-row').forEach(r => r.remove());
+
+  const cnt = counts[city] || 0;
+  const canDelete = cnt === 0;
+  const row = document.createElement('div');
+  row.className = 'city-dropdown-edit-row';
+  row.innerHTML = `
+    <input class="city-dropdown-edit-input" value="${escapeHtml(city)}" maxlength="10" autocomplete="off">
+    <button class="city-dropdown-edit-save">저장</button>
+    <button class="city-dropdown-edit-del ${canDelete?'can-delete':'no-delete'}" title="${canDelete?'삭제':'등록된 장소가 있어 삭제 불가'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </button>`;
+  itemEl.insertAdjacentElement('afterend', row);
+
+  const input = row.querySelector('.city-dropdown-edit-input');
+  input.focus(); input.select();
+
+  // 저장
+  const doSave = () => {
+    const newName = input.value.trim();
+    if (!newName) { toast('도시 이름을 입력해주세요'); return; }
+    if (newName === city) { row.remove(); return; }
+    if (cities.includes(newName)) { toast('이미 있는 도시 이름입니다'); return; }
+    // cities 배열 업데이트
+    const idx = cities.indexOf(city);
+    if (idx !== -1) cities[idx] = newName;
+    // 해당 도시 카드 전체 city 필드 업데이트
+    places.forEach(p => { if (p.city === city) p.city = newName; });
+    if (currentFilter === city) currentFilter = newName;
+    saveCities();
+    queueSync();
+    row.remove();
+    closeCityDropdown();
+    renderFilters();
+    render();
+    toast(`"${newName}"(으)로 변경됐습니다`);
+  };
+
+  row.querySelector('.city-dropdown-edit-save').addEventListener('click', (e) => { e.stopPropagation(); doSave(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } if (e.key === 'Escape') row.remove(); });
+
+  // 삭제
+  row.querySelector('.city-dropdown-edit-del').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!canDelete) { toast('등록된 장소가 있어 삭제할 수 없습니다'); return; }
+    cities = cities.filter(c => c !== city);
+    if (currentFilter === city) currentFilter = 'all';
+    saveCities();
+    row.remove();
+    closeCityDropdown();
+    renderFilters();
+    render();
+    toast(`"${city}" 삭제됐습니다`);
+  });
 }
 
 /* Render */
@@ -1073,11 +1218,12 @@ function renderEditorCityChips() {
     }
   }
 
-  // 드랍다운 옵션 목록 렌더링
+  // 드랍다운 옵션 목록 렌더링 (가나다 정렬)
   const dropdown = document.getElementById('editorCityDropdown');
   if (dropdown) {
+    const sorted = [...cities].sort((a, b) => a.localeCompare(b, 'ko'));
     let html = '';
-    cities.forEach(city => {
+    sorted.forEach(city => {
       const color = getCityColor(city);
       const sel = editingCity === city;
       html += `<div class="editor-city-option${sel?' selected':''}" data-city="${escapeHtml(city)}">
@@ -1093,12 +1239,6 @@ function renderEditorCityChips() {
         renderEditorCityChips();
       });
     });
-  }
-
-  // 새 도시 버튼 이벤트 재바인딩
-  const addBtn = document.getElementById('cityAddBtn');
-  if (addBtn) {
-    addBtn.onclick = showCityNewInput;
   }
 
   // 선택 버튼 토글 이벤트
@@ -1137,14 +1277,28 @@ function closeEditorCityDropdown() {
   }
 }
 
-function showCityNewInput() { document.getElementById('cityNewWrap').classList.add('show'); document.getElementById('cityNewInput').focus(); }
-function hideCityNewInput() { document.getElementById('cityNewWrap').classList.remove('show'); document.getElementById('cityNewInput').value = ''; }
-function confirmNewCity() {
-  const val = document.getElementById('cityNewInput').value.trim();
-  if (!val) { toast('도시 이름을 입력해주세요'); return; }
-  if (!cities.includes(val)) { cities.push(val); saveCities(); }
-  editingCity = val; hideCityNewInput(); renderEditorCityChips(); renderFilters();
+/* 헤더 새 도시 추가 */
+function showHeaderCityInput() {
+  const wrap = document.getElementById('headerCityNewWrap');
+  if (wrap) { wrap.classList.add('show'); document.getElementById('headerCityNewInput').focus(); }
+  closeCityDropdown();
 }
+function hideHeaderCityInput() {
+  const wrap = document.getElementById('headerCityNewWrap');
+  if (wrap) { wrap.classList.remove('show'); document.getElementById('headerCityNewInput').value = ''; }
+  syncHeaderHeight();
+}
+function confirmHeaderNewCity() {
+  const val = document.getElementById('headerCityNewInput').value.trim();
+  if (!val) { toast('도시 이름을 입력해주세요'); return; }
+  if (cities.includes(val)) { toast('이미 있는 도시 이름입니다'); return; }
+  cities.push(val); saveCities();
+  hideHeaderCityInput(); renderFilters(); renderEditorCityChips();
+  toast(`"${val}" 추가됐습니다`);
+}
+/* 에디터 모달 내부 hideCityNewInput (모달 닫힐 때 호출용 - 헤더로 이동했으므로 noop) */
+function showCityNewInput() { showHeaderCityInput(); }
+function hideCityNewInput() { hideHeaderCityInput(); }
 
 /* URL 추출 */
 function extractUrls(text) {
@@ -1295,8 +1449,13 @@ function bindEvents() {
     editingStars = Number(btn.dataset.star); refreshStarsUI();
   });
 
-  document.getElementById('cityNewConfirm').addEventListener('click', confirmNewCity);
-  document.getElementById('cityNewInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); confirmNewCity(); } });
+  document.getElementById('headerCityAddBtn').addEventListener('click', showHeaderCityInput);
+  document.getElementById('headerCityNewConfirm').addEventListener('click', confirmHeaderNewCity);
+  document.getElementById('headerCityNewCancel').addEventListener('click', hideHeaderCityInput);
+  document.getElementById('headerCityNewInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmHeaderNewCity(); }
+    if (e.key === 'Escape') hideHeaderCityInput();
+  });
 
   const editorText = document.getElementById('editorText');
   editorText.addEventListener('input', function(e) {

@@ -80,10 +80,10 @@
   /* 도시 드랍다운 (헤더) */
   .city-dropdown-wrap { position: relative; flex-shrink: 0; }
   .city-dropdown-btn {
-    padding: 6px 10px 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
     background: var(--surface); border: 1px solid var(--border);
     color: var(--text-soft); white-space: nowrap; transition: all 0.15s;
-    display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 120px;
+    display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; width: 120px;
   }
   .city-dropdown-btn.city-active { color: white; }
   .city-dropdown-btn svg { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.15s; }
@@ -558,7 +558,7 @@
     <button class="filter-chip active" data-filter="all" id="filterAll">전체</button>
     <div class="city-dropdown-wrap" id="cityDropdownWrap">
       <button class="city-dropdown-btn" id="cityDropdownBtn">
-        <span id="cityDropdownLabel">도시 선택</span>
+        <span id="cityDropdownLabel">도시 선택 </span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
@@ -998,12 +998,12 @@ function renderFilters() {
     if (currentFilter !== 'all') {
       const color = getCityColor(currentFilter);
       const cnt = counts[currentFilter] || 0;
-      label.textContent = `${currentFilter}(${cnt})`;
+      label.textContent = `${currentFilter}(${cnt}) `;
       btn.className = 'city-dropdown-btn city-active';
       btn.style.background = color;
       btn.style.borderColor = color;
     } else {
-      label.textContent = '도시 선택';
+      label.textContent = '도시 선택 ';
       btn.className = 'city-dropdown-btn';
       btn.style.background = '';
       btn.style.borderColor = '';

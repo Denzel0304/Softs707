@@ -83,13 +83,13 @@
     padding: 6px 10px 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
     background: var(--surface); border: 1px solid var(--border);
     color: var(--text-soft); white-space: nowrap; transition: all 0.15s;
-    display: flex; align-items: center; gap: 4px; cursor: pointer;
+    display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 96px;
   }
   .city-dropdown-btn.city-active { color: white; }
   .city-dropdown-btn svg { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.15s; }
   .city-dropdown-btn.open svg { transform: rotate(180deg); }
   .city-dropdown-menu {
-    position: absolute; top: calc(100% + 6px); left: 0; min-width: 130px;
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 96px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     box-shadow: var(--shadow-lg); z-index: 50; display: none; overflow: hidden;
     animation: popIn 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -148,6 +148,7 @@
   .city-dropdown-edit-row {
     display: flex; align-items: center; gap: 6px; padding: 6px 10px;
     background: var(--surface-2); border-bottom: 1px solid var(--border);
+    max-width: 220px;
   }
   .city-dropdown-edit-input {
     flex: 1; border: 1.5px solid var(--accent); border-radius: 8px;
@@ -855,6 +856,9 @@ function closeModal() { if (modalStack.length === 0) return; history.back(); }
 window.addEventListener('popstate', () => {
   const overlay = document.getElementById('viewerOverlay');
   if (overlay && overlay.classList.contains('show')) { overlay.classList.remove('show'); return; }
+  // 드롭다운(또는 편집행)이 열려 있으면 그것만 닫고 종료
+  const menu = document.getElementById('cityDropdownMenu');
+  if (menu && menu.classList.contains('open')) { closeCityDropdown(true); return; }
   if (modalStack.length === 0) return;
   const id = modalStack.pop();
   const el = document.getElementById(id); if (el) el.classList.remove('show');
@@ -1059,21 +1063,24 @@ function openCityDropdown() {
   if (!wrap || !menu || !btn) return;
   menu.classList.add('open');
   btn.classList.add('open');
+  history.pushState({ cityDropdown: true }, '');
   wrap._outsideHandler = (e) => {
     if (!wrap.contains(e.target)) closeCityDropdown();
   };
   setTimeout(() => document.addEventListener('click', wrap._outsideHandler), 0);
 }
-function closeCityDropdown() {
+function closeCityDropdown(fromPopstate) {
   const wrap = document.getElementById('cityDropdownWrap');
   const menu = document.getElementById('cityDropdownMenu');
   const btn = document.getElementById('cityDropdownBtn');
-  if (menu) menu.classList.remove('open');
+  if (!menu || !menu.classList.contains('open')) return;
+  menu.classList.remove('open');
   if (btn) btn.classList.remove('open');
   if (wrap && wrap._outsideHandler) {
     document.removeEventListener('click', wrap._outsideHandler);
     wrap._outsideHandler = null;
   }
+  if (!fromPopstate && history.state && history.state.cityDropdown) history.back();
 }
 
 /* 도시 인라인 편집 */

@@ -1557,8 +1557,8 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
     const vv = window.visualViewport; const keyboardHeight = window.innerHeight - vv.height;
     document.querySelectorAll('.sheet').forEach(sheet => {
-      if (keyboardHeight > 0) { sheet.style.paddingBottom = keyboardHeight + 'px'; sheet.style.maxHeight = (vv.height - 24) + 'px'; }
-      else { sheet.style.paddingBottom = ''; sheet.style.maxHeight = ''; }
+      if (keyboardHeight > 0) { sheet.style.maxHeight = (vv.height - 24) + 'px'; }
+      else { sheet.style.maxHeight = ''; }
     });
   });
 }

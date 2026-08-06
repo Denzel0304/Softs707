@@ -293,7 +293,7 @@
   }
   .sheet-scroll {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 0 18px calc(20px + var(--safe-bottom));
+    padding: 16px 18px calc(20px + var(--safe-bottom));
     min-height: 0;
   }
   .dialog {
@@ -306,6 +306,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 20px 18px 14px;
     flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
   }
   .editor-cancel, .editor-save { font-size: 14px; font-weight: 600; border-radius: 10px; transition: all 0.15s; }
   .editor-cancel { color: var(--text); padding: 8px 14px; background: #e0d8c8; border: 1px solid #c9bea8; }

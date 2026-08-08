@@ -1541,6 +1541,8 @@ function bindEvents() {
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
     render();
+    const lc = document.querySelector('.list-container');
+    if (lc) lc.scrollTop = 0;
   });
 
   // Card actions (썸네일·삭제·편집 모두 단일 리스너로 처리)

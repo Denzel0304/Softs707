@@ -1293,9 +1293,59 @@ function attachListMode(ta) {
     }
   });
 
+  // ── 번호 목록 전체 재번호 유틸 ──
+  // 텍스트 전체에서 "숫자. " 로 시작하는 줄들을 순서대로 1부터 다시 매김.
+  // 번호 목록이 아닌 줄(일반 텍스트, 빈 줄, ●줄 등)은 그대로 두되,
+  // 번호 줄이 끊기면 다음 번호 블록은 1부터 다시 시작.
+  function renumberAll() {
+    const pos = ta.selectionStart;
+    const lines = ta.value.split('\n');
+    let counter = 0;
+    let changed = false;
+    const result = lines.map(line => {
+      const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
+      if (m) {
+        counter++;
+        const newLine = counter + m[2] + m[3];
+        if (newLine !== line) changed = true;
+        return newLine;
+      } else {
+        counter = 0; // 번호 블록 끊김 → 다음 블록은 1부터
+        return line;
+      }
+    });
+    if (!changed) return;
+
+    // 커서 위치 보정: 변경된 줄의 번호 자릿수 차이만큼 커서 이동
+    const oldLines = lines;
+    const newLines = result;
+    let oldOffset = 0, newOffset = 0;
+    for (let i = 0; i < oldLines.length; i++) {
+      const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
+      const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
+      if (pos <= oldEnd) {
+        // 커서가 이 줄 안에 있음
+        const posInLine = pos - oldOffset;
+        const om = oldLines[i].match(/^(\d+\.\s)/);
+        const nm = newLines[i].match(/^(\d+\.\s)/);
+        const diff = nm && om ? nm[1].length - om[1].length : 0;
+        const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
+        ta.value = newLines.join('\n');
+        ta.selectionStart = ta.selectionEnd = newPos;
+        return;
+      }
+      oldOffset = oldEnd;
+      newOffset = newEnd;
+    }
+    ta.value = newLines.join('\n');
+    ta.selectionStart = ta.selectionEnd = pos;
+  }
+
   // textarea 값이 외부에서 리셋되면 (.value = '') 모드도 초기화되도록
+  // 그리고 Backspace/Delete 등으로 번호 줄이 지워진 뒤 재번호 매기기
   ta.addEventListener('input', function() {
-    if (ta.value === '') mode = null;
+    if (ta.value === '') { mode = null; return; }
+    if (mode === 'number') renumberAll();
   });
 }
 

@@ -1195,8 +1195,18 @@ function attachListMode(ta) {
     return false;
   }
 
-  function handleEnter(preventFn) {
+  function handleEnter(preventFn, isShift) {
     if (!mode) return false;
+    // Shift+Enter → 자동 넘버링 없이 일반 줄바꿈
+    if (isShift) {
+      preventFn();
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(ta.selectionEnd);
+      ta.value = before + '\n' + after;
+      ta.selectionStart = ta.selectionEnd = start + 1;
+      return true;
+    }
     preventFn();
     const start = ta.selectionStart;
     const before = ta.value.substring(0, start);
@@ -1217,6 +1227,7 @@ function attachListMode(ta) {
 
     } else if (mode === 'number') {
       const match = curLine.match(/^(\d+)\.\s/);
+      // 빈 번호 줄에서 엔터 → 모드 해제
       if (match && curLine === match[0]) {
         const trim = before.slice(0, -match[0].length);
         ta.value = trim + '\n' + after;
@@ -1226,7 +1237,21 @@ function attachListMode(ta) {
       }
       const nextNum = match ? parseInt(match[1]) + 1 : 1;
       const insert = '\n' + nextNum + '. ';
-      ta.value = before + insert + after;
+
+      // after 부분의 번호 목록 줄들을 재번호 매기기
+      const afterLines = after.split('\n');
+      let renumFrom = nextNum + 1;
+      const renumberedAfterLines = afterLines.map((line, idx) => {
+        if (idx === 0) return line; // 첫 줄은 커서 바로 뒤이므로 번호 없음
+        const lm = line.match(/^(\d+)(\.\s)/);
+        if (lm) {
+          return renumFrom++ + lm[2] + line.slice(lm[0].length);
+        }
+        return line;
+      });
+      const newAfter = renumberedAfterLines.join('\n');
+
+      ta.value = before + insert + newAfter;
       ta.selectionStart = ta.selectionEnd = start + insert.length;
     }
     return true;
@@ -1238,7 +1263,7 @@ function attachListMode(ta) {
     if (e.key === ' ') {
       handled = handleSpace(() => e.preventDefault());
     } else if (e.key === 'Enter') {
-      handled = handleEnter(() => e.preventDefault());
+      handled = handleEnter(() => e.preventDefault(), e.shiftKey);
     }
     // 자동 넘버링이 작동했다면 preventDefault 때문에 input 이벤트가
     // 발생하지 않아 attachCaretScroll이 못 듣는다 → 직접 호출.
@@ -1261,7 +1286,7 @@ function attachListMode(ta) {
     // Enter 입력 (줄바꿈) — 모바일 가상키보드의 엔터키
     else if (e.inputType === 'insertLineBreak' ||
              (e.inputType === 'insertText' && e.data === '\n')) {
-      handled = handleEnter(() => e.preventDefault());
+      handled = handleEnter(() => e.preventDefault(), false);
     }
     if (handled && typeof ta._scrollCaretIntoView === 'function') {
       requestAnimationFrame(ta._scrollCaretIntoView);

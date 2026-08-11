@@ -1607,187 +1607,174 @@ function bindEvents() {
     }
   }
 
-  // ── 번호 블록 단위 재번호 ──
-  // 연속된 번호 줄을 하나의 블록으로 보고, 블록 첫 줄 번호를 기준값으로 유지.
-  // 빈 줄/일반 줄이 블록을 끊으면 다음 블록은 자기 첫 줄 번호부터 독립적으로 시작.
-  function renumberAll(ta) {
-    const pos = ta.selectionStart;
-    const lines = ta.value.split('\n');
-    let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
-    const result = lines.map(line => {
-      const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
-      if (m) {
-        if (!inBlock) {
-          inBlock = true;
-          blockStart = parseInt(m[1], 10);
-          blockOffset = 0;
-        }
-        const expected = blockStart + blockOffset++;
-        const newLine = expected + m[2] + m[3];
-        if (newLine !== line) changed = true;
-        return newLine;
-      } else {
-        inBlock = false;
-        return line;
-      }
-    });
-    if (!changed) return;
-    // 커서 위치 보정
-    const oldLines = lines;
-    const newLines = result;
-    let oldOffset = 0, newOffset = 0;
-    for (let i = 0; i < oldLines.length; i++) {
-      const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
-      const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
-      if (pos <= oldEnd) {
-        const posInLine = pos - oldOffset;
-        const om = oldLines[i].match(/^(\d+\.\s)/);
-        const nm = newLines[i].match(/^(\d+\.\s)/);
-        const diff = nm && om ? nm[1].length - om[1].length : 0;
-        const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
-        ta.value = newLines.join('\n');
-        ta.selectionStart = ta.selectionEnd = newPos;
-        return;
-      }
-      oldOffset = oldEnd;
-      newOffset = newEnd;
-    }
-    ta.value = newLines.join('\n');
-    ta.selectionStart = ta.selectionEnd = pos;
-  }
+  // ── aimemo 방식 자동 넘버링 (keydown + beforeinput + input) ──
+  (function() {
+    const ta = editorText;
+    let mode = null; // null | 'bullet' | 'number'
 
-  // ── Shift+Enter: 번호 없이 일반 줄바꿈 (PC keydown으로 처리) ──
-  editorText.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.shiftKey && this._listType === 'number') {
-      e.preventDefault();
-      const ta = this;
+    function handleSpace(preventFn) {
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const lines = before.split('\n');
+      const curLine = lines[lines.length - 1];
+
+      const numMatch = curLine.match(/^(\d+)\.$/);
+      if (numMatch && mode !== 'number') {
+        preventFn();
+        const lineStart = before.lastIndexOf('\n') + 1;
+        ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ta.value.substring(start);
+        const newCursor = lineStart + numMatch[1].length + 2;
+        ta.selectionStart = ta.selectionEnd = newCursor;
+        mode = 'number';
+        scrollCursorIntoView(ta);
+        return true;
+      }
+      if (curLine === '*' && mode !== 'bullet') {
+        preventFn();
+        const lineStart = before.lastIndexOf('\n') + 1;
+        ta.value = ta.value.substring(0, lineStart) + '• ' + ta.value.substring(start);
+        ta.selectionStart = ta.selectionEnd = lineStart + 2;
+        mode = 'bullet';
+        scrollCursorIntoView(ta);
+        return true;
+      }
+      return false;
+    }
+
+    function handleEnter(preventFn, isShift) {
+      if (!mode) return false;
+      // Shift+Enter → 번호 없이 일반 줄바꿈
+      if (isShift) {
+        preventFn();
+        const start = ta.selectionStart;
+        const before = ta.value.substring(0, start);
+        const after = ta.value.substring(ta.selectionEnd);
+        ta.value = before + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = start + 1;
+        scrollCursorIntoView(ta);
+        return true;
+      }
+      preventFn();
       const start = ta.selectionStart;
       const before = ta.value.substring(0, start);
       const after = ta.value.substring(ta.selectionEnd);
-      ta.value = before + '\n' + after;
-      ta.selectionStart = ta.selectionEnd = start + 1;
+      const lines = before.split('\n');
+      const curLine = lines[lines.length - 1];
+
+      if (mode === 'bullet') {
+        if (curLine === '• ') {
+          ta.value = before.slice(0, -2) + '\n' + after;
+          ta.selectionStart = ta.selectionEnd = start - 2 + 1;
+          mode = null;
+          return true;
+        }
+        const insert = '\n• ';
+        ta.value = before + insert + after;
+        ta.selectionStart = ta.selectionEnd = start + insert.length;
+
+      } else if (mode === 'number') {
+        const match = curLine.match(/^(\d+)\.\s/);
+        // 빈 번호 줄에서 엔터 → 모드 해제
+        if (match && curLine === match[0]) {
+          const trim = before.slice(0, -match[0].length);
+          ta.value = trim + '\n' + after;
+          ta.selectionStart = ta.selectionEnd = trim.length + 1;
+          mode = null;
+          return true;
+        }
+        const nextNum = match ? parseInt(match[1]) + 1 : 1;
+        const insert = '\n' + nextNum + '. ';
+        // 커서 뒤 번호 줄 재정렬
+        const afterLines = after.split('\n');
+        let renumFrom = nextNum + 1;
+        const renumberedAfter = afterLines.map((line, idx) => {
+          if (idx === 0) return line;
+          const lm = line.match(/^(\d+)(\.\s)/);
+          if (lm) return renumFrom++ + lm[2] + line.slice(lm[0].length);
+          return line;
+        }).join('\n');
+        ta.value = before + insert + renumberedAfter;
+        ta.selectionStart = ta.selectionEnd = start + insert.length;
+      }
       scrollCursorIntoView(ta);
-    }
-  });
-
-  editorText.addEventListener('input', function(e) {
-    updateEditorLinks();
-    const ta = this;
-    const pos = ta.selectionStart;
-    const val = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    // 방금 입력된 문자 확인: 현재 커서 직전 문자
-    const charBefore = val[pos - 1];
-    const lineText = val.substring(lineStart, pos);
-
-    /* ── 스페이스 입력: 리스트 활성화 트리거 ── */
-    if (charBefore === ' ') {
-      const textBeforeSpace = lineText.substring(0, lineText.length - 1); // 스페이스 제외
-
-      // '* ' → bullet
-      if (textBeforeSpace === '*') {
-        // '*' + 공백을 '• '로 교체
-        const newVal = val.substring(0, lineStart) + '• ' + val.substring(pos);
-        ta.value = newVal;
-        const newPos = lineStart + 2;
-        ta.selectionStart = ta.selectionEnd = newPos;
-        ta._listType = 'bullet';
-        ta._listNum = null;
-        scrollCursorIntoView(ta);
-        return;
-      }
-
-      // '숫자.' → numbered list
-      const numMatch = textBeforeSpace.match(/^(\d+)\.$/);
-      if (numMatch) {
-        const startNum = parseInt(numMatch[1], 10);
-        const prefix = startNum + '. ';
-        const newVal = val.substring(0, lineStart) + prefix + val.substring(pos);
-        ta.value = newVal;
-        const newPos = lineStart + prefix.length;
-        ta.selectionStart = ta.selectionEnd = newPos;
-        ta._listType = 'number';
-        ta._listNum = startNum;
-        scrollCursorIntoView(ta);
-        return;
-      }
+      return true;
     }
 
-    /* ── 엔터 입력: 리스트 계속 또는 종료 ── */
-    if (charBefore === '\n') {
-      if (!ta._listType) {
-        // 번호 모드 아니어도 삭제로 번호가 깨졌을 수 있으니 재번호 시도
-        renumberAll(ta);
-        scrollCursorIntoView(ta);
-        return;
-      }
-
-      // 엔터 직전 줄 (방금 완성된 줄)
-      const prevLineEnd = pos - 1; // '\n' 위치
-      const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
-      const prevLine = val.substring(prevLineStart, prevLineEnd);
-
-      if (ta._listType === 'number') {
-        const numLine = prevLine.match(/^(\d+)\. (.*)$/);
-        if (!numLine) { ta._listType = null; return; }
-        const content = numLine[2];
-        if (content.trim() === '') {
-          // 빈 항목 → 리스트 종료, 해당 줄 prefix 제거 후 엔터도 제거
-          const newVal = val.substring(0, prevLineStart) + val.substring(pos);
-          ta.value = newVal;
-          ta.selectionStart = ta.selectionEnd = prevLineStart;
-          ta._listType = null;
-          ta._listNum = null;
+    function renumberAll() {
+      const pos = ta.selectionStart;
+      const lines = ta.value.split('\n');
+      let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
+      const result = lines.map(line => {
+        const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
+        if (m) {
+          if (!inBlock) {
+            inBlock = true;
+            blockStart = parseInt(m[1], 10);
+            blockOffset = 0;
+          }
+          const expected = blockStart + blockOffset++;
+          const newLine = expected + m[2] + m[3];
+          if (newLine !== line) changed = true;
+          return newLine;
         } else {
-          // 다음 번호 prefix 삽입 + 커서 뒤 번호 줄 재정렬
-          const nextNum = parseInt(numLine[1], 10) + 1;
-          ta._listNum = nextNum;
-          const prefix = nextNum + '. ';
-          const after = val.substring(pos);
-          const afterLines = after.split('\n');
-          let renumFrom = nextNum + 1;
-          const renumberedAfter = afterLines.map((line, idx) => {
-            if (idx === 0) return line;
-            const lm = line.match(/^(\d+)(\.\s)/);
-            if (lm) return renumFrom++ + lm[2] + line.slice(lm[0].length);
-            return line;
-          }).join('\n');
-          const newVal = val.substring(0, pos) + prefix + renumberedAfter;
-          ta.value = newVal;
-          const newPos = pos + prefix.length;
+          inBlock = false;
+          return line;
+        }
+      });
+      if (!changed) return;
+      const oldLines = lines, newLines = result;
+      let oldOffset = 0, newOffset = 0;
+      for (let i = 0; i < oldLines.length; i++) {
+        const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
+        const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
+        if (pos <= oldEnd) {
+          const posInLine = pos - oldOffset;
+          const om = oldLines[i].match(/^(\d+\.\s)/);
+          const nm = newLines[i].match(/^(\d+\.\s)/);
+          const diff = nm && om ? nm[1].length - om[1].length : 0;
+          const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
+          ta.value = newLines.join('\n');
           ta.selectionStart = ta.selectionEnd = newPos;
+          return;
         }
-        scrollCursorIntoView(ta);
-        return;
+        oldOffset = oldEnd;
+        newOffset = newEnd;
       }
-
-      if (ta._listType === 'bullet') {
-        const bulletLine = prevLine.match(/^• (.*)$/);
-        if (!bulletLine) { ta._listType = null; return; }
-        const content = bulletLine[1];
-        if (content.trim() === '') {
-          // 빈 항목 → 리스트 종료
-          const newVal = val.substring(0, prevLineStart) + val.substring(pos);
-          ta.value = newVal;
-          ta.selectionStart = ta.selectionEnd = prevLineStart;
-          ta._listType = null;
-        } else {
-          // 불릿 계속
-          const newVal = val.substring(0, pos) + '• ' + val.substring(pos);
-          ta.value = newVal;
-          ta.selectionStart = ta.selectionEnd = pos + 2;
-        }
-        scrollCursorIntoView(ta);
-        return;
-      }
+      ta.value = newLines.join('\n');
+      ta.selectionStart = ta.selectionEnd = pos;
     }
 
-    // Backspace/Delete 등으로 번호가 바뀌었을 때 재번호
-    if (ta._listType === 'number') renumberAll(ta);
+    // PC: keydown
+    ta.addEventListener('keydown', function(e) {
+      let handled = false;
+      if (e.key === ' ') {
+        handled = handleSpace(() => e.preventDefault());
+      } else if (e.key === 'Enter') {
+        handled = handleEnter(() => e.preventDefault(), e.shiftKey);
+      }
+      if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+    });
 
-    // 일반 타이핑 중에도 커서가 항상 보이게
-    scrollCursorIntoView(ta);
-  });
+    // 모바일: beforeinput
+    ta.addEventListener('beforeinput', function(e) {
+      let handled = false;
+      if (e.inputType === 'insertText' && e.data === ' ') {
+        handled = handleSpace(() => e.preventDefault());
+      } else if (e.inputType === 'insertLineBreak' ||
+                 (e.inputType === 'insertText' && e.data === '\n')) {
+        handled = handleEnter(() => e.preventDefault(), false);
+      }
+      if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+    });
+
+    // input: updateEditorLinks + 삭제 후 재번호 + 모드 리셋
+    ta.addEventListener('input', function() {
+      updateEditorLinks();
+      if (ta.value === '') { mode = null; return; }
+      if (mode === 'number') renumberAll();
+      scrollCursorIntoView(ta);
+    });
+  })();
 
   // Confirm modal
   document.getElementById('confirmCancel').addEventListener('click', () => closeModal());

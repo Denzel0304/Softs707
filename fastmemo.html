@@ -1612,6 +1612,9 @@ function bindEvents() {
     const ta = editorText;
     let mode = null; // null | 'bullet' | 'number'
 
+    // ZWS: Android IME가 번호 prefix 숫자를 조합 버퍼로 잡는 것을 방지
+    const ZWS = '\u200b';
+
     function handleSpace(preventFn) {
       const start = ta.selectionStart;
       const before = ta.value.substring(0, start);
@@ -1622,8 +1625,8 @@ function bindEvents() {
       if (numMatch && mode !== 'number') {
         preventFn();
         const lineStart = before.lastIndexOf('\n') + 1;
-        ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ta.value.substring(start);
-        const newCursor = lineStart + numMatch[1].length + 2;
+        ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ZWS + ta.value.substring(start);
+        const newCursor = lineStart + numMatch[1].length + 2 + 1;
         ta.selectionStart = ta.selectionEnd = newCursor;
         mode = 'number';
         scrollCursorIntoView(ta);
@@ -1674,16 +1677,16 @@ function bindEvents() {
 
       } else if (mode === 'number') {
         const match = curLine.match(/^(\d+)\.\s/);
-        // 빈 번호 줄에서 엔터 → 모드 해제
-        if (match && curLine === match[0]) {
-          const trim = before.slice(0, -match[0].length);
+        // 빈 번호 줄에서 엔터 → 모드 해제 (ZWS 포함 실제 길이로 제거)
+        if (match && curLine.replace(/\u200b/g, '') === match[0]) {
+          const trim = before.slice(0, -curLine.length);
           ta.value = trim + '\n' + after;
           ta.selectionStart = ta.selectionEnd = trim.length + 1;
           mode = null;
           return true;
         }
         const nextNum = match ? parseInt(match[1]) + 1 : 1;
-        const insert = '\n' + nextNum + '. ';
+        const insert = '\n' + nextNum + '. ' + ZWS;
         // 커서 뒤 번호 줄 재정렬
         const afterLines = after.split('\n');
         let renumFrom = nextNum + 1;
@@ -1705,7 +1708,8 @@ function bindEvents() {
       const lines = ta.value.split('\n');
       let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
       const result = lines.map(line => {
-        const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
+        const cleanLine = line.replace(/\u200b/g, '');
+        const m = cleanLine.match(/^(\d+)(\.\s)([\s\S]*)$/);
         if (m) {
           if (!inBlock) {
             inBlock = true;
@@ -1713,8 +1717,11 @@ function bindEvents() {
             blockOffset = 0;
           }
           const expected = blockStart + blockOffset++;
-          const newLine = expected + m[2] + m[3];
-          if (newLine !== line) changed = true;
+          const oldPrefix = m[1] + m[2];
+          const newPrefix = expected + m[2];
+          if (oldPrefix === newPrefix) return line;
+          const newLine = newPrefix + line.slice(oldPrefix.length);
+          changed = true;
           return newLine;
         } else {
           inBlock = false;
@@ -1768,10 +1775,10 @@ function bindEvents() {
     });
 
     // input: updateEditorLinks + 삭제 후 재번호 + 모드 리셋
-    ta.addEventListener('input', function() {
+    ta.addEventListener('input', function(e) {
       updateEditorLinks();
       if (ta.value === '') { mode = null; return; }
-      if (mode === 'number') renumberAll();
+      if (mode === 'number' && !e.isComposing) renumberAll();
       scrollCursorIntoView(ta);
     });
   })();

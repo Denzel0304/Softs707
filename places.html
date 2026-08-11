@@ -890,8 +890,6 @@ function onModalClosed(id) {
   if (id === 'editorModal') {
     document.getElementById('editorTitle').value = '';
     document.getElementById('editorText').value = '';
-    document.getElementById('editorText')._listType = null;
-    document.getElementById('editorText')._listNum = null;
     document.getElementById('editorLinks').innerHTML = '';
     editingId = null; editingCity = null; editingStars = 0; editingPhotos = [];
     closeEditorCityDropdown();
@@ -1355,8 +1353,6 @@ function openNewPlace() {
   editingId = null; editingCity = null; editingStars = 0; editingPhotos = [];
   document.getElementById('editorTitle').value = '';
   document.getElementById('editorText').value = '';
-  document.getElementById('editorText')._listType = null;
-  document.getElementById('editorText')._listNum = null;
   document.getElementById('editorLinks').innerHTML = '';
   document.getElementById('editorDate').value = todayStr();
   refreshStarsUI(); renderEditorCityChips(); renderEditorPhotos(); hideCityNewInput();
@@ -1370,8 +1366,6 @@ function openEditPlace(id) {
   editingPhotos = p.photos ? [...p.photos] : [];
   document.getElementById('editorTitle').value = p.title;
   document.getElementById('editorText').value = p.content || '';
-  document.getElementById('editorText')._listType = null;
-  document.getElementById('editorText')._listNum = null;
   document.getElementById('editorDate').value = p.visitDate || todayStr();
   document.getElementById('editorActions').style.display = 'flex';
   refreshStarsUI(); renderEditorCityChips(); renderEditorPhotos(); updateEditorLinks(); hideCityNewInput();
@@ -1481,59 +1475,153 @@ function bindEvents() {
   });
 
   const editorText = document.getElementById('editorText');
-  editorText.addEventListener('input', function(e) {
-    updateEditorLinks();
-    const ta = this; const pos = ta.selectionStart; const val = ta.value;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const charBefore = val[pos - 1];
-    const lineText = val.substring(lineStart, pos);
-    if (charBefore === ' ') {
-      const textBeforeSpace = lineText.substring(0, lineText.length - 1);
-      if (textBeforeSpace === '*') {
-        const newVal = val.substring(0, lineStart) + '• ' + val.substring(pos);
-        ta.value = newVal; ta.selectionStart = ta.selectionEnd = lineStart + 2;
-        ta._listType = 'bullet'; ta._listNum = null; scrollCursorIntoView(ta); return;
+
+  // ── aimemo 방식 자동 넘버링 (keydown + beforeinput + input) ──
+  (function() {
+    const ta = editorText;
+    let mode = null; // null | 'bullet' | 'number'
+
+    function handleSpace(preventFn) {
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const lines = before.split('\n');
+      const curLine = lines[lines.length - 1];
+      const numMatch = curLine.match(/^(\d+)\.$/);
+      if (numMatch && mode !== 'number') {
+        preventFn();
+        const lineStart = before.lastIndexOf('\n') + 1;
+        ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ta.value.substring(start);
+        ta.selectionStart = ta.selectionEnd = lineStart + numMatch[1].length + 2;
+        mode = 'number';
+        scrollCursorIntoView(ta);
+        return true;
       }
-      const numMatch = textBeforeSpace.match(/^(\d+)\.$/);
-      if (numMatch) {
-        const startNum = parseInt(numMatch[1], 10); const prefix = startNum + '. ';
-        const newVal = val.substring(0, lineStart) + prefix + val.substring(pos);
-        ta.value = newVal; ta.selectionStart = ta.selectionEnd = lineStart + prefix.length;
-        ta._listType = 'number'; ta._listNum = startNum; scrollCursorIntoView(ta); return;
+      if (curLine === '*' && mode !== 'bullet') {
+        preventFn();
+        const lineStart = before.lastIndexOf('\n') + 1;
+        ta.value = ta.value.substring(0, lineStart) + '• ' + ta.value.substring(start);
+        ta.selectionStart = ta.selectionEnd = lineStart + 2;
+        mode = 'bullet';
+        scrollCursorIntoView(ta);
+        return true;
       }
+      return false;
     }
-    if (charBefore === '\n') {
-      if (!ta._listType) return;
-      const prevLineEnd = pos - 1; const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
-      const prevLine = val.substring(prevLineStart, prevLineEnd);
-      if (ta._listType === 'number') {
-        const numLine = prevLine.match(/^(\d+)\. (.*)$/);
-        if (!numLine) { ta._listType = null; return; }
-        if (numLine[2].trim() === '') {
-          ta.value = val.substring(0, prevLineStart) + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = prevLineStart; ta._listType = null; ta._listNum = null;
-        } else {
-          const nextNum = ta._listNum + 1; ta._listNum = nextNum; const prefix = nextNum + '. ';
-          const newVal = val.substring(0, pos) + prefix + val.substring(pos);
-          ta.value = newVal; ta.selectionStart = ta.selectionEnd = pos + prefix.length;
-        }
-        scrollCursorIntoView(ta); return;
+
+    function handleEnter(preventFn, isShift) {
+      if (!mode) return false;
+      if (isShift) {
+        preventFn();
+        const start = ta.selectionStart;
+        const before = ta.value.substring(0, start);
+        const after = ta.value.substring(ta.selectionEnd);
+        ta.value = before + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = start + 1;
+        scrollCursorIntoView(ta);
+        return true;
       }
-      if (ta._listType === 'bullet') {
-        const bulletLine = prevLine.match(/^• (.*)$/);
-        if (!bulletLine) { ta._listType = null; return; }
-        if (bulletLine[1].trim() === '') {
-          ta.value = val.substring(0, prevLineStart) + val.substring(pos);
-          ta.selectionStart = ta.selectionEnd = prevLineStart; ta._listType = null;
-        } else {
-          const newVal = val.substring(0, pos) + '• ' + val.substring(pos);
-          ta.value = newVal; ta.selectionStart = ta.selectionEnd = pos + 2;
+      preventFn();
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(ta.selectionEnd);
+      const lines = before.split('\n');
+      const curLine = lines[lines.length - 1];
+      if (mode === 'bullet') {
+        if (curLine === '• ') {
+          ta.value = before.slice(0, -2) + '\n' + after;
+          ta.selectionStart = ta.selectionEnd = start - 2 + 1;
+          mode = null; return true;
         }
-        scrollCursorIntoView(ta); return;
+        const insert = '\n• ';
+        ta.value = before + insert + after;
+        ta.selectionStart = ta.selectionEnd = start + insert.length;
+      } else if (mode === 'number') {
+        const match = curLine.match(/^(\d+)\.\s/);
+        if (match && curLine === match[0]) {
+          const trim = before.slice(0, -match[0].length);
+          ta.value = trim + '\n' + after;
+          ta.selectionStart = ta.selectionEnd = trim.length + 1;
+          mode = null; return true;
+        }
+        const nextNum = match ? parseInt(match[1]) + 1 : 1;
+        const insert = '\n' + nextNum + '. ';
+        const afterLines = after.split('\n');
+        let renumFrom = nextNum + 1;
+        const renumberedAfter = afterLines.map((line, idx) => {
+          if (idx === 0) return line;
+          const lm = line.match(/^(\d+)(\.\s)/);
+          if (lm) return renumFrom++ + lm[2] + line.slice(lm[0].length);
+          return line;
+        }).join('\n');
+        ta.value = before + insert + renumberedAfter;
+        ta.selectionStart = ta.selectionEnd = start + insert.length;
       }
+      scrollCursorIntoView(ta);
+      return true;
     }
-    scrollCursorIntoView(ta);
-  });
+
+    function renumberAll() {
+      const pos = ta.selectionStart;
+      const lines = ta.value.split('\n');
+      let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
+      const result = lines.map(line => {
+        const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
+        if (m) {
+          if (!inBlock) { inBlock = true; blockStart = parseInt(m[1], 10); blockOffset = 0; }
+          const expected = blockStart + blockOffset++;
+          const newLine = expected + m[2] + m[3];
+          if (newLine !== line) changed = true;
+          return newLine;
+        } else { inBlock = false; return line; }
+      });
+      if (!changed) return;
+      const oldLines = lines, newLines = result;
+      let oldOffset = 0, newOffset = 0;
+      for (let i = 0; i < oldLines.length; i++) {
+        const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
+        const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
+        if (pos <= oldEnd) {
+          const posInLine = pos - oldOffset;
+          const om = oldLines[i].match(/^(\d+\.\s)/);
+          const nm = newLines[i].match(/^(\d+\.\s)/);
+          const diff = nm && om ? nm[1].length - om[1].length : 0;
+          const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
+          ta.value = newLines.join('\n');
+          ta.selectionStart = ta.selectionEnd = newPos;
+          return;
+        }
+        oldOffset = oldEnd; newOffset = newEnd;
+      }
+      ta.value = newLines.join('\n');
+      ta.selectionStart = ta.selectionEnd = pos;
+    }
+
+    // PC: keydown
+    ta.addEventListener('keydown', function(e) {
+      let handled = false;
+      if (e.key === ' ') handled = handleSpace(() => e.preventDefault());
+      else if (e.key === 'Enter') handled = handleEnter(() => e.preventDefault(), e.shiftKey);
+      if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+    });
+
+    // 모바일: beforeinput
+    ta.addEventListener('beforeinput', function(e) {
+      let handled = false;
+      if (e.inputType === 'insertText' && e.data === ' ')
+        handled = handleSpace(() => e.preventDefault());
+      else if (e.inputType === 'insertLineBreak' || (e.inputType === 'insertText' && e.data === '\n'))
+        handled = handleEnter(() => e.preventDefault(), false);
+      if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+    });
+
+    // input: updateEditorLinks + 삭제 후 재번호 + 모드 리셋
+    ta.addEventListener('input', function() {
+      updateEditorLinks();
+      if (ta.value === '') { mode = null; return; }
+      if (mode === 'number') renumberAll();
+      scrollCursorIntoView(ta);
+    });
+  })();
 
   document.getElementById('confirmCancel').addEventListener('click', () => closeModal());
   document.getElementById('confirmDelete').addEventListener('click', doDelete);

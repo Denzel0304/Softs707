@@ -1165,6 +1165,9 @@ function attachListMode(ta) {
   // ── 공통 처리 함수 ──
   // (PC keydown 과 모바일 beforeinput 양쪽에서 호출)
   // returns true if handled (preventDefault 호출했어야 함)
+  // ZWS: Android IME가 번호 prefix 숫자를 조합 버퍼로 잡는 것을 방지
+  const ZWS = '\u200b';
+
   function handleSpace(preventFn) {
     const start = ta.selectionStart;
     const before = ta.value.substring(0, start);
@@ -1176,8 +1179,8 @@ function attachListMode(ta) {
     if (numMatch && mode !== 'number') {
       preventFn();
       const lineStart = before.lastIndexOf('\n') + 1;
-      ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ta.value.substring(start);
-      const newCursor = lineStart + numMatch[1].length + 2;
+      ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ZWS + ta.value.substring(start);
+      const newCursor = lineStart + numMatch[1].length + 2 + 1;
       ta.selectionStart = ta.selectionEnd = newCursor;
       mode = 'number';
       return true;
@@ -1227,16 +1230,16 @@ function attachListMode(ta) {
 
     } else if (mode === 'number') {
       const match = curLine.match(/^(\d+)\.\s/);
-      // 빈 번호 줄에서 엔터 → 모드 해제
-      if (match && curLine === match[0]) {
-        const trim = before.slice(0, -match[0].length);
+      // 빈 번호 줄에서 엔터 → 모드 해제 (ZWS 포함 실제 길이로 제거)
+      if (match && curLine.replace(/\u200b/g, '') === match[0]) {
+        const trim = before.slice(0, -curLine.length);
         ta.value = trim + '\n' + after;
         ta.selectionStart = ta.selectionEnd = trim.length + 1;
         mode = null;
         return true;
       }
       const nextNum = match ? parseInt(match[1]) + 1 : 1;
-      const insert = '\n' + nextNum + '. ';
+      const insert = '\n' + nextNum + '. ' + ZWS;
 
       // after 부분의 번호 목록 줄들을 재번호 매기기
       const afterLines = after.split('\n');
@@ -1308,7 +1311,8 @@ function attachListMode(ta) {
     let blockOffset = 0;
     let changed = false;
     const result = lines.map(line => {
-      const m = line.match(/^(\d+)(\.\s)([\s\S]*)$/);
+      const cleanLine = line.replace(/\u200b/g, '');
+      const m = cleanLine.match(/^(\d+)(\.\s)([\s\S]*)$/);
       if (m) {
         if (!inBlock) {
           inBlock = true;
@@ -1317,8 +1321,11 @@ function attachListMode(ta) {
         }
         const expected = blockStart + blockOffset;
         blockOffset++;
-        const newLine = expected + m[2] + m[3];
-        if (newLine !== line) changed = true;
+        const oldPrefix = m[1] + m[2];
+        const newPrefix = expected + m[2];
+        if (oldPrefix === newPrefix) return line;
+        const newLine = newPrefix + line.slice(oldPrefix.length);
+        changed = true;
         return newLine;
       } else {
         inBlock = false;
@@ -1354,9 +1361,9 @@ function attachListMode(ta) {
 
   // textarea 값이 외부에서 리셋되면 (.value = '') 모드도 초기화되도록
   // 그리고 Backspace/Delete 등으로 번호 줄이 지워진 뒤 재번호 매기기
-  ta.addEventListener('input', function() {
+  ta.addEventListener('input', function(e) {
     if (ta.value === '') { mode = null; return; }
-    if (mode === 'number') renumberAll();
+    if (mode === 'number' && !e.isComposing) renumberAll();
   });
 }
 

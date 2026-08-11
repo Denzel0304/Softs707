@@ -1690,10 +1690,16 @@ function bindEvents() {
         // 커서 뒤 번호 줄 재정렬
         const afterLines = after.split('\n');
         let renumFrom = nextNum + 1;
+        let inSameBlock = true; // 같은 그룹 내에서만 재번호
         const renumberedAfter = afterLines.map((line, idx) => {
           if (idx === 0) return line;
-          const lm = line.match(/^(\d+)(\.\s)/);
-          if (lm) return renumFrom++ + lm[2] + line.slice(lm[0].length);
+          const cleanLine = line.replace(/\u200b/g, '');
+          const lm = cleanLine.match(/^(\d+)(\.\s)/);
+          if (lm && inSameBlock) {
+            return renumFrom++ + lm[2] + line.slice(lm[0].length);
+          }
+          // 번호 줄이 아닌 줄(빈 줄, 일반 텍스트)을 만나면 그룹 끊김 → 이후는 건드리지 않음
+          if (!lm) inSameBlock = false;
           return line;
         }).join('\n');
         ta.value = before + insert + renumberedAfter;

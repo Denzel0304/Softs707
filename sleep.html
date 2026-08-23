@@ -13,25 +13,22 @@
     --night-mid: #0d0d2b;
     --night-blue: #111135;
     --indigo: #1a1a4e;
-    --purple-dim: #2a1f5a;
     --star-white: #f0f0ff;
-    --star-dim: #8888bb;
     --moon-gold: #ffd97d;
     --aurora-teal: #4dd9c0;
     --aurora-purple: #a78bfa;
     --sleep-blue: #6eb5ff;
     --danger: #ff6b8a;
+    --draft-color: #ffd97d;
     --text-primary: #e8e8ff;
     --text-secondary: #9999cc;
     --card-bg: rgba(26, 26, 78, 0.6);
     --card-border: rgba(167, 139, 250, 0.15);
-    --modal-bg: rgba(6, 6, 15, 0.97);
     --radius: 16px;
     --radius-sm: 10px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   html, body {
     height: 100%;
     font-family: 'Noto Sans KR', sans-serif;
@@ -40,318 +37,168 @@
     overflow-x: hidden;
   }
 
-  /* ── 별 배경 ── */
-  #starfield {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-  .star {
-    position: absolute;
-    border-radius: 50%;
-    background: white;
-    animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
-  }
-  @keyframes twinkle {
-    0%, 100% { opacity: var(--min-op, .2); transform: scale(1); }
-    50% { opacity: var(--max-op, .9); transform: scale(1.3); }
-  }
-  .shooting-star {
-    position: absolute;
-    width: 2px;
-    height: 2px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 0 6px 2px rgba(255,255,255,0.8);
-    animation: shoot 6s ease-in infinite;
-    opacity: 0;
-  }
-  @keyframes shoot {
-    0% { opacity: 0; transform: translate(0,0) rotate(215deg); }
-    5% { opacity: 1; }
-    15% { opacity: 0; transform: translate(-200px, 200px) rotate(215deg); }
-    100% { opacity: 0; }
-  }
+  #starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-  /* ── 달 ── */
   #moon {
-    position: fixed;
-    top: 28px;
-    right: 28px;
-    width: 48px;
-    height: 48px;
-    z-index: 1;
-    pointer-events: none;
+    position: fixed; top: 28px; right: 28px;
+    width: 48px; height: 48px; z-index: 1; pointer-events: none;
   }
   #moon::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #fff8dc, #ffd97d 60%, #e6b84a);
     box-shadow: 0 0 20px 6px rgba(255,217,125,.35), 0 0 50px 15px rgba(255,217,125,.12);
   }
   #moon::after {
-    content: '';
-    position: absolute;
-    top: 6px; right: 4px;
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    background: var(--night-deep);
-    opacity: .18;
+    content: ''; position: absolute; top: 6px; right: 4px;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--night-deep); opacity: .18;
   }
 
-  /* ── 레이아웃 ── */
   #app {
-    position: relative;
-    z-index: 2;
-    max-width: 430px;
-    margin: 0 auto;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
+    position: relative; z-index: 2;
+    max-width: 430px; margin: 0 auto;
+    min-height: 100dvh; display: flex; flex-direction: column;
   }
 
-  /* ── 헤더 ── */
   header {
     padding: 20px 20px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: flex; align-items: center; gap: 10px;
   }
   .logo-moon { font-size: 22px; }
   .app-title {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -.5px;
+    font-size: 22px; font-weight: 700; letter-spacing: -.5px;
     background: linear-gradient(135deg, var(--star-white), var(--aurora-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
-  .app-sub {
-    margin-left: auto;
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 300;
-  }
+  .app-sub { margin-left: auto; font-size: 11px; color: var(--text-secondary); font-weight: 300; }
 
-  /* ── 탭 ── */
   .tabs {
-    display: flex;
-    margin: 0 20px 16px;
-    background: rgba(255,255,255,.04);
-    border-radius: 12px;
-    padding: 3px;
-    gap: 2px;
+    display: flex; margin: 0 20px 16px;
+    background: rgba(255,255,255,.04); border-radius: 12px; padding: 3px; gap: 2px;
   }
   .tab {
-    flex: 1;
-    padding: 8px 4px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
-    font-family: inherit;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all .2s;
+    flex: 1; padding: 8px 4px; border: none; background: transparent;
+    color: var(--text-secondary); font-size: 12px; font-weight: 500;
+    font-family: inherit; border-radius: 10px; cursor: pointer; transition: all .2s;
   }
-  .tab.active {
-    background: var(--indigo);
-    color: var(--aurora-purple);
-    box-shadow: 0 0 12px rgba(167,139,250,.2);
-  }
+  .tab.active { background: var(--indigo); color: var(--aurora-purple); box-shadow: 0 0 12px rgba(167,139,250,.2); }
 
-  /* ── 페이지 ── */
   .page { display: none; flex-direction: column; flex: 1; padding: 0 16px 100px; gap: 12px; }
   .page.active { display: flex; }
 
-  /* ── 카드 ── */
   .card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius);
-    padding: 16px;
-    backdrop-filter: blur(12px);
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius); padding: 16px; backdrop-filter: blur(12px);
   }
   .card-title {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 12px;
+    font-size: 11px; font-weight: 500; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px;
   }
+
+  /* ── 드래프트 배너 ── */
+  .draft-banner {
+    background: linear-gradient(135deg, rgba(255,217,125,.12), rgba(167,139,250,.08));
+    border: 1px solid rgba(255,217,125,.3);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+  .draft-banner:active { border-color: rgba(255,217,125,.6); }
+  .draft-banner-icon { font-size: 28px; flex-shrink: 0; }
+  .draft-banner-text { flex: 1; }
+  .draft-banner-title { font-size: 14px; font-weight: 600; color: var(--moon-gold); margin-bottom: 3px; }
+  .draft-banner-sub { font-size: 12px; color: var(--text-secondary); }
+  .draft-banner-arrow { font-size: 18px; color: var(--moon-gold); opacity: .6; }
 
   /* ── 오늘 섹션 ── */
-  .today-date {
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-  }
-  .today-status {
-    text-align: center;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -.5px;
-    margin-bottom: 4px;
-  }
-  .today-hint {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
+  .today-date { text-align: center; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .today-status { text-align: center; font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px; }
+  .today-hint { text-align: center; font-size: 12px; color: var(--text-secondary); }
 
-  /* ── 수면 타임라인 ── */
-  .timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .tl-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-  }
-  .tl-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .tl-dot.sleep { background: var(--aurora-purple); box-shadow: 0 0 6px var(--aurora-purple); }
-  .tl-dot.wake  { background: var(--moon-gold); box-shadow: 0 0 6px var(--moon-gold); }
-  .tl-dot.inter { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-  .tl-dot.resleep { background: var(--aurora-teal); box-shadow: 0 0 6px var(--aurora-teal); }
+  /* ── 타임라인 ── */
+  .timeline { display: flex; flex-direction: column; gap: 8px; }
+  .tl-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tl-dot.sleep  { background: var(--aurora-purple); box-shadow: 0 0 6px var(--aurora-purple); }
+  .tl-dot.wake   { background: var(--moon-gold);    box-shadow: 0 0 6px var(--moon-gold); }
+  .tl-dot.inter  { background: var(--danger);       box-shadow: 0 0 6px var(--danger); }
+  .tl-dot.resleep{ background: var(--aurora-teal);  box-shadow: 0 0 6px var(--aurora-teal); }
   .tl-label { color: var(--text-secondary); font-size: 12px; min-width: 80px; }
   .tl-val { color: var(--text-primary); font-weight: 500; }
 
-  /* ── 점수 바 ── */
-  .score-display {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .score-display { display: flex; align-items: center; gap: 12px; }
   .score-num {
-    font-size: 40px;
-    font-weight: 700;
-    min-width: 52px;
+    font-size: 40px; font-weight: 700; min-width: 52px;
     background: linear-gradient(135deg, var(--moon-gold), var(--aurora-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .score-bar-wrap { flex: 1; }
-  .score-bar-bg {
-    height: 8px;
-    background: rgba(255,255,255,.08);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 4px;
-  }
+  .score-bar-bg { height: 8px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
   .score-bar-fill {
-    height: 100%;
-    border-radius: 4px;
+    height: 100%; border-radius: 4px;
     background: linear-gradient(90deg, var(--aurora-purple), var(--moon-gold));
     transition: width .6s cubic-bezier(.4,0,.2,1);
   }
   .score-label { font-size: 11px; color: var(--text-secondary); }
 
-  /* ── + FAB 버튼 ── */
+  /* ── FAB ── */
   #fab {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    border: none;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 50; width: 60px; height: 60px; border-radius: 50%; border: none;
     background: linear-gradient(135deg, var(--aurora-purple), var(--sleep-blue));
-    color: white;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: 0 4px 24px rgba(167,139,250,.5), 0 0 0 0 rgba(167,139,250,.3);
+    color: white; font-size: 28px; cursor: pointer;
+    box-shadow: 0 4px 24px rgba(167,139,250,.5);
     animation: pulse-fab 3s ease-in-out infinite;
     display: flex; align-items: center; justify-content: center;
     font-family: 'DM Sans', sans-serif;
   }
   @keyframes pulse-fab {
-    0%, 100% { box-shadow: 0 4px 24px rgba(167,139,250,.5), 0 0 0 0 rgba(167,139,250,.3); }
-    50% { box-shadow: 0 4px 24px rgba(167,139,250,.5), 0 0 0 10px rgba(167,139,250,.0); }
+    0%,100%{ box-shadow: 0 4px 24px rgba(167,139,250,.5), 0 0 0 0 rgba(167,139,250,.3); }
+    50%{ box-shadow: 0 4px 24px rgba(167,139,250,.5), 0 0 0 10px rgba(167,139,250,.0); }
   }
 
-  /* ── 기록 리스트 ── */
+  /* ── 기록 목록 ── */
   .record-list { display: flex; flex-direction: column; gap: 10px; }
   .record-item {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    transition: border-color .2s;
   }
+  .record-item.draft { border-color: rgba(255,217,125,.25); }
   .record-item:active { background: rgba(167,139,250,.08); }
-  .record-date-badge {
-    min-width: 44px;
-    text-align: center;
-  }
+  .record-date-badge { min-width: 44px; text-align: center; }
   .record-day { font-size: 20px; font-weight: 700; color: var(--text-primary); }
   .record-weekday { font-size: 10px; color: var(--text-secondary); }
   .record-info { flex: 1; }
   .record-sleep-time { font-size: 14px; font-weight: 500; color: var(--aurora-teal); }
+  .record-sleep-time.draft-text { color: var(--moon-gold); }
   .record-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
   .record-score-badge {
-    width: 34px; height: 34px;
-    border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     border: 2px solid var(--aurora-purple);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--aurora-purple);
+    font-size: 13px; font-weight: 700; color: var(--aurora-purple);
   }
+  .record-score-badge.draft { border-color: rgba(255,217,125,.4); color: var(--moon-gold); font-size: 10px; }
   .record-actions { display: flex; gap: 6px; }
   .btn-edit, .btn-del {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
-    transition: background .2s;
+    width: 28px; height: 28px; border-radius: 50%; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: background .2s;
   }
   .btn-edit { background: rgba(167,139,250,.15); color: var(--aurora-purple); }
   .btn-del  { background: rgba(255,107,138,.12); color: var(--danger); }
 
-  /* ── 그래프 페이지 ── */
-  .month-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
-  }
-  .month-nav button {
-    background: none; border: none;
-    color: var(--text-secondary);
-    font-size: 20px; cursor: pointer; padding: 4px 10px;
-  }
+  /* ── 통계 ── */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .month-nav button { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: 4px 10px; }
   .month-nav-label { font-size: 15px; font-weight: 600; color: var(--text-primary); }
   .chart-wrap { position: relative; height: 180px; }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .stat-item {
-    background: rgba(255,255,255,.04);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-item { background: rgba(255,255,255,.04); border-radius: 10px; padding: 10px 12px; }
   .stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .8px; }
   .stat-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
   .stat-val.teal { color: var(--aurora-teal); }
@@ -362,212 +209,166 @@
   /* ── 모달 ── */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 100;
-    background: rgba(6,6,15,.85);
-    backdrop-filter: blur(6px);
+    background: rgba(6,6,15,.85); backdrop-filter: blur(6px);
     display: flex; align-items: flex-end;
-    opacity: 0; pointer-events: none;
-    transition: opacity .25s;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   .modal-sheet {
-    width: 100%; max-width: 430px;
-    margin: 0 auto;
+    width: 100%; max-width: 430px; margin: 0 auto;
     background: #0e0e28;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
-    border: 1px solid rgba(167,139,250,.2);
-    border-bottom: none;
+    border-top-left-radius: 24px; border-top-right-radius: 24px;
+    border: 1px solid rgba(167,139,250,.2); border-bottom: none;
     padding: 12px 20px 40px;
     transform: translateY(100%);
     transition: transform .3s cubic-bezier(.4,0,.2,1);
-    max-height: 92dvh;
-    overflow-y: auto;
+    max-height: 92dvh; overflow-y: auto;
   }
   .modal-overlay.open .modal-sheet { transform: translateY(0); }
-  .modal-handle {
-    width: 36px; height: 4px;
-    background: rgba(255,255,255,.2);
-    border-radius: 2px;
-    margin: 0 auto 16px;
-  }
-  .modal-title {
-    font-size: 17px; font-weight: 700;
-    margin-bottom: 18px; text-align: center;
-    color: var(--text-primary);
-  }
+  .modal-handle { width: 36px; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; margin: 0 auto 16px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; text-align: center; color: var(--text-primary); }
   .modal-section { margin-bottom: 18px; }
   .modal-section-title {
-    font-size: 11px; font-weight: 500;
-    color: var(--aurora-purple);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    font-size: 11px; font-weight: 500; color: var(--aurora-purple);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
   }
 
-  /* ── 폼 요소 ── */
-  .form-row {
-    display: flex; gap: 10px; align-items: center;
-    margin-bottom: 8px;
-  }
-  .form-label {
-    font-size: 12px; color: var(--text-secondary);
-    min-width: 80px; flex-shrink: 0;
-  }
+  /* ── 폼 ── */
+  .form-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .form-label { font-size: 12px; color: var(--text-secondary); min-width: 80px; flex-shrink: 0; }
   input[type="time"], input[type="date"] {
-    flex: 1;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(167,139,250,.2);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 15px;
-    font-family: 'DM Sans', inherit;
-    padding: 8px 12px;
-    outline: none;
-    -webkit-appearance: none;
-    color-scheme: dark;
+    flex: 1; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(167,139,250,.2); border-radius: 8px;
+    color: var(--text-primary); font-size: 15px;
+    font-family: 'DM Sans', inherit; padding: 8px 12px;
+    outline: none; -webkit-appearance: none; color-scheme: dark;
   }
-  input[type="time"]:focus, input[type="date"]:focus {
-    border-color: var(--aurora-purple);
+  input[type="time"]:focus, input[type="date"]:focus { border-color: var(--aurora-purple); }
+
+  /* 날짜 자동계산 힌트 */
+  .date-hint {
+    font-size: 11px; color: var(--moon-gold);
+    background: rgba(255,217,125,.08);
+    border: 1px solid rgba(255,217,125,.2);
+    border-radius: 8px; padding: 6px 10px; margin-top: 6px;
+    display: none;
   }
+  .date-hint.visible { display: block; }
 
   .interruption-block {
-    background: rgba(255,107,138,.06);
-    border: 1px solid rgba(255,107,138,.15);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    position: relative;
+    background: rgba(255,107,138,.06); border: 1px solid rgba(255,107,138,.15);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; position: relative;
   }
   .interruption-block .form-row:last-child { margin-bottom: 0; }
   .btn-remove-inter {
     position: absolute; top: 8px; right: 8px;
-    background: rgba(255,107,138,.15);
-    border: none; border-radius: 50%;
-    width: 22px; height: 22px;
-    color: var(--danger); font-size: 14px;
+    background: rgba(255,107,138,.15); border: none; border-radius: 50%;
+    width: 22px; height: 22px; color: var(--danger); font-size: 14px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
   .btn-add-inter {
     width: 100%; padding: 8px;
-    background: rgba(255,107,138,.08);
-    border: 1px dashed rgba(255,107,138,.25);
-    border-radius: 8px;
-    color: var(--danger);
-    font-size: 12px;
-    font-family: inherit;
-    cursor: pointer;
+    background: rgba(255,107,138,.08); border: 1px dashed rgba(255,107,138,.25);
+    border-radius: 8px; color: var(--danger); font-size: 12px;
+    font-family: inherit; cursor: pointer;
   }
 
-  /* ── 점수 슬라이더 ── */
+  /* 점수 슬라이더 */
   .score-slider-wrap { padding: 4px 0; }
-  .score-slider-label {
-    display: flex; justify-content: space-between;
-    font-size: 12px; color: var(--text-secondary);
-    margin-bottom: 8px;
-  }
+  .score-slider-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
   .score-current-display {
-    text-align: center;
-    font-size: 36px; font-weight: 700;
+    text-align: center; font-size: 36px; font-weight: 700;
     background: linear-gradient(135deg, var(--moon-gold), var(--aurora-purple));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
   }
   input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%; height: 6px;
-    border-radius: 3px;
+    -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
     background: linear-gradient(to right, var(--aurora-purple) 0%, var(--aurora-purple) var(--pct, 50%), rgba(255,255,255,.1) var(--pct,50%), rgba(255,255,255,.1) 100%);
     outline: none;
   }
   input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px;
-    border-radius: 50%;
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
     background: linear-gradient(135deg, var(--aurora-purple), var(--moon-gold));
-    box-shadow: 0 0 8px rgba(167,139,250,.6);
-    cursor: pointer;
+    box-shadow: 0 0 8px rgba(167,139,250,.6); cursor: pointer;
   }
   .score-emoji { text-align: center; font-size: 22px; margin-top: 6px; }
 
-  /* ── 버튼 ── */
+  /* 단계 표시 */
+  .step-indicator {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; margin-bottom: 16px;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,.15); transition: background .3s;
+  }
+  .step-dot.active { background: var(--aurora-purple); box-shadow: 0 0 6px var(--aurora-purple); }
+  .step-dot.done { background: var(--aurora-teal); }
+  .step-line { width: 24px; height: 1px; background: rgba(255,255,255,.1); }
+
+  /* 단계별 패널 */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* 버튼 */
   .btn-primary {
     width: 100%; padding: 14px;
     background: linear-gradient(135deg, var(--aurora-purple), var(--sleep-blue));
-    border: none; border-radius: 12px;
-    color: white; font-size: 15px; font-weight: 600;
-    font-family: inherit; cursor: pointer;
-    margin-top: 8px;
-    box-shadow: 0 4px 16px rgba(167,139,250,.3);
-    transition: opacity .2s;
+    border: none; border-radius: 12px; color: white; font-size: 15px; font-weight: 600;
+    font-family: inherit; cursor: pointer; margin-top: 8px;
+    box-shadow: 0 4px 16px rgba(167,139,250,.3); transition: opacity .2s;
   }
   .btn-primary:active { opacity: .85; }
+  .btn-primary.gold-btn {
+    background: linear-gradient(135deg, #d4a017, var(--moon-gold));
+    box-shadow: 0 4px 16px rgba(255,217,125,.3);
+  }
   .btn-secondary {
     width: 100%; padding: 12px;
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
-    color: var(--text-secondary); font-size: 14px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px; color: var(--text-secondary); font-size: 14px;
     font-family: inherit; cursor: pointer; margin-top: 6px;
   }
 
-  /* ── 빈 상태 ── */
-  .empty-state {
-    text-align: center; padding: 40px 20px;
-    color: var(--text-secondary);
-  }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
   .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; line-height: 1.6; }
 
-  /* ── 토스트 ── */
+  /* 토스트 */
   #toast {
     position: fixed; bottom: 100px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: rgba(77,217,192,.15);
-    border: 1px solid var(--aurora-teal);
-    color: var(--aurora-teal);
-    font-size: 13px; padding: 8px 18px;
-    border-radius: 20px;
-    opacity: 0; pointer-events: none;
-    transition: all .3s;
-    z-index: 200;
-    white-space: nowrap;
+    background: rgba(77,217,192,.15); border: 1px solid var(--aurora-teal);
+    color: var(--aurora-teal); font-size: 13px; padding: 8px 18px;
+    border-radius: 20px; opacity: 0; pointer-events: none;
+    transition: all .3s; z-index: 200; white-space: nowrap;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ── 확인 다이얼로그 ── */
+  /* 확인 다이얼로그 */
   .confirm-overlay {
     position: fixed; inset: 0; z-index: 200;
     background: rgba(6,6,15,.9);
     display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none;
-    transition: opacity .2s;
-    padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s; padding: 20px;
   }
   .confirm-overlay.open { opacity: 1; pointer-events: all; }
   .confirm-box {
-    background: #0e0e28;
-    border: 1px solid rgba(255,107,138,.25);
-    border-radius: 16px;
-    padding: 24px 20px;
-    width: 100%;
-    max-width: 300px;
-    text-align: center;
+    background: #0e0e28; border: 1px solid rgba(255,107,138,.25);
+    border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 300px; text-align: center;
   }
   .confirm-box h3 { font-size: 16px; margin-bottom: 8px; }
   .confirm-box p { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
   .confirm-btns { display: flex; gap: 10px; }
   .btn-cancel-cf {
-    flex: 1; padding: 10px;
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 10px; color: var(--text-secondary);
-    font-family: inherit; font-size: 14px; cursor: pointer;
+    flex: 1; padding: 10px; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 10px;
+    color: var(--text-secondary); font-family: inherit; font-size: 14px; cursor: pointer;
   }
   .btn-confirm-cf {
-    flex: 1; padding: 10px;
-    background: rgba(255,107,138,.15);
-    border: 1px solid rgba(255,107,138,.3);
-    border-radius: 10px; color: var(--danger);
-    font-family: inherit; font-size: 14px; cursor: pointer;
+    flex: 1; padding: 10px; background: rgba(255,107,138,.15);
+    border: 1px solid rgba(255,107,138,.3); border-radius: 10px;
+    color: var(--danger); font-family: inherit; font-size: 14px; cursor: pointer;
   }
 
   .divider { height: 1px; background: rgba(255,255,255,.06); margin: 4px 0; }
@@ -575,7 +376,6 @@
 </head>
 <body>
 
-<!-- 별 배경 -->
 <canvas id="starfield"></canvas>
 <div id="moon"></div>
 
@@ -592,11 +392,12 @@
     <button class="tab" onclick="switchTab('chart')">통계</button>
   </div>
 
-  <!-- ══ 오늘 탭 ══ -->
+  <!-- 오늘 탭 -->
   <div id="page-home" class="page active">
+    <div id="draft-banner-wrap"></div>
     <div id="today-card" class="card"></div>
     <div id="today-timeline" class="card" style="display:none">
-      <div class="card-title">오늘 수면 타임라인</div>
+      <div class="card-title">수면 타임라인</div>
       <div class="timeline" id="tl-content"></div>
     </div>
     <div id="today-score-card" class="card" style="display:none">
@@ -611,12 +412,12 @@
     </div>
   </div>
 
-  <!-- ══ 기록 탭 ══ -->
+  <!-- 기록 탭 -->
   <div id="page-records" class="page">
     <div id="records-list"></div>
   </div>
 
-  <!-- ══ 통계 탭 ══ -->
+  <!-- 통계 탭 -->
   <div id="page-chart" class="page">
     <div class="card">
       <div class="month-nav">
@@ -625,27 +426,22 @@
         <button onclick="changeChartMonth(1)">›</button>
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">수면 시간 (시간)</div>
       <div class="chart-wrap"><canvas id="chartSleep"></canvas></div>
     </div>
-
     <div class="card">
       <div class="card-title">순수 수면 시간 (시간)</div>
       <div class="chart-wrap"><canvas id="chartPure"></canvas></div>
     </div>
-
     <div class="card">
       <div class="card-title">숙면 점수</div>
       <div class="chart-wrap"><canvas id="chartScore"></canvas></div>
     </div>
-
     <div class="card">
       <div class="card-title">중간에 깬 횟수</div>
       <div class="chart-wrap"><canvas id="chartWakes"></canvas></div>
     </div>
-
     <div class="card">
       <div class="card-title">월 통계</div>
       <div class="stats-grid" id="stats-grid"></div>
@@ -653,65 +449,139 @@
   </div>
 </div>
 
-<!-- FAB -->
-<button id="fab" onclick="openInputModal()" aria-label="수면 기록 추가">＋</button>
-
-<!-- 토스트 -->
+<button id="fab" onclick="openNightModal()" aria-label="취침 기록">🌙</button>
 <div id="toast"></div>
 
-<!-- ══ 수면 입력 모달 ══ -->
-<div class="modal-overlay" id="modal-input" role="dialog" aria-modal="true">
+<!-- ══ 모달 A: 밤 취침 기록 ══ -->
+<div class="modal-overlay" id="modal-night" role="dialog" aria-modal="true">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">수면 기록</div>
-
+    <div class="modal-title">🌙 오늘 밤 취침 기록</div>
     <div class="modal-section">
-      <div class="modal-section-title">📅 날짜</div>
+      <div class="modal-section-title">잠든 시간</div>
       <div class="form-row">
-        <label class="form-label">날짜</label>
-        <input type="date" id="inp-date">
+        <label class="form-label">취침 시간</label>
+        <input type="time" id="night-sleep-time" value="00:30" oninput="updateNightDateHint()">
       </div>
+      <div class="date-hint" id="night-date-hint"></div>
+    </div>
+    <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);line-height:1.7">
+      💡 취침 시간만 저장하면 돼요.<br>
+      기상 후 아침에 앱을 열면 나머지를 이어서 기록할 수 있어요.
+    </div>
+    <button class="btn-primary gold-btn" onclick="saveNightRecord()">취침 기록 저장 🌙</button>
+    <button class="btn-secondary" onclick="closeModal('modal-night')">취소</button>
+  </div>
+</div>
+
+<!-- ══ 모달 B: 아침 기록 완성 ══ -->
+<div class="modal-overlay" id="modal-morning" role="dialog" aria-modal="true">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+
+    <!-- 단계 표시 -->
+    <div class="step-indicator">
+      <div class="step-dot done" id="sdot-1"></div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="sdot-2"></div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="sdot-3"></div>
     </div>
 
+    <div class="modal-title" id="morning-title">☀️ 좋은 아침이에요!</div>
+
+    <!-- 단계 1: 기상 시간 -->
+    <div class="step-panel active" id="step-1">
+      <div class="modal-section">
+        <div class="modal-section-title">☀️ 기상 시간</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;" id="morning-sleep-info"></div>
+        <div class="form-row">
+          <label class="form-label">일어난 시간</label>
+          <input type="time" id="morning-wake-time" value="07:45">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="goMorningStep(2)">다음 →</button>
+      <button class="btn-secondary" onclick="closeModal('modal-morning')">나중에 하기</button>
+    </div>
+
+    <!-- 단계 2: 중간에 깸 -->
+    <div class="step-panel" id="step-2">
+      <div class="modal-section">
+        <div class="modal-section-title">⚡ 중간에 깬 적 있나요?</div>
+        <div id="morning-interruptions-list"></div>
+        <button class="btn-add-inter" onclick="addMorningInterruption()">＋ 깬 구간 추가</button>
+      </div>
+      <button class="btn-primary" onclick="goMorningStep(3)">다음 →</button>
+      <button class="btn-secondary" onclick="goMorningStep(1)">← 이전</button>
+    </div>
+
+    <!-- 단계 3: 숙면 점수 -->
+    <div class="step-panel" id="step-3">
+      <div class="modal-section">
+        <div class="modal-section-title">⭐ 어떻게 주무셨나요?</div>
+        <div class="score-slider-wrap">
+          <div class="score-current-display" id="morning-score-display">5</div>
+          <input type="range" min="1" max="10" value="5" id="morning-score"
+            oninput="updateMorningScore(this.value)">
+          <div class="score-slider-label"><span>1 힘들었어요</span><span>10 완벽해요</span></div>
+          <div class="score-emoji" id="morning-score-emoji">😐</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveMorningRecord()">기록 완성하기 ✨</button>
+      <button class="btn-secondary" onclick="goMorningStep(2)">← 이전</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 모달 C: 전체 수동 편집 ══ -->
+<div class="modal-overlay" id="modal-edit" role="dialog" aria-modal="true">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="edit-modal-title">수면 기록 수정</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">📅 날짜 (취침한 날)</div>
+      <div class="form-row">
+        <label class="form-label">날짜</label>
+        <input type="date" id="edit-date">
+      </div>
+    </div>
     <div class="modal-section">
       <div class="modal-section-title">🌙 취침</div>
       <div class="form-row">
         <label class="form-label">잠든 시간</label>
-        <input type="time" id="inp-sleep">
+        <input type="time" id="edit-sleep">
       </div>
     </div>
-
     <div class="modal-section">
       <div class="modal-section-title">☀️ 기상</div>
       <div class="form-row">
         <label class="form-label">일어난 시간</label>
-        <input type="time" id="inp-wake">
+        <input type="time" id="edit-wake">
       </div>
     </div>
-
     <div class="modal-section">
       <div class="modal-section-title">⚡ 중간에 깸</div>
-      <div id="interruptions-list"></div>
-      <button class="btn-add-inter" onclick="addInterruption()">＋ 깬 구간 추가</button>
+      <div id="edit-interruptions-list"></div>
+      <button class="btn-add-inter" onclick="addEditInterruption()">＋ 깬 구간 추가</button>
     </div>
-
     <div class="modal-section">
       <div class="modal-section-title">⭐ 숙면 점수</div>
       <div class="score-slider-wrap">
-        <div class="score-current-display" id="inp-score-display">5</div>
-        <input type="range" min="1" max="10" value="5" id="inp-score"
-          oninput="updateScoreDisplay(this.value)">
+        <div class="score-current-display" id="edit-score-display">5</div>
+        <input type="range" min="1" max="10" value="5" id="edit-score"
+          oninput="updateEditScore(this.value)">
         <div class="score-slider-label"><span>1 힘들었어요</span><span>10 완벽해요</span></div>
-        <div class="score-emoji" id="inp-score-emoji">😐</div>
+        <div class="score-emoji" id="edit-score-emoji">😐</div>
       </div>
     </div>
 
-    <button class="btn-primary" id="btn-save-record" onclick="saveRecord()">저장하기</button>
-    <button class="btn-secondary" onclick="closeModal('modal-input')">취소</button>
+    <button class="btn-primary" onclick="saveEditRecord()">저장하기</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit')">취소</button>
   </div>
 </div>
 
-<!-- ══ 상세 모달 ══ -->
+<!-- 상세 모달 -->
 <div class="modal-overlay" id="modal-detail" role="dialog" aria-modal="true">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -741,186 +611,148 @@
   const canvas = document.getElementById('starfield');
   const ctx = canvas.getContext('2d');
   let W, H, stars = [];
-
-  function resize(){
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
   function initStars(){
     stars = [];
     const count = Math.floor(W * H / 3000);
-    for(let i=0; i<count; i++){
-      stars.push({
-        x: Math.random()*W, y: Math.random()*H,
-        r: Math.random()*1.4+.3,
-        op: Math.random(),
-        speed: Math.random()*.015+.005,
-        phase: Math.random()*Math.PI*2
-      });
+    for(let i=0;i<count;i++){
+      stars.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.4+.3,
+        speed:Math.random()*.015+.005, phase:Math.random()*Math.PI*2 });
     }
   }
-
-  let t = 0;
+  let t=0;
   function draw(){
     ctx.clearRect(0,0,W,H);
-    // 그라데이션 배경
-    const grad = ctx.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0,'#06060f');
-    grad.addColorStop(.5,'#0d0d2b');
-    grad.addColorStop(1,'#111135');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,W,H);
-
-    t += .016;
+    const grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#06060f'); grad.addColorStop(.5,'#0d0d2b'); grad.addColorStop(1,'#111135');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+    t+=.016;
     stars.forEach(s=>{
-      const op = .2 + .7*(Math.sin(t*s.speed*10+s.phase)+1)/2;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(240,240,255,${op})`;
-      ctx.fill();
+      const op=.2+.7*(Math.sin(t*s.speed*10+s.phase)+1)/2;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(240,240,255,${op})`; ctx.fill();
     });
     requestAnimationFrame(draw);
   }
-
-  // 별똥별 (CSS 대신 canvas로)
   function shootingStar(){
-    const x = Math.random()*W*.8+W*.1;
-    const y = Math.random()*H*.4;
-    const len = 120+Math.random()*80;
-    const angle = Math.PI/4;
-    let p = 0;
-    function animShoot(){
-      if(p>1) return;
-      p+=.04;
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(x - Math.cos(angle)*len*p, y - Math.sin(angle)*len*p);
-      ctx.lineTo(x - Math.cos(angle)*len*(p-.04), y - Math.sin(angle)*len*(p-.04));
-      ctx.strokeStyle = `rgba(255,255,255,${(1-p)*.7})`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.restore();
-      requestAnimationFrame(animShoot);
+    const x=Math.random()*W*.8+W*.1, y=Math.random()*H*.4;
+    const len=120+Math.random()*80, angle=Math.PI/4;
+    let p=0;
+    function anim(){
+      if(p>1) return; p+=.04;
+      ctx.save(); ctx.beginPath();
+      ctx.moveTo(x-Math.cos(angle)*len*p, y-Math.sin(angle)*len*p);
+      ctx.lineTo(x-Math.cos(angle)*len*(p-.04), y-Math.sin(angle)*len*(p-.04));
+      ctx.strokeStyle=`rgba(255,255,255,${(1-p)*.7})`; ctx.lineWidth=1.5; ctx.stroke(); ctx.restore();
+      requestAnimationFrame(anim);
     }
-    animShoot();
+    anim();
     setTimeout(shootingStar, 4000+Math.random()*8000);
   }
-
   resize(); initStars(); draw();
   setTimeout(shootingStar, 2000+Math.random()*4000);
-  window.addEventListener('resize', ()=>{ resize(); initStars(); });
+  window.addEventListener('resize',()=>{ resize(); initStars(); });
 })();
 
 // ════════════════════════════════════════════
-//  데이터 관리
+//  상수 & 유틸
 // ════════════════════════════════════════════
-const STORAGE_KEY = 'ggulzzam_v1';
-const MAX_MONTHS = 12;
-
-function loadData(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-  catch{ return {}; }
-}
-function saveData(data){
-  // 12개월 초과 시 가장 오래된 월 삭제
-  let months = Object.keys(data).sort();
-  while(months.length > MAX_MONTHS){
-    delete data[months.shift()];
-    months = Object.keys(data).sort();
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function getMonthKey(dateStr){
-  return dateStr.substring(0,7); // "YYYY-MM"
-}
-
-function getAllRecords(){
-  const data = loadData();
-  const all = [];
-  Object.values(data).forEach(m => Object.values(m).forEach(r => all.push(r)));
-  return all.sort((a,b)=> b.date.localeCompare(a.date));
-}
-
-function getRecord(dateStr){
-  const data = loadData();
-  const mk = getMonthKey(dateStr);
-  return data[mk] ? data[mk][dateStr] : null;
-}
-
-function upsertRecord(record){
-  const data = loadData();
-  const mk = getMonthKey(record.date);
-  if(!data[mk]) data[mk] = {};
-  data[mk][record.date] = record;
-  saveData(data);
-}
-
-function deleteRecord(dateStr){
-  const data = loadData();
-  const mk = getMonthKey(dateStr);
-  if(data[mk]) { delete data[mk][dateStr]; if(!Object.keys(data[mk]).length) delete data[mk]; }
-  saveData(data);
-}
-
-// ════════════════════════════════════════════
-//  유틸
-// ════════════════════════════════════════════
-const WEEKDAYS = ['일','월','화','수','목','금','토'];
+const STORAGE_KEY = 'ggulzzam_v2';
+const MAX_MONTHS  = 12;
+const WEEKDAYS    = ['일','월','화','수','목','금','토'];
 const SCORE_EMOJI = ['','😫','😣','😟','😕','😐','🙂','😊','😌','😴','🤩'];
 
+// 오늘 날짜 문자열 (로컬 기준)
 function todayStr(){
   const d = new Date();
+  return fmtDate(d);
+}
+// 어제 날짜 문자열
+function yesterdayStr(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return fmtDate(d);
+}
+function fmtDate(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function parseTime(timeStr){ // "HH:MM" → minutes from midnight
-  if(!timeStr) return null;
-  const [h,m] = timeStr.split(':').map(Number);
-  return h*60+m;
+// 취침 시간 → 수면 날짜 결정
+// 00:00~05:59 이면 "전날" 날짜, 그 외엔 "오늘" 날짜
+function sleepDateFromTime(timeStr){
+  if(!timeStr) return todayStr();
+  const h = parseInt(timeStr.split(':')[0]);
+  if(h >= 0 && h < 6){
+    return yesterdayStr(); // 새벽 → 전날이 수면 날짜
+  }
+  return todayStr();
 }
 
-function minutesToHHMM(min){
-  if(min===null||min===undefined) return '—';
-  const h = Math.floor(Math.abs(min)/60);
-  const m = Math.abs(min)%60;
-  return `${h}시간 ${m}분`;
-}
+function parseTime(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
 
 function calcSleepMinutes(sleepTime, wakeTime){
   if(!sleepTime||!wakeTime) return null;
-  let s = parseTime(sleepTime), w = parseTime(wakeTime);
-  let diff = w - s;
-  if(diff < 0) diff += 1440; // 자정 넘기는 경우
-  return diff;
+  let s=parseTime(sleepTime), w=parseTime(wakeTime);
+  let diff=w-s; if(diff<0) diff+=1440; return diff;
 }
-
-function calcInterruptionMinutes(interruptions){
-  if(!interruptions||!interruptions.length) return 0;
-  let total = 0;
-  interruptions.forEach(it=>{
-    if(!it.woke||!it.slept) return;
-    let s = parseTime(it.woke), e = parseTime(it.slept);
-    let diff = e - s;
-    if(diff < 0) diff += 1440;
-    total += diff;
-  });
+function calcInterruptionMinutes(inters){
+  if(!inters||!inters.length) return 0;
+  let total=0;
+  inters.forEach(it=>{ if(!it.woke||!it.slept) return; let d=parseTime(it.slept)-parseTime(it.woke); if(d<0)d+=1440; total+=d; });
   return total;
 }
-
-function formatDate(dateStr){
-  const d = new Date(dateStr+'T00:00:00');
+function minutesToHHMM(min){
+  if(min===null||min===undefined||isNaN(min)) return '—';
+  const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
+  return `${h}시간 ${m}분`;
+}
+function formatDateFull(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
   return `${d.getMonth()+1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
 }
-
 function scoreLabel(s){
   if(s<=2) return '매우 나쁨'; if(s<=4) return '나쁨';
   if(s<=6) return '보통'; if(s<=8) return '좋음'; return '매우 좋음';
 }
 
 // ════════════════════════════════════════════
-//  탭 전환
+//  데이터
+// ════════════════════════════════════════════
+function loadData(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY))||{}; }catch{ return {}; } }
+function saveData(data){
+  let months=Object.keys(data).sort();
+  while(months.length>MAX_MONTHS){ delete data[months.shift()]; months=Object.keys(data).sort(); }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function getMonthKey(dateStr){ return dateStr.substring(0,7); }
+function getAllRecords(){
+  const data=loadData(); const all=[];
+  Object.values(data).forEach(m=>Object.values(m).forEach(r=>all.push(r)));
+  return all.sort((a,b)=>b.date.localeCompare(a.date));
+}
+function getRecord(dateStr){
+  const data=loadData(); const mk=getMonthKey(dateStr);
+  return data[mk]?data[mk][dateStr]:null;
+}
+function upsertRecord(rec){
+  const data=loadData(); const mk=getMonthKey(rec.date);
+  if(!data[mk]) data[mk]={};
+  data[mk][rec.date]=rec; saveData(data);
+}
+function deleteRecord(dateStr){
+  const data=loadData(); const mk=getMonthKey(dateStr);
+  if(data[mk]){ delete data[mk][dateStr]; if(!Object.keys(data[mk]).length) delete data[mk]; }
+  saveData(data);
+}
+
+// draft 레코드 찾기 (status === 'draft')
+function getDraftRecord(){
+  const all=getAllRecords();
+  return all.find(r=>r.status==='draft')||null;
+}
+
+// ════════════════════════════════════════════
+//  탭
 // ════════════════════════════════════════════
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -936,119 +768,288 @@ function switchTab(name){
 //  모달 (뒤로가기 대응)
 // ════════════════════════════════════════════
 let _activeModal = null;
-
 function openModal(id){
-  const el = document.getElementById(id);
+  const el=document.getElementById(id);
   el.classList.add('open');
-  _activeModal = id;
-  history.pushState({modal:id}, '');
+  _activeModal=id;
+  history.pushState({modal:id},'');
 }
-
 function closeModal(id){
-  const el = document.getElementById(id);
+  const el=document.getElementById(id);
   el.classList.remove('open');
-  if(_activeModal===id) _activeModal = null;
+  if(_activeModal===id) _activeModal=null;
 }
-
-window.addEventListener('popstate', (e)=>{
-  if(_activeModal){
-    closeModal(_activeModal);
-  }
+window.addEventListener('popstate',()=>{
+  if(_activeModal) closeModal(_activeModal);
 });
-
-// 오버레이 배경 클릭 닫기
 document.querySelectorAll('.modal-overlay').forEach(ov=>{
   ov.addEventListener('click', e=>{
-    if(e.target===ov) {
-      if(history.state && history.state.modal) history.back();
-      else closeModal(ov.id);
-    }
+    if(e.target===ov){ if(history.state&&history.state.modal) history.back(); else closeModal(ov.id); }
   });
 });
 
 // ════════════════════════════════════════════
-//  확인 다이얼로그
+//  FAB 동작: 상황에 따라 다른 모달
 // ════════════════════════════════════════════
-let _pendingDeleteDate = null;
-function openDeleteConfirm(dateStr){
-  _pendingDeleteDate = dateStr;
-  document.getElementById('confirm-del').classList.add('open');
-  history.pushState({confirm:true},'');
-}
-function closeConfirm(){
-  document.getElementById('confirm-del').classList.remove('open');
-}
-function confirmDelete(){
-  if(_pendingDeleteDate){ deleteRecord(_pendingDeleteDate); _pendingDeleteDate=null; }
-  closeConfirm();
-  renderHome(); renderRecords();
-  if(document.getElementById('modal-detail').classList.contains('open')) closeModal('modal-detail');
-  showToast('삭제되었습니다');
+function openNightModal(){
+  const draft=getDraftRecord();
+  if(draft){
+    // draft가 있으면 아침 완성 모달
+    openMorningModal(draft);
+    return;
+  }
+  // draft 없으면 취침 기록
+  document.getElementById('night-sleep-time').value='00:30';
+  updateNightDateHint();
+  openModal('modal-night');
 }
 
 // ════════════════════════════════════════════
-//  토스트
+//  밤 취침 기록
 // ════════════════════════════════════════════
-let _toastTimer;
-function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+function updateNightDateHint(){
+  const time=document.getElementById('night-sleep-time').value;
+  const hint=document.getElementById('night-date-hint');
+  if(!time){ hint.classList.remove('visible'); return; }
+  const h=parseInt(time.split(':')[0]);
+  if(h>=0&&h<6){
+    hint.textContent=`🌙 새벽 시간이라 수면 날짜는 어제(${yesterdayStr()})로 저장돼요`;
+    hint.classList.add('visible');
+  } else {
+    hint.textContent=`📅 수면 날짜: 오늘(${todayStr()})`;
+    hint.classList.add('visible');
+  }
+}
+
+function saveNightRecord(){
+  const sleepTime=document.getElementById('night-sleep-time').value;
+  if(!sleepTime){ showToast('취침 시간을 입력해주세요'); return; }
+  const date=sleepDateFromTime(sleepTime);
+  const existing=getRecord(date);
+  if(existing&&existing.status==='done'){
+    showToast('해당 날짜에 이미 완성된 기록이 있어요'); return;
+  }
+  const rec={ date, sleepTime, status:'draft', interruptions:[], score:null, wakeTime:null };
+  upsertRecord(rec);
+  closeModal('modal-night');
+  updateFAB();
+  renderHome();
+  showToast('취침 기록 저장 🌙 아침에 이어서 기록하세요');
 }
 
 // ════════════════════════════════════════════
-//  오늘 화면
+//  아침 기록 완성 (단계별)
+// ════════════════════════════════════════════
+let _morningDate=null;
+
+function openMorningModal(rec){
+  _morningDate=rec.date;
+  document.getElementById('morning-title').textContent='☀️ 좋은 아침이에요!';
+  document.getElementById('morning-sleep-info').textContent=
+    `${formatDateFull(rec.date)} 취침 ${rec.sleepTime} → 완성해볼게요`;
+  document.getElementById('morning-wake-time').value='07:45';
+  document.getElementById('morning-interruptions-list').innerHTML='';
+  document.getElementById('morning-score').value=5;
+  updateMorningScore(5);
+  goMorningStep(1, true);
+  openModal('modal-morning');
+}
+
+function goMorningStep(step, init=false){
+  [1,2,3].forEach(i=>{
+    document.getElementById(`step-${i}`).classList.toggle('active', i===step);
+    const dot=document.getElementById(`sdot-${i}`);
+    dot.classList.remove('active','done');
+    if(i<step) dot.classList.add('done');
+    else if(i===step) dot.classList.add('active');
+  });
+}
+
+function addMorningInterruption(woke='',slept=''){
+  const list=document.getElementById('morning-interruptions-list');
+  const idx=list.children.length;
+  const div=document.createElement('div');
+  div.className='interruption-block';
+  div.innerHTML=`
+    <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
+    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
+    <div class="form-row"><label class="form-label">다시 잠든</label><input type="time" class="inter-slept" value="${slept}"></div>`;
+  list.appendChild(div);
+}
+
+function updateMorningScore(val){
+  val=parseInt(val);
+  document.getElementById('morning-score-display').textContent=val;
+  document.getElementById('morning-score-emoji').textContent=SCORE_EMOJI[val]||'';
+  document.getElementById('morning-score').style.setProperty('--pct',((val-1)/9*100).toFixed(1)+'%');
+}
+
+function saveMorningRecord(){
+  const wakeTime=document.getElementById('morning-wake-time').value;
+  if(!wakeTime){ showToast('기상 시간을 입력해주세요'); return; }
+  const score=parseInt(document.getElementById('morning-score').value);
+  const inters=[];
+  document.querySelectorAll('#morning-interruptions-list .interruption-block').forEach(b=>{
+    const woke=b.querySelector('.inter-woke').value;
+    const slept=b.querySelector('.inter-slept').value;
+    if(woke||slept) inters.push({woke,slept});
+  });
+  const existing=getRecord(_morningDate)||{};
+  const rec={ ...existing, wakeTime, interruptions:inters, score, status:'done' };
+  upsertRecord(rec);
+  closeModal('modal-morning');
+  updateFAB();
+  renderHome();
+  renderRecords();
+  showToast('기록 완성! 잘 주무셨나요 ✨');
+}
+
+// ════════════════════════════════════════════
+//  수동 편집 모달
+// ════════════════════════════════════════════
+let _editDate=null;
+
+function openEditModal(dateStr){
+  const rec=getRecord(dateStr); if(!rec) return;
+  _editDate=dateStr;
+  document.getElementById('edit-modal-title').textContent='수면 기록 수정';
+  document.getElementById('edit-date').value=rec.date;
+  document.getElementById('edit-sleep').value=rec.sleepTime||'00:30';
+  document.getElementById('edit-wake').value=rec.wakeTime||'07:45';
+  document.getElementById('edit-score').value=rec.score||5;
+  updateEditScore(rec.score||5);
+  const list=document.getElementById('edit-interruptions-list');
+  list.innerHTML='';
+  (rec.interruptions||[]).forEach(it=>addEditInterruption(it.woke,it.slept));
+  openModal('modal-edit');
+}
+
+function addEditInterruption(woke='',slept=''){
+  const list=document.getElementById('edit-interruptions-list');
+  const idx=list.children.length;
+  const div=document.createElement('div');
+  div.className='interruption-block';
+  div.innerHTML=`
+    <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
+    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
+    <div class="form-row"><label class="form-label">다시 잠든</label><input type="time" class="inter-slept" value="${slept}"></div>`;
+  list.appendChild(div);
+}
+
+function updateEditScore(val){
+  val=parseInt(val);
+  document.getElementById('edit-score-display').textContent=val;
+  document.getElementById('edit-score-emoji').textContent=SCORE_EMOJI[val]||'';
+  document.getElementById('edit-score').style.setProperty('--pct',((val-1)/9*100).toFixed(1)+'%');
+}
+
+function saveEditRecord(){
+  const date=document.getElementById('edit-date').value;
+  const sleepTime=document.getElementById('edit-sleep').value;
+  const wakeTime=document.getElementById('edit-wake').value;
+  if(!date||!sleepTime){ showToast('날짜와 취침 시간을 입력해주세요'); return; }
+  const score=parseInt(document.getElementById('edit-score').value);
+  const inters=[];
+  document.querySelectorAll('#edit-interruptions-list .interruption-block').forEach(b=>{
+    const woke=b.querySelector('.inter-woke').value;
+    const slept=b.querySelector('.inter-slept').value;
+    if(woke||slept) inters.push({woke,slept});
+  });
+  // 날짜가 바뀐 경우 기존 날짜 삭제
+  if(_editDate&&_editDate!==date) deleteRecord(_editDate);
+  const existing=getRecord(date)||{};
+  const rec={ ...existing, date, sleepTime, wakeTime, interruptions:inters, score, status: wakeTime?'done':'draft' };
+  upsertRecord(rec);
+  closeModal('modal-edit');
+  updateFAB();
+  renderHome();
+  renderRecords();
+  showToast('수정되었습니다 ✨');
+  _editDate=null;
+}
+
+// ════════════════════════════════════════════
+//  FAB 업데이트 (draft 유무에 따라 아이콘 변경)
+// ════════════════════════════════════════════
+function updateFAB(){
+  const fab=document.getElementById('fab');
+  const draft=getDraftRecord();
+  if(draft){
+    fab.textContent='☀️';
+    fab.title='아침 기록 완성하기';
+    fab.style.background='linear-gradient(135deg, #d4a017, #ffd97d)';
+  } else {
+    fab.textContent='🌙';
+    fab.title='취침 기록하기';
+    fab.style.background='linear-gradient(135deg, var(--aurora-purple), var(--sleep-blue))';
+  }
+}
+
+// ════════════════════════════════════════════
+//  오늘 탭 렌더
 // ════════════════════════════════════════════
 function renderHome(){
-  const today = todayStr();
-  const rec = getRecord(today);
-  const card = document.getElementById('today-card');
-  const tlCard = document.getElementById('today-timeline');
-  const scoreCard = document.getElementById('today-score-card');
+  const draft=getDraftRecord();
+  const bannerWrap=document.getElementById('draft-banner-wrap');
+  const todayCard=document.getElementById('today-card');
+  const tlCard=document.getElementById('today-timeline');
+  const scoreCard=document.getElementById('today-score-card');
 
-  card.innerHTML = `<div class="today-date">${formatDate(today)}</div>`;
+  // 드래프트 배너
+  if(draft){
+    bannerWrap.innerHTML=`
+      <div class="draft-banner" onclick="openMorningModal(${JSON.stringify(draft).replace(/"/g,'&quot;')})">
+        <div class="draft-banner-icon">☀️</div>
+        <div class="draft-banner-text">
+          <div class="draft-banner-title">아침 기록을 완성해요!</div>
+          <div class="draft-banner-sub">${formatDateFull(draft.date)} · 취침 ${draft.sleepTime}</div>
+        </div>
+        <div class="draft-banner-arrow">›</div>
+      </div>`;
+  } else {
+    bannerWrap.innerHTML='';
+  }
 
-  if(!rec){
-    card.innerHTML += `
+  // 가장 최근 완성 기록 표시
+  const done=getAllRecords().find(r=>r.status==='done');
+
+  if(!done){
+    todayCard.innerHTML=`
+      <div class="today-date">최근 기록 없음</div>
       <div class="today-status" style="color:var(--text-secondary);font-size:18px;padding:16px 0">아직 기록이 없어요</div>
-      <div class="today-hint">아래 ＋ 버튼으로 오늘 수면을 기록해보세요 🌙</div>`;
+      <div class="today-hint">🌙 버튼으로 오늘 밤 취침을 기록해보세요</div>`;
     tlCard.style.display='none';
     scoreCard.style.display='none';
     return;
   }
 
-  const totalMin = calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-  const interMin = calcInterruptionMinutes(rec.interruptions);
-  const pureMin = totalMin !== null ? Math.max(0, totalMin - interMin) : null;
+  const totalMin=calcSleepMinutes(done.sleepTime, done.wakeTime);
+  const interMin=calcInterruptionMinutes(done.interruptions);
+  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
 
-  card.innerHTML += `
+  const isYesterday=done.date===yesterdayStr();
+  const label=isYesterday?'어젯밤 수면':'최근 수면 · '+formatDateFull(done.date);
+
+  todayCard.innerHTML=`
+    <div class="today-date">${label}</div>
     <div class="today-status">${minutesToHHMM(totalMin)}</div>
-    <div class="today-hint">순수 수면 ${minutesToHHMM(pureMin)} · 중간에 깸 ${rec.interruptions?.length||0}회</div>
-  `;
+    <div class="today-hint">순수 수면 ${minutesToHHMM(pureMin)} · 중간에 깸 ${done.interruptions?.length||0}회</div>`;
 
-  // 타임라인
   tlCard.style.display='';
-  const tl = document.getElementById('tl-content');
-  let html = `
-    <div class="tl-row"><div class="tl-dot sleep"></div><span class="tl-label">취침</span><span class="tl-val">${rec.sleepTime||'—'}</span></div>
-  `;
-  (rec.interruptions||[]).forEach((it,i)=>{
-    html += `
-      <div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'}</span></div>
-      <div class="tl-row"><div class="tl-dot resleep"></div><span class="tl-label">다시 잠</span><span class="tl-val">${it.slept||'—'}</span></div>
-    `;
+  const tlEl=document.getElementById('tl-content');
+  let html=`<div class="tl-row"><div class="tl-dot sleep"></div><span class="tl-label">취침</span><span class="tl-val">${done.sleepTime||'—'}</span></div>`;
+  (done.interruptions||[]).forEach((it,i)=>{
+    html+=`<div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'}</span></div>
+           <div class="tl-row"><div class="tl-dot resleep"></div><span class="tl-label">다시 잠</span><span class="tl-val">${it.slept||'—'}</span></div>`;
   });
-  html += `<div class="tl-row"><div class="tl-dot wake"></div><span class="tl-label">기상</span><span class="tl-val">${rec.wakeTime||'—'}</span></div>`;
-  tl.innerHTML = html;
+  html+=`<div class="tl-row"><div class="tl-dot wake"></div><span class="tl-label">기상</span><span class="tl-val">${done.wakeTime||'—'}</span></div>`;
+  tlEl.innerHTML=html;
 
-  // 점수
-  if(rec.score){
+  if(done.score){
     scoreCard.style.display='';
-    document.getElementById('today-score-num').textContent = rec.score;
-    document.getElementById('today-score-bar').style.width = (rec.score*10)+'%';
-    document.getElementById('today-score-label').textContent = `${scoreLabel(rec.score)} ${SCORE_EMOJI[rec.score]}`;
+    document.getElementById('today-score-num').textContent=done.score;
+    document.getElementById('today-score-bar').style.width=(done.score*10)+'%';
+    document.getElementById('today-score-label').textContent=`${scoreLabel(done.score)} ${SCORE_EMOJI[done.score]}`;
   } else {
     scoreCard.style.display='none';
   }
@@ -1058,303 +1059,192 @@ function renderHome(){
 //  기록 목록
 // ════════════════════════════════════════════
 function renderRecords(){
-  const records = getAllRecords();
-  const el = document.getElementById('records-list');
+  const records=getAllRecords();
+  const el=document.getElementById('records-list');
   if(!records.length){
-    el.innerHTML = `<div class="empty-state"><div class="icon">🌙</div><p>아직 수면 기록이 없어요.<br>+ 버튼으로 첫 기록을 남겨보세요!</p></div>`;
+    el.innerHTML=`<div class="empty-state"><div class="icon">🌙</div><p>아직 수면 기록이 없어요.<br>🌙 버튼으로 첫 기록을 남겨보세요!</p></div>`;
     return;
   }
-  el.innerHTML = '<div class="record-list">' + records.map(rec=>{
-    const d = new Date(rec.date+'T00:00:00');
-    const totalMin = calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-    const interMin = calcInterruptionMinutes(rec.interruptions);
-    const pureMin = totalMin!==null ? Math.max(0,totalMin-interMin) : null;
+  el.innerHTML='<div class="record-list">'+records.map(rec=>{
+    const d=new Date(rec.date+'T00:00:00');
+    const isDraft=rec.status==='draft';
+    const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
+    const interMin=calcInterruptionMinutes(rec.interruptions);
+    const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+    const sleepText=isDraft?`취침 ${rec.sleepTime} (미완성)`:minutesToHHMM(totalMin);
+    const metaText=isDraft?'기상 기록 필요':(`순수 ${minutesToHHMM(pureMin)} · 깸 ${rec.interruptions?.length||0}회`);
+    const scoreBadge=isDraft
+      ?`<div class="record-score-badge draft">미완성</div>`
+      :`<div class="record-score-badge">${rec.score||'—'}</div>`;
     return `
-      <div class="record-item" onclick="showDetail('${rec.date}')">
+      <div class="record-item${isDraft?' draft':''}" onclick="showDetail('${rec.date}')">
         <div class="record-date-badge">
           <div class="record-day">${d.getDate()}</div>
           <div class="record-weekday">${WEEKDAYS[d.getDay()]}요일</div>
         </div>
         <div class="record-info">
-          <div class="record-sleep-time">${minutesToHHMM(totalMin)}</div>
-          <div class="record-meta">순수 ${minutesToHHMM(pureMin)} · 깸 ${rec.interruptions?.length||0}회</div>
+          <div class="record-sleep-time${isDraft?' draft-text':''}">${sleepText}</div>
+          <div class="record-meta">${metaText}</div>
         </div>
-        <div class="record-score-badge">${rec.score||'—'}</div>
+        ${scoreBadge}
         <div class="record-actions" onclick="event.stopPropagation()">
           <button class="btn-edit" onclick="openEditModal('${rec.date}')" title="수정">✏️</button>
           <button class="btn-del" onclick="openDeleteConfirm('${rec.date}')" title="삭제">🗑️</button>
         </div>
-      </div>
-    `;
-  }).join('') + '</div>';
+      </div>`;
+  }).join('')+'</div>';
 }
 
 // ════════════════════════════════════════════
 //  상세 보기
 // ════════════════════════════════════════════
 function showDetail(dateStr){
-  const rec = getRecord(dateStr);
-  if(!rec) return;
-  const totalMin = calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-  const interMin = calcInterruptionMinutes(rec.interruptions);
-  const pureMin = totalMin!==null ? Math.max(0,totalMin-interMin) : null;
-
-  document.getElementById('detail-title').textContent = formatDate(dateStr);
-
-  let html = `
-    <div class="card" style="margin-bottom:10px">
-      <div class="card-title">수면 정보</div>
-      <div class="timeline">
-        <div class="tl-row"><div class="tl-dot sleep"></div><span class="tl-label">취침 시간</span><span class="tl-val">${rec.sleepTime||'—'}</span></div>
-        <div class="tl-row"><div class="tl-dot wake"></div><span class="tl-label">기상 시간</span><span class="tl-val">${rec.wakeTime||'—'}</span></div>
-        <div class="divider"></div>
-        <div class="tl-row"><span class="tl-label" style="color:var(--aurora-teal)">총 수면</span><span class="tl-val" style="color:var(--aurora-teal)">${minutesToHHMM(totalMin)}</span></div>
-        <div class="tl-row"><span class="tl-label" style="color:var(--aurora-purple)">순수 수면</span><span class="tl-val" style="color:var(--aurora-purple)">${minutesToHHMM(pureMin)}</span></div>
-      </div>
-    </div>
-  `;
-
+  const rec=getRecord(dateStr); if(!rec) return;
+  const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
+  const interMin=calcInterruptionMinutes(rec.interruptions);
+  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+  document.getElementById('detail-title').textContent=formatDateFull(dateStr);
+  let html=`<div class="card" style="margin-bottom:10px"><div class="card-title">수면 정보</div><div class="timeline">
+    <div class="tl-row"><div class="tl-dot sleep"></div><span class="tl-label">취침 시간</span><span class="tl-val">${rec.sleepTime||'—'}</span></div>
+    <div class="tl-row"><div class="tl-dot wake"></div><span class="tl-label">기상 시간</span><span class="tl-val">${rec.wakeTime||'—'}</span></div>
+    <div class="divider"></div>
+    <div class="tl-row"><span class="tl-label" style="color:var(--aurora-teal)">총 수면</span><span class="tl-val" style="color:var(--aurora-teal)">${minutesToHHMM(totalMin)}</span></div>
+    <div class="tl-row"><span class="tl-label" style="color:var(--aurora-purple)">순수 수면</span><span class="tl-val" style="color:var(--aurora-purple)">${minutesToHHMM(pureMin)}</span></div>
+  </div></div>`;
   if(rec.interruptions&&rec.interruptions.length){
-    html += `<div class="card" style="margin-bottom:10px"><div class="card-title">중간에 깬 기록 (${rec.interruptions.length}회)</div><div class="timeline">`;
+    html+=`<div class="card" style="margin-bottom:10px"><div class="card-title">깬 기록 (${rec.interruptions.length}회)</div><div class="timeline">`;
     rec.interruptions.forEach((it,i)=>{
-      const itMin = calcInterruptionMinutes([it]);
-      html += `
-        <div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'} → ${it.slept||'—'} (${minutesToHHMM(itMin)})</span></div>
-      `;
+      const itMin=calcInterruptionMinutes([it]);
+      html+=`<div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'} → ${it.slept||'—'} (${minutesToHHMM(itMin)})</span></div>`;
     });
-    html += `</div></div>`;
+    html+=`</div></div>`;
   }
-
   if(rec.score){
-    html += `
-      <div class="card" style="margin-bottom:10px">
-        <div class="card-title">숙면 점수</div>
-        <div class="score-display">
-          <div class="score-num">${rec.score}</div>
-          <div class="score-bar-wrap">
-            <div class="score-bar-bg"><div class="score-bar-fill" style="width:${rec.score*10}%"></div></div>
-            <div class="score-label">${scoreLabel(rec.score)} ${SCORE_EMOJI[rec.score]}</div>
-          </div>
+    html+=`<div class="card" style="margin-bottom:10px"><div class="card-title">숙면 점수</div>
+      <div class="score-display">
+        <div class="score-num">${rec.score}</div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${rec.score*10}%"></div></div>
+          <div class="score-label">${scoreLabel(rec.score)} ${SCORE_EMOJI[rec.score]}</div>
         </div>
-      </div>`;
+      </div></div>`;
   }
-
-  document.getElementById('detail-content').innerHTML = html;
+  if(rec.status==='draft'){
+    html+=`<div class="draft-banner" style="margin-bottom:10px" onclick="closeModal('modal-detail');setTimeout(()=>openMorningModal(${JSON.stringify(rec).replace(/"/g,"'")}),300)">
+      <div class="draft-banner-icon">☀️</div>
+      <div class="draft-banner-text"><div class="draft-banner-title">아침 기록 완성하기</div><div class="draft-banner-sub">기상 시간, 깸 기록, 숙면 점수 입력</div></div>
+      <div class="draft-banner-arrow">›</div>
+    </div>`;
+  }
+  document.getElementById('detail-content').innerHTML=html;
   openModal('modal-detail');
 }
 
 // ════════════════════════════════════════════
-//  입력 모달
+//  삭제 확인
 // ════════════════════════════════════════════
-let _editDate = null;
-
-function openInputModal(){
-  _editDate = null;
-  document.getElementById('modal-title').textContent = '수면 기록 추가';
-  document.getElementById('btn-save-record').textContent = '저장하기';
-  document.getElementById('inp-date').value = todayStr();
-  document.getElementById('inp-sleep').value = '23:00';
-  document.getElementById('inp-wake').value = '07:00';
-  document.getElementById('interruptions-list').innerHTML = '';
-  document.getElementById('inp-score').value = 5;
-  updateScoreDisplay(5);
-  openModal('modal-input');
+let _pendingDeleteDate=null;
+function openDeleteConfirm(dateStr){ _pendingDeleteDate=dateStr; document.getElementById('confirm-del').classList.add('open'); history.pushState({confirm:true},''); }
+function closeConfirm(){ document.getElementById('confirm-del').classList.remove('open'); }
+function confirmDelete(){
+  if(_pendingDeleteDate){ deleteRecord(_pendingDeleteDate); _pendingDeleteDate=null; }
+  closeConfirm();
+  if(document.getElementById('modal-detail').classList.contains('open')) closeModal('modal-detail');
+  updateFAB(); renderHome(); renderRecords();
+  showToast('삭제되었습니다');
 }
 
-function openEditModal(dateStr){
-  const rec = getRecord(dateStr);
-  if(!rec) return;
-  _editDate = dateStr;
-  document.getElementById('modal-title').textContent = '수면 기록 수정';
-  document.getElementById('btn-save-record').textContent = '수정 저장';
-  document.getElementById('inp-date').value = rec.date;
-  document.getElementById('inp-sleep').value = rec.sleepTime||'';
-  document.getElementById('inp-wake').value = rec.wakeTime||'';
-  document.getElementById('inp-score').value = rec.score||5;
-  updateScoreDisplay(rec.score||5);
-
-  const list = document.getElementById('interruptions-list');
-  list.innerHTML = '';
-  (rec.interruptions||[]).forEach(it=>addInterruption(it.woke, it.slept));
-  openModal('modal-input');
-}
-
-function addInterruption(woke='', slept=''){
-  const list = document.getElementById('interruptions-list');
-  const idx = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'interruption-block';
-  div.innerHTML = `
-    <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
-    <div class="form-row">
-      <label class="form-label">깬 시간 ${idx+1}</label>
-      <input type="time" class="inter-woke" value="${woke}">
-    </div>
-    <div class="form-row">
-      <label class="form-label">다시 잠든</label>
-      <input type="time" class="inter-slept" value="${slept}">
-    </div>`;
-  list.appendChild(div);
-}
-
-function updateScoreDisplay(val){
-  val = parseInt(val);
-  document.getElementById('inp-score-display').textContent = val;
-  document.getElementById('inp-score-emoji').textContent = SCORE_EMOJI[val]||'';
-  const pct = ((val-1)/9*100).toFixed(1)+'%';
-  document.getElementById('inp-score').style.setProperty('--pct', pct);
-}
-
-function saveRecord(){
-  const date = document.getElementById('inp-date').value;
-  const sleepTime = document.getElementById('inp-sleep').value;
-  const wakeTime = document.getElementById('inp-wake').value;
-  const score = parseInt(document.getElementById('inp-score').value);
-
-  if(!date){ showToast('날짜를 입력해주세요'); return; }
-  if(!sleepTime||!wakeTime){ showToast('취침·기상 시간을 입력해주세요'); return; }
-
-  const inters = [];
-  document.querySelectorAll('.interruption-block').forEach(b=>{
-    const woke = b.querySelector('.inter-woke').value;
-    const slept = b.querySelector('.inter-slept').value;
-    if(woke||slept) inters.push({woke, slept});
-  });
-
-  const record = { date, sleepTime, wakeTime, interruptions: inters, score };
-  upsertRecord(record);
-  closeModal('modal-input');
-  renderHome();
-  renderRecords();
-  showToast(_editDate ? '수정되었습니다 ✨' : '기록되었습니다 🌙');
-  _editDate = null;
+// ════════════════════════════════════════════
+//  토스트
+// ════════════════════════════════════════════
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
 // ════════════════════════════════════════════
 //  차트
 // ════════════════════════════════════════════
-let _chartMonth = new Date().getFullYear()*100 + (new Date().getMonth()+1);
-let _charts = {};
+let _chartMonth=new Date().getFullYear()*100+(new Date().getMonth()+1);
+let _charts={};
 
 function changeChartMonth(dir){
-  let y = Math.floor(_chartMonth/100), m = _chartMonth%100;
-  m += dir;
-  if(m>12){m=1;y++;}
-  if(m<1){m=12;y--;}
-  _chartMonth = y*100+m;
-  renderChart();
+  let y=Math.floor(_chartMonth/100), m=_chartMonth%100;
+  m+=dir; if(m>12){m=1;y++;} if(m<1){m=12;y--;}
+  _chartMonth=y*100+m; renderChart();
 }
 
 function renderChart(){
-  const y = Math.floor(_chartMonth/100), m = _chartMonth%100;
-  const mk = `${y}-${String(m).padStart(2,'0')}`;
-  document.getElementById('chart-month-label').textContent = `${y}년 ${m}월`;
-
-  const data = loadData();
-  const monthData = data[mk] || {};
-  const daysInMonth = new Date(y, m, 0).getDate();
+  const y=Math.floor(_chartMonth/100), m=_chartMonth%100;
+  const mk=`${y}-${String(m).padStart(2,'0')}`;
+  document.getElementById('chart-month-label').textContent=`${y}년 ${m}월`;
+  const data=loadData(); const monthData=data[mk]||{};
+  const daysInMonth=new Date(y,m,0).getDate();
   const labels=[], sleepArr=[], pureArr=[], scoreArr=[], wakesArr=[];
-
   for(let d=1;d<=daysInMonth;d++){
-    const ds = `${mk}-${String(d).padStart(2,'0')}`;
-    const rec = monthData[ds];
+    const ds=`${mk}-${String(d).padStart(2,'0')}`;
+    const rec=monthData[ds];
     labels.push(d);
-    if(rec){
-      const totalMin = calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-      const interMin = calcInterruptionMinutes(rec.interruptions);
-      const pureMin = totalMin!==null ? Math.max(0,totalMin-interMin) : null;
-      sleepArr.push(totalMin!==null ? +(totalMin/60).toFixed(2) : null);
-      pureArr.push(pureMin!==null ? +(pureMin/60).toFixed(2) : null);
+    if(rec&&rec.status==='done'){
+      const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
+      const interMin=calcInterruptionMinutes(rec.interruptions);
+      const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+      sleepArr.push(totalMin!==null?+(totalMin/60).toFixed(2):null);
+      pureArr.push(pureMin!==null?+(pureMin/60).toFixed(2):null);
       scoreArr.push(rec.score||null);
       wakesArr.push(rec.interruptions?.length||0);
     } else {
-      sleepArr.push(null);
-      pureArr.push(null);
-      scoreArr.push(null);
-      wakesArr.push(null);
+      sleepArr.push(null); pureArr.push(null); scoreArr.push(null); wakesArr.push(null);
     }
   }
-
-  const chartDefaults = {
-    responsive: true, maintainAspectRatio: false,
-    plugins:{ legend:{display:false} },
+  const chartDefaults={
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
     scales:{
-      x:{ ticks:{color:'#9999cc', font:{size:9}}, grid:{color:'rgba(255,255,255,.04)'} },
-      y:{ ticks:{color:'#9999cc', font:{size:9}}, grid:{color:'rgba(255,255,255,.06)'} }
+      x:{ticks:{color:'#9999cc',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+      y:{ticks:{color:'#9999cc',font:{size:9}},grid:{color:'rgba(255,255,255,.06)'}}
     }
   };
-
-  function makeChart(id, data, color, gcolor){
+  function makeChart(id, data, color){
     if(_charts[id]) _charts[id].destroy();
-    const ctx = document.getElementById(id).getContext('2d');
-    const grad = ctx.createLinearGradient(0,0,0,160);
-    grad.addColorStop(0, gcolor||color+'66');
-    grad.addColorStop(1, 'transparent');
-    _charts[id] = new Chart(ctx, {
-      type:'bar',
-      data:{
-        labels,
-        datasets:[{
-          data,
-          backgroundColor: data.map(v=>v?color+'99':'transparent'),
-          borderColor: color,
-          borderWidth: 1.5,
-          borderRadius: 4,
-          spanGaps: true,
-        }]
-      },
-      options: {...chartDefaults}
+    const ctx=document.getElementById(id).getContext('2d');
+    _charts[id]=new Chart(ctx,{
+      type:'bar', data:{ labels, datasets:[{
+        data, backgroundColor:data.map(v=>v?color+'99':'transparent'),
+        borderColor:color, borderWidth:1.5, borderRadius:4, spanGaps:true
+      }]}, options:{...chartDefaults}
     });
   }
+  makeChart('chartSleep',sleepArr,'#6eb5ff');
+  makeChart('chartPure',pureArr,'#4dd9c0');
+  makeChart('chartScore',scoreArr,'#a78bfa');
+  makeChart('chartWakes',wakesArr,'#ff6b8a');
 
-  makeChart('chartSleep', sleepArr, '#6eb5ff');
-  makeChart('chartPure', pureArr, '#4dd9c0');
-  makeChart('chartScore', scoreArr, '#a78bfa');
-  makeChart('chartWakes', wakesArr, '#ff6b8a');
-
-  // 통계
-  const validSleep = sleepArr.filter(v=>v!==null);
-  const validPure = pureArr.filter(v=>v!==null);
-  const validScore = scoreArr.filter(v=>v!==null);
-  const validWakes = wakesArr.filter(v=>v!==null);
-  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
-  const fmtH = val => val===null ? '—' : `${Math.floor(val)}h ${Math.round((val%1)*60)}m`;
-  const fmtN = (val,d) => val===null ? '—' : val.toFixed(d||1);
-
-  const statsGrid = document.getElementById('stats-grid');
-  statsGrid.innerHTML = `
-    <div class="stat-item">
-      <div class="stat-label">평균 수면시간</div>
-      <div class="stat-val teal">${fmtH(avg(validSleep))}</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">평균 순수 수면</div>
-      <div class="stat-val purple">${fmtH(avg(validPure))}</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">평균 숙면 점수</div>
-      <div class="stat-val gold">${fmtN(avg(validScore))}</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">평균 중간 깨기</div>
-      <div class="stat-val red">${fmtN(avg(validWakes))}회</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">기록일수</div>
-      <div class="stat-val teal">${validSleep.length}일</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">총 수면시간</div>
-      <div class="stat-val purple">${fmtH(validSleep.reduce((a,b)=>a+b,0)||null)}</div>
-    </div>
-  `;
+  const validSleep=sleepArr.filter(v=>v!==null);
+  const validPure=pureArr.filter(v=>v!==null);
+  const validScore=scoreArr.filter(v=>v!==null);
+  const validWakes=wakesArr.filter(v=>v!==null);
+  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+  const fmtH=val=>val===null?'—':`${Math.floor(val)}h ${Math.round((val%1)*60)}m`;
+  const fmtN=(val,d)=>val===null?'—':val.toFixed(d||1);
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-item"><div class="stat-label">평균 수면시간</div><div class="stat-val teal">${fmtH(avg(validSleep))}</div></div>
+    <div class="stat-item"><div class="stat-label">평균 순수 수면</div><div class="stat-val purple">${fmtH(avg(validPure))}</div></div>
+    <div class="stat-item"><div class="stat-label">평균 숙면 점수</div><div class="stat-val gold">${fmtN(avg(validScore))}</div></div>
+    <div class="stat-item"><div class="stat-label">평균 깨기 횟수</div><div class="stat-val red">${fmtN(avg(validWakes))}회</div></div>
+    <div class="stat-item"><div class="stat-label">완성 기록일수</div><div class="stat-val teal">${validSleep.length}일</div></div>
+    <div class="stat-item"><div class="stat-label">총 수면시간</div><div class="stat-val purple">${fmtH(validSleep.reduce((a,b)=>a+b,0)||null)}</div></div>`;
 }
 
 // ════════════════════════════════════════════
 //  초기화
 // ════════════════════════════════════════════
+updateFAB();
 renderHome();
-updateScoreDisplay(5);
+updateMorningScore(5);
+updateEditScore(5);
 </script>
 </body>
 </html>

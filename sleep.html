@@ -874,7 +874,7 @@ function addMorningInterruption(woke='',slept=''){
   div.innerHTML=`
     <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
     <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
-    <div class="form-row"><label class="form-label">다시 잠든</label><input type="time" class="inter-slept" value="${slept}"></div>`;
+    <div class="form-row"><label class="form-label">다시 잠</label><input type="time" class="inter-slept" value="${slept}"></div>`;
   list.appendChild(div);
 }
 
@@ -933,7 +933,7 @@ function addEditInterruption(woke='',slept=''){
   div.innerHTML=`
     <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
     <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
-    <div class="form-row"><label class="form-label">다시 잠든</label><input type="time" class="inter-slept" value="${slept}"></div>`;
+    <div class="form-row"><label class="form-label">다시 잠</label><input type="time" class="inter-slept" value="${slept}"></div>`;
   list.appendChild(div);
 }
 

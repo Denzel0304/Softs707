@@ -48,11 +48,7 @@
     background: radial-gradient(circle at 35% 35%, #fff8dc, #ffd97d 60%, #e6b84a);
     box-shadow: 0 0 20px 6px rgba(255,217,125,.35), 0 0 50px 15px rgba(255,217,125,.12);
   }
-  #moon::after {
-    content: ''; position: absolute; top: 6px; right: 4px;
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--night-deep); opacity: .18;
-  }
+
 
   #app {
     position: relative; z-index: 2;
@@ -780,6 +776,11 @@ function closeModal(id){
   if(_activeModal===id) _activeModal=null;
 }
 window.addEventListener('popstate',()=>{
+  const confirmEl=document.getElementById('confirm-del');
+  if(confirmEl.classList.contains('open')){
+    closeConfirm();
+    return;
+  }
   if(_activeModal) closeModal(_activeModal);
 });
 document.querySelectorAll('.modal-overlay').forEach(ov=>{
@@ -1144,7 +1145,11 @@ function showDetail(dateStr){
 //  삭제 확인
 // ════════════════════════════════════════════
 let _pendingDeleteDate=null;
-function openDeleteConfirm(dateStr){ _pendingDeleteDate=dateStr; document.getElementById('confirm-del').classList.add('open'); history.pushState({confirm:true},''); }
+function openDeleteConfirm(dateStr){
+  _pendingDeleteDate=dateStr;
+  document.getElementById('confirm-del').classList.add('open');
+  history.pushState({confirm:true},'');
+}
 function closeConfirm(){ document.getElementById('confirm-del').classList.remove('open'); }
 function confirmDelete(){
   if(_pendingDeleteDate){ deleteRecord(_pendingDeleteDate); _pendingDeleteDate=null; }

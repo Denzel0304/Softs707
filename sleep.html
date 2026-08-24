@@ -53,7 +53,19 @@
   #app {
     position: relative; z-index: 2;
     max-width: 430px; margin: 0 auto;
-    min-height: 100dvh; display: flex; flex-direction: column;
+    height: 100dvh; display: flex; flex-direction: column;
+  }
+
+  #sticky-header {
+    position: sticky; top: 0; z-index: 10;
+    background: transparent;
+    flex-shrink: 0;
+  }
+
+  #pages-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   header {
@@ -69,7 +81,7 @@
   .app-sub { margin-left: auto; font-size: 11px; color: var(--text-secondary); font-weight: 300; }
 
   .tabs {
-    display: flex; margin: 0 20px 16px;
+    display: flex; margin: 0 20px 12px;
     background: rgba(255,255,255,.04); border-radius: 12px; padding: 3px; gap: 2px;
   }
   .tab {
@@ -79,7 +91,7 @@
   }
   .tab.active { background: var(--indigo); color: var(--aurora-purple); box-shadow: 0 0 12px rgba(167,139,250,.2); }
 
-  .page { display: none; flex-direction: column; flex: 1; padding: 0 16px 100px; gap: 12px; }
+  .page { display: none; flex-direction: column; padding: 0 16px 100px; gap: 12px; }
   .page.active { display: flex; }
 
   .card {
@@ -376,17 +388,21 @@
 <div id="moon"></div>
 
 <div id="app">
-  <header>
-    <span class="logo-moon">🌙</span>
-    <span class="app-title">꿀잠</span>
-    <span class="app-sub">수면 기록</span>
-  </header>
+  <div id="sticky-header">
+    <header>
+      <span class="logo-moon">🌙</span>
+      <span class="app-title">꿀잠</span>
+      <span class="app-sub">수면 기록</span>
+    </header>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('home')">오늘</button>
-    <button class="tab" onclick="switchTab('records')">기록</button>
-    <button class="tab" onclick="switchTab('chart')">통계</button>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('home')">오늘</button>
+      <button class="tab" onclick="switchTab('records')">기록</button>
+      <button class="tab" onclick="switchTab('chart')">통계</button>
+    </div>
   </div>
+
+  <div id="pages-container">
 
   <!-- 오늘 탭 -->
   <div id="page-home" class="page active">
@@ -443,6 +459,8 @@
       <div class="stats-grid" id="stats-grid"></div>
     </div>
   </div>
+
+  </div><!-- /pages-container -->
 </div>
 
 <button id="fab" onclick="openNightModal()" aria-label="취침 기록">🌙</button>
@@ -457,13 +475,12 @@
       <div class="modal-section-title">잠든 시간</div>
       <div class="form-row">
         <label class="form-label">취침 시간</label>
-        <input type="time" id="night-sleep-time" value="00:30" oninput="updateNightDateHint()">
+        <input type="time" id="night-sleep-time" value="23:50" oninput="updateNightDateHint()">
       </div>
       <div class="date-hint" id="night-date-hint"></div>
     </div>
     <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);line-height:1.7">
-      💡 취침 시간만 저장하면 돼요.<br>
-      기상 후 아침에 앱을 열면 나머지를 이어서 기록할 수 있어요.
+      💡 취침 시간만 저장하면 돼요. 기상 후 아침에 앱을 열면 나머지를 이어서 기록할 수 있어요.
     </div>
     <button class="btn-primary gold-btn" onclick="saveNightRecord()">취침 기록 저장 🌙</button>
     <button class="btn-secondary" onclick="closeModal('modal-night')">취소</button>
@@ -800,7 +817,7 @@ function openNightModal(){
     return;
   }
   // draft 없으면 취침 기록
-  document.getElementById('night-sleep-time').value='00:30';
+  document.getElementById('night-sleep-time').value='23:50';
   updateNightDateHint();
   openModal('modal-night');
 }
@@ -871,9 +888,10 @@ function addMorningInterruption(woke='',slept=''){
   const idx=list.children.length;
   const div=document.createElement('div');
   div.className='interruption-block';
+  const defaultWoke = woke || '03:00';
   div.innerHTML=`
     <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
-    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
+    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${defaultWoke}"></div>
     <div class="form-row"><label class="form-label">다시 잠</label><input type="time" class="inter-slept" value="${slept}"></div>`;
   list.appendChild(div);
 }
@@ -930,9 +948,10 @@ function addEditInterruption(woke='',slept=''){
   const idx=list.children.length;
   const div=document.createElement('div');
   div.className='interruption-block';
+  const defaultWoke = woke || '03:00';
   div.innerHTML=`
     <button class="btn-remove-inter" onclick="this.parentElement.remove()">✕</button>
-    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${woke}"></div>
+    <div class="form-row"><label class="form-label">깬 시간 ${idx+1}</label><input type="time" class="inter-woke" value="${defaultWoke}"></div>
     <div class="form-row"><label class="form-label">다시 잠</label><input type="time" class="inter-slept" value="${slept}"></div>`;
   list.appendChild(div);
 }
@@ -1034,7 +1053,7 @@ function renderHome(){
   todayCard.innerHTML=`
     <div class="today-date">${label}</div>
     <div class="today-status">${minutesToHHMM(totalMin)}</div>
-    <div class="today-hint">순수 수면 ${minutesToHHMM(pureMin)} · 중간에 깸 ${done.interruptions?.length||0}회</div>`;
+    <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회</div>`;
 
   tlCard.style.display='';
   const tlEl=document.getElementById('tl-content');

@@ -136,18 +136,19 @@
   .tl-label { color: var(--text-secondary); font-size: 12px; min-width: 80px; }
   .tl-val { color: var(--text-primary); font-weight: 500; }
 
-  /* ── 홈 숙면 점수 카드 (좌우 2분할) ── */
+  /* ── 홈 숙면 점수 카드 (정확히 3등분 + FAB 가운데) ── */
   .score-display {
     display: grid;
-    grid-template-columns: 1fr 72px 1fr;  /* 가운데 72px = FAB(60px)+여유 */
+    grid-template-columns: 1fr 72px 1fr;  /* 고정: FAB(60px) + 좌우 여유 각 6px */
     align-items: center;
     gap: 0;
     min-height: 0;
   }
-  /* 가운데 구분선 */
+  /* 가운데 구분선 — 위치 고정, 좌우 각 1px 선 */
   .score-divider {
     align-self: stretch;
     position: relative;
+    flex-shrink: 0;
   }
   .score-divider::before, .score-divider::after {
     content: '';
@@ -157,11 +158,12 @@
   }
   .score-divider::before { left: 0; }
   .score-divider::after  { right: 0; }
-  /* 왼쪽: 숙면 점수 — 오른쪽 여백 넉넉히 */
+  /* 왼쪽: 숙면 점수 — 중앙 정렬, 패딩 넉넉히 */
   .score-left {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 4px 6px 4px 10px;
+    padding: 4px 8px;
     text-align: center; gap: 3px;
+    width: 100%;
   }
   .score-sub-title { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
   /* 점수 숫자 + 이모지 가로 배치 */
@@ -182,31 +184,28 @@
     transition: width .6s cubic-bezier(.4,0,.2,1);
   }
   .score-label { font-size: 10px; color: var(--text-secondary); }
-  /* 오른쪽: 순수 수면 효율 — 왼쪽 여백 넉넉히 */
+  /* 오른쪽: 수면 효율 — 링 제거, 숫자+라벨만, 고정 폭 중앙 정렬 */
   .score-right {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 4px 10px 4px 6px;
+    padding: 4px 8px;
     text-align: center; gap: 3px;
+    width: 100%;
   }
   .efficiency-row {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: baseline; justify-content: center;
   }
-  .efficiency-ring {
-    width: 36px; height: 36px; flex-shrink: 0;
-    transform: rotate(-90deg);
-  }
-  .efficiency-ring-bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 5; }
-  .efficiency-ring-fill {
-    fill: none; stroke-width: 5; stroke-linecap: round;
-    stroke: url(#effGrad);
-    stroke-dasharray: 107; /* 2π×17 ≈ 106.8 */
-    stroke-dashoffset: 107;
-    transition: stroke-dashoffset .9s cubic-bezier(.4,0,.2,1);
-  }
+  /* 링은 숨김 — HTML은 그대로, CSS로만 제거 */
+  .efficiency-ring { display: none; }
+  .efficiency-ring-bg { display: none; }
+  .efficiency-ring-fill { display: none; }
   .efficiency-num {
-    font-size: 26px; font-weight: 700; line-height: 1;
+    font-size: 30px; font-weight: 700; line-height: 1;
     background: linear-gradient(135deg, var(--aurora-teal), var(--sleep-blue));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    /* 고정 너비로 2자리/3자리 모두 같은 공간 차지 */
+    min-width: 0;
+    display: block;
+    text-align: center;
   }
   .efficiency-label { font-size: 10px; color: var(--text-secondary); }
 
@@ -499,20 +498,10 @@
         <!-- 가운데 구분선 -->
         <div class="score-divider"></div>
 
-        <!-- 오른쪽: 순수 수면 효율 -->
+        <!-- 오른쪽: 수면 효율 (숫자만) -->
         <div class="score-right">
           <div class="score-sub-title">수면 효율</div>
           <div class="efficiency-row">
-            <svg class="efficiency-ring" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="effGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#4dd9c0"/>
-                  <stop offset="100%" stop-color="#6eb5ff"/>
-                </linearGradient>
-              </defs>
-              <circle class="efficiency-ring-bg" cx="22" cy="22" r="17"/>
-              <circle class="efficiency-ring-fill" id="today-eff-ring" cx="22" cy="22" r="17"/>
-            </svg>
             <div class="efficiency-num" id="today-eff-pct">—</div>
           </div>
           <div class="efficiency-label" id="today-eff-label">순수 수면 비율</div>
@@ -1177,27 +1166,14 @@ function renderHome(){
       : null;
     const effEl  = document.getElementById('today-eff-pct');
     const effLbl = document.getElementById('today-eff-label');
+    // effRing은 DOM에서 제거됐을 수 있으므로 null 체크
     const effRing= document.getElementById('today-eff-ring');
-    const CIRCUMFERENCE = 107; // 2π×17 ≈ 106.8, CSS와 동기화
     if(effPct !== null){
       effEl.textContent  = effPct + '%';
       effLbl.textContent = `순수 ${minutesToHHMM(pureMin)}`;
-      // dashoffset: 0 = 꽉 참, CIRCUMFERENCE = 비어있음
-      const offset = CIRCUMFERENCE * (1 - effPct / 100);
-      // 애니메이션: 먼저 꽉찬 상태로 리셋 후 전환
-      effRing.style.transition = 'none';
-      effRing.style.strokeDasharray  = CIRCUMFERENCE;
-      effRing.style.strokeDashoffset = CIRCUMFERENCE;
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-          effRing.style.transition = 'stroke-dashoffset .9s cubic-bezier(.4,0,.2,1)';
-          effRing.style.strokeDashoffset = offset;
-        });
-      });
     } else {
       effEl.textContent  = '—';
       effLbl.textContent = '순수 수면 비율';
-      effRing.style.strokeDashoffset = CIRCUMFERENCE;
     }
   } else {
     scoreCard.style.display='none';

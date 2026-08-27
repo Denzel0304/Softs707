@@ -440,6 +440,23 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbxH4-SopczisKZKzbCf0WqW
 let sessionToken = null;
 let sessionTs    = null;
 
+// ── 저장된 세션 복원 (영구 인증) ────────────────────────
+(function restoreSession() {
+  try {
+    const saved = localStorage.getItem('togo_session');
+    if (!saved) return;
+    const s = JSON.parse(saved);
+    if (s.token && s.ts) {
+      sessionToken = s.token;
+      sessionTs    = s.ts;
+      document.getElementById('stepAuth').style.display = 'none';
+      document.getElementById('stepSend').style.display = 'block';
+    }
+  } catch(e) {
+    localStorage.removeItem('togo_session');
+  }
+})();
+
 // ── 뒤로가기 처리 ──────────────────────────────────────
 history.pushState(null, '', location.href);
 window.addEventListener('popstate', function() {
@@ -470,6 +487,9 @@ async function doAuth() {
     if (data.ok) {
       sessionToken = data.token;
       sessionTs    = data.ts;
+
+      // 영구 저장
+      localStorage.setItem('togo_session', JSON.stringify({ token: data.token, ts: data.ts }));
 
       // 화면 전환
       document.getElementById('stepAuth').style.display = 'none';
@@ -538,6 +558,7 @@ async function sendEmail() {
       // 토큰 만료 → 재인증
       sessionToken = null;
       sessionTs    = null;
+      localStorage.removeItem('togo_session');
       status.className = 'status-line error';
       status.innerHTML = '// SESSION EXPIRED — RE-AUTH<span class="blink">_</span>';
       setTimeout(() => {

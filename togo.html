@@ -132,6 +132,11 @@
     font-size: 13px;
   }
 
+  .field-group {
+    margin-bottom: 20px;
+  }
+
+  input[type="password"],
   input[type="email"] {
     width: 100%;
     background: rgba(0, 255, 65, 0.05);
@@ -146,15 +151,22 @@
     letter-spacing: 1px;
   }
 
+  input[type="password"]::placeholder,
   input[type="email"]::placeholder {
     color: rgba(0, 255, 65, 0.2);
     font-size: 13px;
   }
 
+  input[type="password"]:focus,
   input[type="email"]:focus {
     border-color: #00ff41;
     background: rgba(0, 255, 65, 0.08);
     box-shadow: 0 0 16px rgba(0, 255, 65, 0.2), inset 0 0 8px rgba(0, 255, 65, 0.05);
+  }
+
+  input:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 
   .error-msg {
@@ -210,6 +222,37 @@
 
   .btn-text { position: relative; z-index: 1; }
 
+  /* Auth success indicator */
+  .auth-badge {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #00ff41;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 3px;
+    background: rgba(0, 255, 65, 0.05);
+  }
+
+  .auth-badge.show { display: flex; }
+
+  .auth-badge-dot {
+    width: 6px;
+    height: 6px;
+    background: #00ff41;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #00ff41;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px #00ff41; }
+    50% { opacity: 0.5; box-shadow: 0 0 2px #00ff41; }
+  }
+
   .status-line {
     margin-top: 20px;
     font-size: 11px;
@@ -220,6 +263,7 @@
   }
 
   .status-line.active { color: #00ff41; }
+  .status-line.error  { color: #ff3131; }
 
   .blink {
     animation: blink 1s step-end infinite;
@@ -229,6 +273,10 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
   }
+
+  /* Step screens */
+  #stepAuth  { display: block; }
+  #stepSend  { display: none; }
 
   .modal-overlay {
     display: none;
@@ -335,15 +383,36 @@
     <div class="corner corner-bl"></div>
     <div class="corner corner-br"></div>
 
-    <div class="label">TARGET ADDRESS</div>
-    <input type="email" id="emailInput" placeholder="user@domain.com" autocomplete="email" />
-    <div class="error-msg" id="errorMsg">// INVALID EMAIL FORMAT</div>
+    <!-- STEP 1: 비번 인증 -->
+    <div id="stepAuth">
+      <div class="label">ACCESS CODE</div>
+      <input type="password" id="pwInput" placeholder="••••••••••••••••" autocomplete="off" />
+      <div class="error-msg" id="pwError">// ACCESS DENIED</div>
 
-    <button class="btn" id="sendBtn" onclick="sendEmail()">
-      <span class="btn-text">TRANSMIT</span>
-    </button>
+      <button class="btn" id="authBtn" onclick="doAuth()">
+        <span class="btn-text">AUTHENTICATE</span>
+      </button>
 
-    <div class="status-line" id="statusLine">// AWAITING INPUT<span class="blink">_</span></div>
+      <div class="status-line" id="authStatus">// ENTER ACCESS CODE<span class="blink">_</span></div>
+    </div>
+
+    <!-- STEP 2: 이메일 전송 -->
+    <div id="stepSend">
+      <div class="auth-badge show">
+        <div class="auth-badge-dot"></div>
+        <span>SESSION AUTHENTICATED</span>
+      </div>
+
+      <div class="label">TARGET ADDRESS</div>
+      <input type="email" id="emailInput" placeholder="user@domain.com" autocomplete="email" />
+      <div class="error-msg" id="emailError">// INVALID EMAIL FORMAT</div>
+
+      <button class="btn" id="sendBtn" onclick="sendEmail()">
+        <span class="btn-text">TRANSMIT</span>
+      </button>
+
+      <div class="status-line" id="sendStatus">// AWAITING INPUT<span class="blink">_</span></div>
+    </div>
   </div>
 
   <div class="footer">[ ENCRYPTED · SECURE · PRIVATE ]</div>
@@ -368,6 +437,10 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxH4-SopczisKZKzbCf0WqWhtAMOqgNC7z9ougf1hhunibW4OIX9A1IUpes5rfxk7O0ew/exec";
 
+let sessionToken = null;
+let sessionTs    = null;
+
+// ── 뒤로가기 처리 ──────────────────────────────────────
 history.pushState(null, '', location.href);
 window.addEventListener('popstate', function() {
   if (document.getElementById('modalOverlay').classList.contains('show')) {
@@ -376,40 +449,110 @@ window.addEventListener('popstate', function() {
   }
 });
 
-async function sendEmail() {
-  const input = document.getElementById('emailInput');
-  const email = input.value.trim();
-  const errorMsg = document.getElementById('errorMsg');
-  const statusLine = document.getElementById('statusLine');
-  const btn = document.getElementById('sendBtn');
+// ── STEP 1: 인증 ────────────────────────────────────────
+async function doAuth() {
+  const pw      = document.getElementById('pwInput').value;
+  const pwError = document.getElementById('pwError');
+  const status  = document.getElementById('authStatus');
+  const btn     = document.getElementById('authBtn');
 
-  errorMsg.classList.remove('show');
+  pwError.classList.remove('show');
+  if (!pw) { pwError.classList.add('show'); return; }
+
+  btn.disabled = true;
+  status.className = 'status-line active';
+  status.innerHTML = '// AUTHENTICATING<span class="blink">_</span>';
+
+  try {
+    const res  = await fetch(GAS_URL + '?action=auth&pw=' + encodeURIComponent(pw));
+    const data = await res.json();
+
+    if (data.ok) {
+      sessionToken = data.token;
+      sessionTs    = data.ts;
+
+      // 화면 전환
+      document.getElementById('stepAuth').style.display = 'none';
+      document.getElementById('stepSend').style.display = 'block';
+      document.getElementById('emailInput').focus();
+    } else {
+      pwError.classList.add('show');
+      status.className = 'status-line error';
+      status.innerHTML = '// ACCESS DENIED<span class="blink">_</span>';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  } catch (err) {
+    status.className = 'status-line error';
+    status.innerHTML = '// CONNECTION ERROR<span class="blink">_</span>';
+  }
+
+  btn.disabled = false;
+}
+
+// ── STEP 2: 이메일 전송 ─────────────────────────────────
+async function sendEmail() {
+  const input      = document.getElementById('emailInput');
+  const email      = input.value.trim();
+  const emailError = document.getElementById('emailError');
+  const status     = document.getElementById('sendStatus');
+  const btn        = document.getElementById('sendBtn');
+
+  emailError.classList.remove('show');
 
   const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
   if (!emailRegex.test(email)) {
-    errorMsg.classList.add('show');
+    emailError.classList.add('show');
     input.focus();
     return;
   }
 
+  if (!sessionToken) {
+    // 토큰 없으면 인증 화면으로 복귀
+    document.getElementById('stepSend').style.display = 'none';
+    document.getElementById('stepAuth').style.display = 'block';
+    return;
+  }
+
   btn.disabled = true;
-  statusLine.className = 'status-line active';
-  statusLine.innerHTML = '// TRANSMITTING<span class="blink">_</span>';
+  status.className = 'status-line active';
+  status.innerHTML = '// TRANSMITTING<span class="blink">_</span>';
 
   try {
-    await fetch(GAS_URL + '?email=' + encodeURIComponent(email), {
-      method: 'GET',
-      mode: 'no-cors'
+    const params = new URLSearchParams({
+      action : 'send',
+      email  : email,
+      token  : sessionToken,
+      ts     : sessionTs
     });
+    const res  = await fetch(GAS_URL + '?' + params.toString());
+    const data = await res.json();
 
-    statusLine.className = 'status-line';
-    statusLine.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
-    document.getElementById('modalEmail').textContent = email;
-    document.getElementById('modalOverlay').classList.add('show');
-    input.value = '';
+    if (data.ok) {
+      status.className = 'status-line';
+      status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
+      document.getElementById('modalEmail').textContent = email;
+      document.getElementById('modalOverlay').classList.add('show');
+      input.value = '';
+    } else if (data.err === 'INVALID_TOKEN' || data.err === 'EXPIRED') {
+      // 토큰 만료 → 재인증
+      sessionToken = null;
+      sessionTs    = null;
+      status.className = 'status-line error';
+      status.innerHTML = '// SESSION EXPIRED — RE-AUTH<span class="blink">_</span>';
+      setTimeout(() => {
+        document.getElementById('stepSend').style.display = 'none';
+        document.getElementById('stepAuth').style.display = 'block';
+        document.getElementById('authStatus').className = 'status-line';
+        document.getElementById('authStatus').innerHTML = '// ENTER ACCESS CODE<span class="blink">_</span>';
+      }, 1500);
+    } else {
+      status.className = 'status-line error';
+      status.innerHTML = '// ERROR: RETRY<span class="blink">_</span>';
+    }
   } catch (err) {
-    statusLine.className = 'status-line';
-    statusLine.innerHTML = '// ERROR: RETRY<span class="blink">_</span>';
+    status.className = 'status-line error';
+    status.innerHTML = '// CONNECTION ERROR<span class="blink">_</span>';
   }
 
   btn.disabled = false;
@@ -419,12 +562,22 @@ function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
 
-document.getElementById('emailInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') sendEmail();
+// ── 키보드 단축키 ───────────────────────────────────────
+document.getElementById('pwInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doAuth();
 });
 
-document.getElementById('emailInput').addEventListener('input', function() {
-  document.getElementById('errorMsg').classList.remove('show');
+document.getElementById('pwInput').addEventListener('input', () => {
+  document.getElementById('pwError').classList.remove('show');
+});
+
+document.addEventListener('keydown', e => {
+  const sendStep = document.getElementById('stepSend');
+  if (sendStep.style.display === 'block' && e.key === 'Enter') sendEmail();
+});
+
+document.getElementById('emailInput').addEventListener('input', () => {
+  document.getElementById('emailError').classList.remove('show');
 });
 </script>
 </body>

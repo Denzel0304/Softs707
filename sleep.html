@@ -450,6 +450,49 @@
   }
 
   .divider { height: 1px; background: rgba(255,255,255,.06); margin: 4px 0; }
+
+  /* ── 수면 게이지 ── */
+  .sleep-card-inner {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .sleep-card-text { flex: 1; }
+  .sleep-wave-outer {
+    width: 72px; height: 72px; border-radius: 50%; overflow: hidden; position: relative;
+    flex-shrink: 0;
+    border: 2px solid var(--aurora-purple);
+    background: rgba(167,139,250,.08);
+    box-shadow: 0 0 0 5px rgba(167,139,250,.07), 0 4px 16px rgba(167,139,250,.15);
+    transition: border-color .5s, background .5s, box-shadow .5s;
+  }
+  .sleep-wave-outer.overflow {
+    border-color: #3dbe7a;
+    background: rgba(61,190,122,.08);
+    box-shadow: 0 0 0 5px rgba(61,190,122,.08), 0 4px 16px rgba(61,190,122,.18);
+  }
+  .sleep-wave-fill {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+    background: linear-gradient(180deg, var(--aurora-purple) 0%, #5e3fb3 100%);
+    transition: height .8s cubic-bezier(.34,1.2,.64,1), background .5s;
+  }
+  .sleep-wave-outer.overflow .sleep-wave-fill {
+    background: linear-gradient(180deg, #8ee8b4 0%, #3dbe7a 100%);
+  }
+  .sleep-wave-fill::before {
+    content:''; position:absolute; top:-8px; left:-10%; width:120%; height:18px;
+    border-radius:50%; background:rgba(255,255,255,.3);
+    animation: sleepWaveSway 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes sleepWaveSway { from{transform:translateX(-4%)} to{transform:translateX(4%)} }
+  .sleep-wave-text {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; z-index:3; pointer-events:none; white-space:nowrap;
+  }
+  .sleep-wave-pct {
+    font-size:15px; font-weight:700; color:var(--star-white); line-height:1; display:block;
+  }
+  .sleep-wave-sub {
+    font-size:9px; color:rgba(240,240,255,.7); margin-top:2px; display:block;
+  }
 </style>
 </head>
 <body>
@@ -1136,10 +1179,33 @@ function renderHome(){
   const isYesterday=done.date===yesterdayStr();
   const label=isYesterday?'어젯밤 수면':'최근 수면 · '+formatDateFull(done.date);
 
+  const GOAL_MIN = 480; // 8시간
+  const fillPct = totalMin !== null ? Math.min(totalMin / GOAL_MIN * 100, 100) : 0;
+  const isOver  = totalMin !== null && totalMin > GOAL_MIN;
+  const displayPct = totalMin !== null ? Math.round(totalMin / GOAL_MIN * 100) : 0;
+  const overflowClass = isOver ? ' overflow' : '';
+
   todayCard.innerHTML=`
     <div class="today-date">${label}</div>
-    <div class="today-status">${minutesToHHMM(totalMin)}</div>
-    <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회</div>`;
+    <div class="sleep-card-inner">
+      <div class="sleep-card-text">
+        <div class="today-status">${minutesToHHMM(totalMin)}</div>
+        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회</div>
+      </div>
+      <div class="sleep-wave-outer${overflowClass}" id="sleep-gauge-outer">
+        <div class="sleep-wave-fill" id="sleep-gauge-fill" style="height:0%"></div>
+        <div class="sleep-wave-text">
+          <span class="sleep-wave-pct">${displayPct}%</span>
+          <span class="sleep-wave-sub">${isOver?'초과':'/ 8h'}</span>
+        </div>
+      </div>
+    </div>`;
+
+  // 애니메이션: 다음 프레임에 높이 적용
+  requestAnimationFrame(()=>{
+    const fill = document.getElementById('sleep-gauge-fill');
+    if(fill) fill.style.height = fillPct + '%';
+  });
 
   tlCard.style.display='';
   const tlEl=document.getElementById('tl-content');

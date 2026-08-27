@@ -362,6 +362,108 @@
     color: #003d0f;
     letter-spacing: 2px;
   }
+
+  /* ── 전송 진행 오버레이 ── */
+  .progress-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 90;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .progress-overlay.show { display: flex; }
+
+  .progress-box {
+    width: 100%;
+    max-width: 340px;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 4px;
+    background: #000;
+    padding: 28px 24px;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0, 255, 65, 0.15);
+  }
+
+  .progress-box .corner { opacity: 1; }
+
+  .progress-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #00ff41;
+    margin-bottom: 20px;
+    text-shadow: 0 0 8px rgba(0,255,65,0.6);
+  }
+
+  .progress-log {
+    font-size: 10px;
+    color: #005c1a;
+    letter-spacing: 1px;
+    line-height: 2;
+    margin-bottom: 20px;
+    min-height: 80px;
+  }
+
+  .progress-log .log-line {
+    display: block;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .progress-log .log-line.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .progress-log .log-line.bright { color: #00ff41; }
+
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #003d0f, #00ff41);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+    border-radius: 2px;
+    transition: width 0.15s linear;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+    animation: shimmer 0.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .progress-pct {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: #00ff41;
+    letter-spacing: 2px;
+    text-align: right;
+  }
 </style>
 </head>
 <body>
@@ -416,6 +518,28 @@
   </div>
 
   <div class="footer">[ ENCRYPTED · SECURE · PRIVATE ]</div>
+</div>
+
+<!-- 전송 진행 오버레이 -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-box">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div class="progress-title">TRANSMITTING DATA</div>
+    <div class="progress-log" id="progressLog">
+      <span class="log-line" id="log0">&gt; ENCRYPTING PAYLOAD...</span>
+      <span class="log-line" id="log1">&gt; ESTABLISHING SECURE CHANNEL...</span>
+      <span class="log-line" id="log2">&gt; ROUTING THROUGH PROXY...</span>
+      <span class="log-line" id="log3">&gt; INJECTING PACKET STREAM...</span>
+      <span class="log-line bright" id="log4">&gt; TRANSMISSION COMPLETE ✓</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-pct" id="progressPct">0%</div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -510,6 +634,65 @@ async function doAuth() {
   btn.disabled = false;
 }
 
+// ── 프로그레스 바 애니메이션 ────────────────────────────
+function runProgress(onComplete) {
+  const fill    = document.getElementById('progressFill');
+  const pct     = document.getElementById('progressPct');
+  const overlay = document.getElementById('progressOverlay');
+
+  // 로그 라인 초기화
+  for (let i = 0; i < 5; i++) {
+    const el = document.getElementById('log' + i);
+    el.classList.remove('show');
+  }
+  fill.style.width = '0%';
+  pct.textContent  = '0%';
+  overlay.classList.add('show');
+
+  // 로그 라인 타이밍 (ms)
+  const logTimes = [200, 700, 1300, 1900, 0]; // log4는 완료 시 표시
+  logTimes.slice(0, 4).forEach((t, i) => {
+    setTimeout(() => document.getElementById('log' + i).classList.add('show'), t);
+  });
+
+  // 프로그레스 바: 0~88% 를 2.8초 동안 천천히 (GAS 응답 대기)
+  let current  = 0;
+  const target = 88;
+  const dur    = 2800;
+  const step   = 40; // ms
+  const inc    = (target / (dur / step));
+
+  const timer = setInterval(() => {
+    current = Math.min(current + inc + (Math.random() * inc * 0.5), target);
+    fill.style.width = current + '%';
+    pct.textContent  = Math.floor(current) + '%';
+    if (current >= target) clearInterval(timer);
+  }, step);
+
+  // GAS 응답 오면 onComplete 호출 → 100%로 마무리
+  return {
+    complete: function(cb) {
+      clearInterval(timer);
+      // 88% → 100% 빠르게
+      let c = parseFloat(fill.style.width) || 88;
+      const finTimer = setInterval(() => {
+        c = Math.min(c + 3, 100);
+        fill.style.width = c + '%';
+        pct.textContent  = Math.floor(c) + '%';
+        if (c >= 100) {
+          clearInterval(finTimer);
+          document.getElementById('log4').classList.add('show');
+          setTimeout(cb, 600);
+        }
+      }, 30);
+    },
+    abort: function() {
+      clearInterval(timer);
+      overlay.classList.remove('show');
+    }
+  };
+}
+
 // ── STEP 2: 이메일 전송 ─────────────────────────────────
 async function sendEmail() {
   const input      = document.getElementById('emailInput');
@@ -528,7 +711,6 @@ async function sendEmail() {
   }
 
   if (!sessionToken) {
-    // 토큰 없으면 인증 화면으로 복귀
     document.getElementById('stepSend').style.display = 'none';
     document.getElementById('stepAuth').style.display = 'block';
     return;
@@ -537,6 +719,9 @@ async function sendEmail() {
   btn.disabled = true;
   status.className = 'status-line active';
   status.innerHTML = '// TRANSMITTING<span class="blink">_</span>';
+
+  // 프로그레스 시작 + GAS 요청 동시 실행
+  const progress = runProgress();
 
   try {
     const params = new URLSearchParams({
@@ -549,13 +734,17 @@ async function sendEmail() {
     const data = await res.json();
 
     if (data.ok) {
-      status.className = 'status-line';
-      status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
-      document.getElementById('modalEmail').textContent = email;
-      document.getElementById('modalOverlay').classList.add('show');
-      input.value = '';
+      // GAS 응답 완료 → 바 100% 채우고 모달
+      progress.complete(() => {
+        document.getElementById('progressOverlay').classList.remove('show');
+        status.className = 'status-line';
+        status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
+        document.getElementById('modalEmail').textContent = email;
+        document.getElementById('modalOverlay').classList.add('show');
+        input.value = '';
+      });
     } else if (data.err === 'INVALID_TOKEN' || data.err === 'EXPIRED') {
-      // 토큰 만료 → 재인증
+      progress.abort();
       sessionToken = null;
       sessionTs    = null;
       localStorage.removeItem('togo_session');
@@ -568,10 +757,12 @@ async function sendEmail() {
         document.getElementById('authStatus').innerHTML = '// ENTER ACCESS CODE<span class="blink">_</span>';
       }, 1500);
     } else {
+      progress.abort();
       status.className = 'status-line error';
       status.innerHTML = '// ERROR: RETRY<span class="blink">_</span>';
     }
   } catch (err) {
+    progress.abort();
     status.className = 'status-line error';
     status.innerHTML = '// CONNECTION ERROR<span class="blink">_</span>';
   }

@@ -635,56 +635,56 @@ async function doAuth() {
 }
 
 // ── 프로그레스 바 애니메이션 ────────────────────────────
-function runProgress(onComplete) {
+function runProgress() {
   const fill    = document.getElementById('progressFill');
   const pct     = document.getElementById('progressPct');
   const overlay = document.getElementById('progressOverlay');
 
-  // 로그 라인 초기화
-  for (let i = 0; i < 5; i++) {
-    const el = document.getElementById('log' + i);
-    el.classList.remove('show');
-  }
+  // 초기화
+  for (let i = 0; i < 5; i++) document.getElementById('log' + i).classList.remove('show');
   fill.style.width = '0%';
   pct.textContent  = '0%';
   overlay.classList.add('show');
 
-  // 로그 라인 타이밍 (ms)
-  const logTimes = [200, 700, 1300, 1900, 0]; // log4는 완료 시 표시
-  logTimes.slice(0, 4).forEach((t, i) => {
+  // 로그 라인 타이밍
+  const logTimes = [200, 800, 1400, 2000];
+  logTimes.forEach((t, i) => {
     setTimeout(() => document.getElementById('log' + i).classList.add('show'), t);
   });
 
-  // 프로그레스 바: 0~88% 를 2.8초 동안 천천히 (GAS 응답 대기)
-  let current  = 0;
-  const target = 88;
-  const dur    = 2800;
-  const step   = 40; // ms
-  const inc    = (target / (dur / step));
+  // 0 → 100% 를 3초 동안 쭉 채움
+  const dur  = 3000;
+  const step = 40;
+  let current = 0;
+  let gasOk   = false;  // GAS 응답 완료 여부
+  let gasCb   = null;   // 100% 됐을 때 실행할 콜백
 
   const timer = setInterval(() => {
-    current = Math.min(current + inc + (Math.random() * inc * 0.5), target);
+    current = Math.min(current + (100 / (dur / step)) + (Math.random() * 0.5), 100);
     fill.style.width = current + '%';
     pct.textContent  = Math.floor(current) + '%';
-    if (current >= target) clearInterval(timer);
+
+    if (current >= 100) {
+      clearInterval(timer);
+      // 100% 됐을 때 GAS도 완료됐으면 바로 콜백
+      if (gasOk && gasCb) {
+        document.getElementById('log4').classList.add('show');
+        setTimeout(gasCb, 600);
+      }
+    }
   }, step);
 
-  // GAS 응답 오면 onComplete 호출 → 100%로 마무리
   return {
+    // GAS 응답 성공 시 호출
     complete: function(cb) {
-      clearInterval(timer);
-      // 88% → 100% 빠르게
-      let c = parseFloat(fill.style.width) || 88;
-      const finTimer = setInterval(() => {
-        c = Math.min(c + 3, 100);
-        fill.style.width = c + '%';
-        pct.textContent  = Math.floor(c) + '%';
-        if (c >= 100) {
-          clearInterval(finTimer);
-          document.getElementById('log4').classList.add('show');
-          setTimeout(cb, 600);
-        }
-      }, 30);
+      gasOk = true;
+      // 바가 이미 100%면 바로 실행, 아니면 바 완료 시 실행
+      if (current >= 100) {
+        document.getElementById('log4').classList.add('show');
+        setTimeout(cb, 600);
+      } else {
+        gasCb = cb; // 바 완료 시점에 실행되도록 저장
+      }
     },
     abort: function() {
       clearInterval(timer);

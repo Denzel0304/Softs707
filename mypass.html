@@ -580,7 +580,7 @@
   <div class="mp_menu_panel">
     <button class="mp_menu_item" id="mp_menu_import">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      CSV 임포트
+      CSV 가져오기
     </button>
     <button class="mp_menu_item" id="mp_menu_export">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1019,51 +1019,79 @@ async function deleteAll() {
 }
 
 /* ── CSV PARSE ── */
-function parseCSV(text) {
-  const lines = [];
-  let cur = '', inQ = false;
-  for (let i=0;i<text.length;i++) {
-    const c=text[i];
-    if (c==='"') { inQ=!inQ; cur+=c; }
-    else if ((c==='\n'||c==='\r') && !inQ) { if (cur||lines.length) lines.push(cur); cur=''; if(c==='\r'&&text[i+1]==='\n')i++; }
-    else cur+=c;
-  }
-  if (cur) lines.push(cur);
-
-  function parseLine(line) {
-    const fields=[], re=/("(?:[^"]|"")*"|[^,]*)/g;
-    let m;
-    while((m=re.exec(line))!==null){
-      let v=m[1];
-      if(v.startsWith('"')&&v.endsWith('"')) v=v.slice(1,-1).replace(/""/g,'"');
-      fields.push(v);
+// RFC 4180 준수 파서: 따옴표 안의 쉼표/줄바꿈/이중따옴표 모두 처리
+function parseCSVLine(line) {
+  const fields = [];
+  let i = 0, len = line.length;
+  while (i <= len) {
+    if (i === len) { fields.push(''); break; }
+    if (line[i] === '"') {
+      // quoted field
+      i++; // 여는 따옴표 건너뜀
+      let val = '';
+      while (i < len) {
+        if (line[i] === '"') {
+          if (line[i+1] === '"') { val += '"'; i += 2; } // escaped quote
+          else { i++; break; } // 닫는 따옴표
+        } else { val += line[i++]; }
+      }
+      fields.push(val);
+      // 다음 쉼표 건너뜀
+      if (line[i] === ',') i++;
+    } else {
+      // unquoted field
+      let start = i;
+      while (i < len && line[i] !== ',') i++;
+      fields.push(line.slice(start, i));
+      if (line[i] === ',') i++;
     }
-    return fields;
   }
+  return fields;
+}
 
-  const header = parseLine(lines[0]||'');
-  const idx={};
-  header.forEach((h,i)=>idx[h.trim()]=i);
+function parseCSV(text) {
+  // CRLF/LF 통일 후 줄 분리 (따옴표 내부 줄바꿈 고려)
+  const rows = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { inQ = !inQ; cur += c; }
+    else if ((c === '\n' || c === '\r') && !inQ) {
+      rows.push(cur); cur = '';
+      if (c === '\r' && text[i+1] === '\n') i++;
+    } else { cur += c; }
+  }
+  if (cur.trim()) rows.push(cur);
 
-  const rows=[];
-  for(let i=1;i<lines.length;i++){
-    if(!lines[i].trim()) continue;
-    const f=parseLine(lines[i]);
-    const type=(f[idx['type']]||'login').trim();
-    if(type!=='login') continue;
-    rows.push({
-      name:     (f[idx['name']]||'').trim(),
-      url:      (f[idx['url']]||'').trim(),
-      email:    (f[idx['email']]||'').trim(),
-      username: (f[idx['username']]||'').trim(),
-      password: (f[idx['password']]||'').trim(),
-      note:     (f[idx['note']]||'').trim(),
-      vault:    (f[idx['vault']]||'Personal').trim(),
-      createTime: parseInt(f[idx['createTime']])||0,
-      modifyTime: parseInt(f[idx['modifyTime']])||0
+  if (!rows.length) return [];
+
+  const header = parseCSVLine(rows[0]);
+  const idx = {};
+  header.forEach((h, i) => { idx[h.trim()] = i; });
+
+  // 필수 컬럼 존재 여부 확인
+  if (idx['name'] === undefined || idx['password'] === undefined) return [];
+
+  const result = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (!rows[i].trim()) continue;
+    const f = parseCSVLine(rows[i]);
+    const type = (f[idx['type']] || 'login').trim();
+    if (type !== 'login') continue;
+    const get = key => (idx[key] !== undefined ? (f[idx[key]] || '') : '').trim();
+    result.push({
+      name:       get('name'),
+      url:        get('url'),
+      email:      get('email'),
+      username:   get('username'),
+      password:   get('password'),
+      note:       get('note'),
+      vault:      get('vault') || 'Personal',
+      createTime: parseInt(get('createTime')) || 0,
+      modifyTime: parseInt(get('modifyTime')) || 0
     });
   }
-  return rows;
+  return result;
 }
 
 /* ── IMPORT ── */

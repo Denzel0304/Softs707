@@ -77,6 +77,29 @@
   .mp_status_dot { width:7px; height:7px; border-radius:50%; background:var(--success); flex-shrink:0; }
   .mp_status_dot.empty { background:var(--text-muted); }
 
+  /* ── SEARCH FILTER BAR ── */
+  .mp_filter_bar {
+    background:var(--surface-card); border-bottom:1px solid var(--border);
+    flex-shrink:0; overflow:hidden;
+    max-height:0; opacity:0; padding:0 14px;
+    transition:max-height 0.22s ease, opacity 0.18s ease, padding 0.22s ease;
+  }
+  .mp_filter_bar.visible { max-height:40px; opacity:1; padding:8px 14px; }
+  .mp_filter_inner { display:flex; align-items:center; gap:12px; }
+  .mp_filter_label {
+    font-size:11px; color:var(--text-muted); font-weight:600;
+    letter-spacing:0.4px; white-space:nowrap; flex-shrink:0;
+  }
+  .mp_filter_checks { display:flex; gap:14px; }
+  .mp_filter_check {
+    display:flex; align-items:center; gap:5px;
+    font-size:12px; color:var(--text-secondary); font-weight:500;
+    cursor:pointer; user-select:none; white-space:nowrap;
+  }
+  .mp_filter_check input[type=checkbox] {
+    width:15px; height:15px; accent-color:var(--sky-mid); cursor:pointer; flex-shrink:0;
+  }
+
   /* ── VAULT TABS ── */
   .mp_tabs_wrap {
     background:var(--surface-card); border-bottom:1px solid var(--border);
@@ -400,6 +423,21 @@
       <span id="mp_status_text">로컬 저장소</span>
     </div>
     <span id="mp_total_count" style="font-size:11px;">0개</span>
+  </div>
+
+  <!-- ── SEARCH FILTER BAR ── -->
+  <div class="mp_filter_bar" id="mp_filter_bar">
+    <div class="mp_filter_inner">
+      <span class="mp_filter_label">필드:</span>
+      <div class="mp_filter_checks">
+        <label class="mp_filter_check">
+          <input type="checkbox" id="mp_chk_url"> 주소
+        </label>
+        <label class="mp_filter_check">
+          <input type="checkbox" id="mp_chk_id"> 아이디
+        </label>
+      </div>
+    </div>
   </div>
 
   <!-- ── VAULT TABS ── -->
@@ -740,15 +778,30 @@ function updateVaultSelect() {
 
 /* ── FILTER / RENDER ── */
 function applyFilter() {
-  const q = S.searchQ.toLowerCase();
+  const q        = S.searchQ.toLowerCase();
+  const chkUrl   = document.getElementById('mp_chk_url').checked;
+  const chkId    = document.getElementById('mp_chk_id').checked;
+  const anyCheck = chkUrl || chkId;
+
   S.filtered = S.items.filter(i => {
+    // vault 필터
     const vaultOk = S.activeVault === '__all__' || (i.vault||'Personal') === S.activeVault;
     if (!vaultOk) return false;
+    // 검색어 없으면 통과
     if (!q) return true;
-    return (i.name||'').toLowerCase().includes(q)
-        || (i.email||'').toLowerCase().includes(q)
-        || (i.username||'').toLowerCase().includes(q)
-        || (i.url||'').toLowerCase().includes(q);
+
+    if (!anyCheck) {
+      // 체크 없음 → 전체 필드 검색
+      return (i.name||'').toLowerCase().includes(q)
+          || (i.email||'').toLowerCase().includes(q)
+          || (i.username||'').toLowerCase().includes(q)
+          || (i.url||'').toLowerCase().includes(q);
+    }
+    // 체크된 필드들에서 AND 검색
+    // (둘 다 체크 → 두 필드 모두에서 q를 찾아야 함)
+    const urlOk = chkUrl  ? (i.url||'').toLowerCase().includes(q) : true;
+    const idOk  = chkId   ? ((i.email||'').toLowerCase().includes(q) || (i.username||'').toLowerCase().includes(q)) : true;
+    return urlOk && idOk;
   });
   renderList();
   updateStatusBar();
@@ -1179,10 +1232,22 @@ function init() {
   history.replaceState({ mp:'main' }, '');
 
   /* 검색 */
-  document.getElementById('mp_search').addEventListener('input', e => {
+  const mpSearchEl   = document.getElementById('mp_search');
+  const mpFilterBar  = document.getElementById('mp_filter_bar');
+  const mpChkUrl     = document.getElementById('mp_chk_url');
+  const mpChkId      = document.getElementById('mp_chk_id');
+
+  function syncFilterBar() {
+    mpFilterBar.classList.toggle('visible', mpSearchEl.value.length > 0);
+  }
+
+  mpSearchEl.addEventListener('input', e => {
     S.searchQ = e.target.value;
+    syncFilterBar();
     applyFilter();
   });
+  mpChkUrl.addEventListener('change', applyFilter);
+  mpChkId.addEventListener('change',  applyFilter);
 
   /* 탭 클릭 (renderTabs에서 동적으로 바인딩) */
 

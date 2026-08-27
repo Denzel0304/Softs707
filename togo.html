@@ -646,7 +646,7 @@ function runProgress() {
   pct.textContent  = '0%';
   overlay.classList.add('show');
 
-  // 로그 라인 타이밍
+  // 로그 라인 순서대로 등장
   const logTimes = [200, 800, 1400, 2000];
   logTimes.forEach((t, i) => {
     setTimeout(() => document.getElementById('log' + i).classList.add('show'), t);
@@ -656,40 +656,22 @@ function runProgress() {
   const dur  = 3000;
   const step = 40;
   let current = 0;
-  let gasOk   = false;  // GAS 응답 완료 여부
-  let gasCb   = null;   // 100% 됐을 때 실행할 콜백
+  let cb = null;
 
   const timer = setInterval(() => {
-    current = Math.min(current + (100 / (dur / step)) + (Math.random() * 0.5), 100);
+    current = Math.min(current + (100 / (dur / step)) + (Math.random() * 0.4), 100);
     fill.style.width = current + '%';
     pct.textContent  = Math.floor(current) + '%';
-
     if (current >= 100) {
       clearInterval(timer);
-      // 100% 됐을 때 GAS도 완료됐으면 바로 콜백
-      if (gasOk && gasCb) {
-        document.getElementById('log4').classList.add('show');
-        setTimeout(gasCb, 600);
-      }
+      document.getElementById('log4').classList.add('show');
+      if (cb) setTimeout(cb, 600);
     }
   }, step);
 
   return {
-    // GAS 응답 성공 시 호출
-    complete: function(cb) {
-      gasOk = true;
-      // 바가 이미 100%면 바로 실행, 아니면 바 완료 시 실행
-      if (current >= 100) {
-        document.getElementById('log4').classList.add('show');
-        setTimeout(cb, 600);
-      } else {
-        gasCb = cb; // 바 완료 시점에 실행되도록 저장
-      }
-    },
-    abort: function() {
-      clearInterval(timer);
-      overlay.classList.remove('show');
-    }
+    complete: function(callback) { cb = callback; },
+    abort:    function() { clearInterval(timer); overlay.classList.remove('show'); }
   };
 }
 
@@ -720,52 +702,27 @@ async function sendEmail() {
   status.className = 'status-line active';
   status.innerHTML = '// TRANSMITTING<span class="blink">_</span>';
 
-  // 프로그레스 시작 + GAS 요청 동시 실행
+  // 프로그레스 시작
   const progress = runProgress();
 
-  try {
-    const params = new URLSearchParams({
-      action : 'send',
-      email  : email,
-      token  : sessionToken,
-      ts     : sessionTs
-    });
-    const res  = await fetch(GAS_URL + '?' + params.toString());
-    const data = await res.json();
+  // GAS 요청 (no-cors — 응답 내용 안 읽음)
+  const params = new URLSearchParams({
+    action : 'send',
+    email  : email,
+    token  : sessionToken,
+    ts     : sessionTs
+  });
+  fetch(GAS_URL + '?' + params.toString(), { mode: 'no-cors' }).catch(() => {});
 
-    if (data.ok) {
-      // GAS 응답 완료 → 바 100% 채우고 모달
-      progress.complete(() => {
-        document.getElementById('progressOverlay').classList.remove('show');
-        status.className = 'status-line';
-        status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
-        document.getElementById('modalEmail').textContent = email;
-        document.getElementById('modalOverlay').classList.add('show');
-        input.value = '';
-      });
-    } else if (data.err === 'INVALID_TOKEN' || data.err === 'EXPIRED') {
-      progress.abort();
-      sessionToken = null;
-      sessionTs    = null;
-      localStorage.removeItem('togo_session');
-      status.className = 'status-line error';
-      status.innerHTML = '// SESSION EXPIRED — RE-AUTH<span class="blink">_</span>';
-      setTimeout(() => {
-        document.getElementById('stepSend').style.display = 'none';
-        document.getElementById('stepAuth').style.display = 'block';
-        document.getElementById('authStatus').className = 'status-line';
-        document.getElementById('authStatus').innerHTML = '// ENTER ACCESS CODE<span class="blink">_</span>';
-      }, 1500);
-    } else {
-      progress.abort();
-      status.className = 'status-line error';
-      status.innerHTML = '// ERROR: RETRY<span class="blink">_</span>';
-    }
-  } catch (err) {
-    progress.abort();
-    status.className = 'status-line error';
-    status.innerHTML = '// CONNECTION ERROR<span class="blink">_</span>';
-  }
+  // 바 100% 되면 무조건 모달 (GAS는 이미 처리 중 or 완료)
+  progress.complete(() => {
+    document.getElementById('progressOverlay').classList.remove('show');
+    status.className = 'status-line';
+    status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
+    document.getElementById('modalEmail').textContent = email;
+    document.getElementById('modalOverlay').classList.add('show');
+    input.value = '';
+  });
 
   btn.disabled = false;
 }

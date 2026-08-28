@@ -964,7 +964,7 @@ function cancelEdit(i) {
 function saveEdit(i) {
   const input = document.getElementById('addrInput' + i);
   const newVal = input.value.trim();
-  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  const emailRegex = /^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(newVal)) {
     input.style.borderBottomColor = '#ff3131';
     input.style.color = '#ff3131';
@@ -1024,7 +1024,7 @@ function saveAll() {
 
   // 쉼표 또는 줄바꿈 구분, 공백 정리
   const raw = val.split(/[\n,]+/).map(e => e.trim()).filter(e => e.length > 0);
-  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  const emailRegex = /^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
   const valid = raw.filter(e => emailRegex.test(e));
 
   saveAddresses(valid);
@@ -1051,7 +1051,7 @@ function clearAll() {
 function manualAdd() {
   const input = document.getElementById('manualAddInput');
   const email = input.value.trim();
-  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  const emailRegex = /^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) {
     input.style.borderColor = '#ff3131';
     setTimeout(() => input.style.borderColor = '', 800);
@@ -1234,7 +1234,7 @@ async function sendEmail() {
 
   emailError.classList.remove('show');
 
-  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  const emailRegex = /^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) {
     emailError.classList.add('show');
     input.focus();

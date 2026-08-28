@@ -17,8 +17,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 24px 20px;
+    justify-content: flex-start;
+    padding: 24px 20px 40px;
     overflow-x: hidden;
   }
 
@@ -44,9 +44,10 @@
     z-index: 1;
   }
 
+  /* ── 헤더 ── */
   .header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 28px;
   }
 
   .title {
@@ -69,7 +70,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 12px 0 32px;
+    margin: 12px 0 0;
   }
 
   .divider-line {
@@ -87,20 +88,76 @@
     box-shadow: 0 0 6px #00ff41;
   }
 
-  .card {
+  /* ── 탭 ── */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
     border: 1px solid rgba(0, 255, 65, 0.3);
-    border-radius: 4px;
-    padding: 28px 24px;
-    background: rgba(0, 255, 65, 0.03);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid rgba(0, 255, 65, 0.3);
+    color: #005c1a;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
     position: relative;
   }
 
-  .card::before {
+  .tab-btn:last-child { border-right: none; }
+
+  .tab-btn.active {
+    color: #00ff41;
+    background: rgba(0, 255, 65, 0.07);
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+  }
+
+  .tab-btn.active::after {
     content: '';
     position: absolute;
-    top: -1px; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(to right, transparent, #00ff41, transparent);
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: #00ff41;
+    box-shadow: 0 0 6px rgba(0,255,65,0.8);
+  }
+
+  .tab-btn:hover:not(.active) {
+    color: #008f24;
+    background: rgba(0, 255, 65, 0.03);
+  }
+
+  .tab-badge {
+    display: inline-block;
+    background: rgba(0,255,65,0.15);
+    border: 1px solid rgba(0,255,65,0.4);
+    color: #00ff41;
+    font-size: 9px;
+    font-family: 'Share Tech Mono', monospace;
+    border-radius: 2px;
+    padding: 1px 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+    line-height: 1.4;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 0 0 4px 4px;
+    padding: 28px 24px;
+    background: rgba(0, 255, 65, 0.03);
+    position: relative;
   }
 
   .corner {
@@ -116,6 +173,11 @@
   .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
   .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
+  /* ── 탭 패널 ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── 공통 UI ── */
   .label {
     font-size: 11px;
     color: #008f24;
@@ -132,12 +194,11 @@
     font-size: 13px;
   }
 
-  .field-group {
-    margin-bottom: 20px;
-  }
+  .field-group { margin-bottom: 20px; }
 
   input[type="password"],
-  input[type="email"] {
+  input[type="email"],
+  input[type="text"] {
     width: 100%;
     background: rgba(0, 255, 65, 0.05);
     border: 1px solid rgba(0, 255, 65, 0.3);
@@ -152,22 +213,21 @@
   }
 
   input[type="password"]::placeholder,
-  input[type="email"]::placeholder {
+  input[type="email"]::placeholder,
+  input[type="text"]::placeholder {
     color: rgba(0, 255, 65, 0.2);
     font-size: 13px;
   }
 
   input[type="password"]:focus,
-  input[type="email"]:focus {
+  input[type="email"]:focus,
+  input[type="text"]:focus {
     border-color: #00ff41;
     background: rgba(0, 255, 65, 0.08);
     box-shadow: 0 0 16px rgba(0, 255, 65, 0.2), inset 0 0 8px rgba(0, 255, 65, 0.05);
   }
 
-  input:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
+  input:disabled { opacity: 0.35; cursor: not-allowed; }
 
   .error-msg {
     font-size: 11px;
@@ -176,7 +236,6 @@
     margin-top: 8px;
     display: none;
   }
-
   .error-msg.show { display: block; }
 
   .btn {
@@ -212,17 +271,10 @@
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
     text-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
   }
-
   .btn:active { transform: scale(0.98); }
-
-  .btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-text { position: relative; z-index: 1; }
 
-  /* Auth success indicator */
   .auth-badge {
     display: none;
     align-items: center;
@@ -236,7 +288,6 @@
     border-radius: 3px;
     background: rgba(0, 255, 65, 0.05);
   }
-
   .auth-badge.show { display: flex; }
 
   .auth-badge-dot {
@@ -261,23 +312,249 @@
     min-height: 16px;
     text-align: center;
   }
-
   .status-line.active { color: #00ff41; }
   .status-line.error  { color: #ff3131; }
 
-  .blink {
-    animation: blink 1s step-end infinite;
-  }
+  .blink { animation: blink 1s step-end infinite; }
 
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
   }
 
-  /* Step screens */
-  #stepAuth  { display: block; }
-  #stepSend  { display: none; }
+  /* ── Step 화면 ── */
+  #stepAuth { display: block; }
+  #stepSend { display: none; }
 
+  /* ── 주소록 탭 ── */
+  .addr-section { margin-bottom: 24px; }
+
+  .addr-copy-box {
+    width: 100%;
+    background: rgba(0, 255, 65, 0.04);
+    border: 1px solid rgba(0, 255, 65, 0.25);
+    border-radius: 3px;
+    color: #00b32d;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 12px 14px;
+    min-height: 70px;
+    resize: none;
+    outline: none;
+    letter-spacing: 0.5px;
+    line-height: 1.8;
+    word-break: break-all;
+    cursor: text;
+  }
+
+  .addr-copy-box:focus {
+    border-color: rgba(0, 255, 65, 0.5);
+    background: rgba(0, 255, 65, 0.06);
+  }
+
+  .addr-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-sm {
+    flex: 1;
+    padding: 10px 8px;
+    background: transparent;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 3px;
+    color: #008f24;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-sm:hover {
+    border-color: #00ff41;
+    color: #00ff41;
+    background: rgba(0, 255, 65, 0.07);
+    box-shadow: 0 0 10px rgba(0,255,65,0.2);
+  }
+
+  .btn-sm:active { transform: scale(0.97); }
+
+  .btn-sm.danger {
+    border-color: rgba(255, 49, 49, 0.4);
+    color: #8f0000;
+  }
+  .btn-sm.danger:hover {
+    border-color: #ff3131;
+    color: #ff3131;
+    background: rgba(255, 49, 49, 0.07);
+    box-shadow: 0 0 10px rgba(255,49,49,0.2);
+  }
+
+  /* ── 개별 주소 목록 ── */
+  .addr-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .addr-count {
+    font-size: 10px;
+    color: #005c1a;
+    letter-spacing: 1px;
+  }
+
+  .addr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .addr-list::-webkit-scrollbar { width: 3px; }
+  .addr-list::-webkit-scrollbar-track { background: transparent; }
+  .addr-list::-webkit-scrollbar-thumb { background: rgba(0,255,65,0.3); border-radius: 2px; }
+
+  .addr-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(0, 255, 65, 0.15);
+    border-radius: 3px;
+    background: rgba(0, 255, 65, 0.02);
+    transition: border-color 0.15s;
+  }
+
+  .addr-item:hover { border-color: rgba(0, 255, 65, 0.35); }
+  .addr-item.editing { border-color: rgba(0, 255, 65, 0.6); background: rgba(0,255,65,0.05); }
+
+  .addr-idx {
+    font-size: 10px;
+    color: #003d0f;
+    min-width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .addr-email-text {
+    flex: 1;
+    font-size: 13px;
+    color: #00b32d;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    cursor: pointer;
+  }
+
+  .addr-email-text:hover { color: #00ff41; }
+
+  .addr-email-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.5);
+    border-radius: 0;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 2px 4px;
+    outline: none;
+    display: none;
+    width: 100%;
+    letter-spacing: 0.5px;
+  }
+
+  .addr-item-btns {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .addr-icon-btn {
+    width: 26px;
+    height: 26px;
+    background: transparent;
+    border: 1px solid rgba(0, 255, 65, 0.25);
+    border-radius: 2px;
+    color: #005c1a;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .addr-icon-btn:hover { border-color: #00ff41; color: #00ff41; background: rgba(0,255,65,0.08); }
+  .addr-icon-btn.del:hover { border-color: #ff3131; color: #ff3131; background: rgba(255,49,49,0.07); }
+  .addr-icon-btn.save { display: none; border-color: rgba(0,255,65,0.5); color: #00b32d; }
+  .addr-icon-btn.save:hover { border-color: #00ff41; color: #00ff41; background: rgba(0,255,65,0.1); }
+  .addr-icon-btn.cancel-edit { display: none; }
+
+  .addr-empty {
+    text-align: center;
+    font-size: 11px;
+    color: #003d0f;
+    letter-spacing: 1px;
+    padding: 32px 0;
+    border: 1px dashed rgba(0,255,65,0.1);
+    border-radius: 3px;
+  }
+
+  /* ── 주소 직접 추가 ── */
+  .addr-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .addr-add-row input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .btn-add {
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    border-radius: 3px;
+    color: #008f24;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .btn-add:hover {
+    border-color: #00ff41;
+    color: #00ff41;
+    background: rgba(0,255,65,0.07);
+  }
+
+  /* ── copy 피드백 ── */
+  .copy-feedback {
+    font-size: 10px;
+    color: #00ff41;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-top: 6px;
+    height: 14px;
+    transition: opacity 0.3s;
+    opacity: 0;
+  }
+  .copy-feedback.show { opacity: 1; }
+
+  /* ── 모달 오버레이 ── */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -288,7 +565,6 @@
     justify-content: center;
     padding: 24px;
   }
-
   .modal-overlay.show { display: flex; }
 
   .modal {
@@ -302,14 +578,9 @@
     position: relative;
     box-shadow: 0 0 40px rgba(0, 255, 65, 0.2);
   }
-
   .modal .corner { opacity: 1; }
 
-  .modal-icon {
-    font-size: 36px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 10px rgba(0,255,65,0.8));
-  }
+  .modal-icon { font-size: 36px; margin-bottom: 16px; filter: drop-shadow(0 0 10px rgba(0,255,65,0.8)); }
 
   .modal-title {
     font-family: 'Orbitron', monospace;
@@ -329,12 +600,7 @@
     margin-bottom: 24px;
     word-break: break-all;
   }
-
-  .modal-body span {
-    color: #00ff41;
-    display: block;
-    margin-top: 4px;
-  }
+  .modal-body span { color: #00ff41; display: block; margin-top: 4px; }
 
   .modal-btn {
     padding: 12px 32px;
@@ -349,21 +615,9 @@
     cursor: pointer;
     transition: all 0.2s;
   }
+  .modal-btn:hover { background: rgba(0,255,65,0.1); box-shadow: 0 0 12px rgba(0,255,65,0.3); }
 
-  .modal-btn:hover {
-    background: rgba(0,255,65,0.1);
-    box-shadow: 0 0 12px rgba(0,255,65,0.3);
-  }
-
-  .footer {
-    margin-top: 32px;
-    text-align: center;
-    font-size: 10px;
-    color: #003d0f;
-    letter-spacing: 2px;
-  }
-
-  /* ── 전송 진행 오버레이 ── */
+  /* ── 진행 오버레이 ── */
   .progress-overlay {
     display: none;
     position: fixed;
@@ -374,7 +628,6 @@
     justify-content: center;
     padding: 24px;
   }
-
   .progress-overlay.show { display: flex; }
 
   .progress-box {
@@ -387,7 +640,6 @@
     position: relative;
     box-shadow: 0 0 40px rgba(0, 255, 65, 0.15);
   }
-
   .progress-box .corner { opacity: 1; }
 
   .progress-title {
@@ -415,12 +667,7 @@
     transform: translateY(4px);
     transition: opacity 0.3s, transform 0.3s;
   }
-
-  .progress-log .log-line.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
+  .progress-log .log-line.show { opacity: 1; transform: translateY(0); }
   .progress-log .log-line.bright { color: #00ff41; }
 
   .progress-track {
@@ -452,10 +699,7 @@
     animation: shimmer 0.6s ease-in-out infinite;
   }
 
-  @keyframes shimmer {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
+  @keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
   .progress-pct {
     font-family: 'Orbitron', monospace;
@@ -463,6 +707,14 @@
     color: #00ff41;
     letter-spacing: 2px;
     text-align: right;
+  }
+
+  .footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 10px;
+    color: #003d0f;
+    letter-spacing: 2px;
   }
 </style>
 </head>
@@ -479,41 +731,88 @@
     </div>
   </div>
 
+  <!-- 탭 바 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabTransmit" onclick="switchTab('transmit')">
+      TRANSMIT
+    </button>
+    <button class="tab-btn" id="tabAddr" onclick="switchTab('addr')">
+      ADDRESS BOOK <span class="tab-badge" id="addrCount">0</span>
+    </button>
+  </div>
+
   <div class="card">
     <div class="corner corner-tl"></div>
     <div class="corner corner-tr"></div>
     <div class="corner corner-bl"></div>
     <div class="corner corner-br"></div>
 
-    <!-- STEP 1: 비번 인증 -->
-    <div id="stepAuth">
-      <div class="label">ACCESS CODE</div>
-      <input type="password" id="pwInput" placeholder="••••••••••••••••" autocomplete="off" />
-      <div class="error-msg" id="pwError">// ACCESS DENIED</div>
+    <!-- ── TRANSMIT 탭 ── -->
+    <div class="tab-panel active" id="panelTransmit">
 
-      <button class="btn" id="authBtn" onclick="doAuth()">
-        <span class="btn-text">AUTHENTICATE</span>
-      </button>
-
-      <div class="status-line" id="authStatus">// ENTER ACCESS CODE<span class="blink">_</span></div>
-    </div>
-
-    <!-- STEP 2: 이메일 전송 -->
-    <div id="stepSend">
-      <div class="auth-badge show">
-        <div class="auth-badge-dot"></div>
-        <span>SESSION AUTHENTICATED</span>
+      <!-- STEP 1: 인증 -->
+      <div id="stepAuth">
+        <div class="label">ACCESS CODE</div>
+        <input type="password" id="pwInput" placeholder="••••••••••••••••" autocomplete="off" />
+        <div class="error-msg" id="pwError">// ACCESS DENIED</div>
+        <button class="btn" id="authBtn" onclick="doAuth()">
+          <span class="btn-text">AUTHENTICATE</span>
+        </button>
+        <div class="status-line" id="authStatus">// ENTER ACCESS CODE<span class="blink">_</span></div>
       </div>
 
-      <div class="label">TARGET ADDRESS</div>
-      <input type="email" id="emailInput" placeholder="user@domain.com" autocomplete="email" />
-      <div class="error-msg" id="emailError">// INVALID EMAIL FORMAT</div>
+      <!-- STEP 2: 전송 -->
+      <div id="stepSend">
+        <div class="auth-badge show">
+          <div class="auth-badge-dot"></div>
+          <span>SESSION AUTHENTICATED</span>
+        </div>
 
-      <button class="btn" id="sendBtn" onclick="sendEmail()">
-        <span class="btn-text">TRANSMIT</span>
-      </button>
+        <div class="label">TARGET ADDRESS</div>
+        <input type="email" id="emailInput" placeholder="user@domain.com" autocomplete="email" />
+        <div class="error-msg" id="emailError">// INVALID EMAIL FORMAT</div>
 
-      <div class="status-line" id="sendStatus">// AWAITING INPUT<span class="blink">_</span></div>
+        <button class="btn" id="sendBtn" onclick="sendEmail()">
+          <span class="btn-text">TRANSMIT</span>
+        </button>
+
+        <div class="status-line" id="sendStatus">// AWAITING INPUT<span class="blink">_</span></div>
+      </div>
+    </div>
+
+    <!-- ── ADDRESS BOOK 탭 ── -->
+    <div class="tab-panel" id="panelAddr">
+
+      <!-- 전체 목록 (쉼표 구분) -->
+      <div class="addr-section">
+        <div class="label">ALL ADDRESSES</div>
+        <textarea class="addr-copy-box" id="addrCopyBox" readonly placeholder="전송 성공 시 자동으로 주소가 추가됩니다."></textarea>
+        <div class="addr-actions">
+          <button class="btn-sm" onclick="copyAll()">COPY ALL</button>
+          <button class="btn-sm" onclick="editAll()">EDIT</button>
+          <button class="btn-sm" id="btnSaveAll" style="display:none;" onclick="saveAll()">SAVE</button>
+          <button class="btn-sm danger" onclick="confirmClearAll()">CLEAR ALL</button>
+        </div>
+        <div class="copy-feedback" id="copyFeedback">// COPIED TO CLIPBOARD</div>
+      </div>
+
+      <!-- 개별 주소 목록 -->
+      <div class="addr-section">
+        <div class="addr-list-header">
+          <div class="label" style="margin-bottom:0;">INDIVIDUAL LIST</div>
+          <div class="addr-count" id="addrCountText">0 addresses</div>
+        </div>
+        <div class="addr-list" id="addrList">
+          <div class="addr-empty">// NO ADDRESSES STORED</div>
+        </div>
+
+        <!-- 직접 추가 -->
+        <div class="addr-add-row">
+          <input type="email" id="manualAddInput" placeholder="직접 추가: user@domain.com" />
+          <button class="btn-add" onclick="manualAdd()">+ ADD</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -542,6 +841,7 @@
   </div>
 </div>
 
+<!-- 전송 완료 모달 -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="corner corner-tl"></div>
@@ -558,13 +858,228 @@
   </div>
 </div>
 
+<!-- CLEAR ALL 확인 모달 -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div class="modal-icon" style="font-size:28px; color:#ff3131; filter:drop-shadow(0 0 10px rgba(255,49,49,0.8))">⚠</div>
+    <div class="modal-title" style="color:#ff3131; text-shadow:0 0 10px rgba(255,49,49,0.5)">CONFIRM DELETE</div>
+    <div class="modal-body">주소록을 전부 삭제합니다.<br>이 작업은 되돌릴 수 없습니다.</div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button class="modal-btn" style="border-color:#ff3131; color:#ff3131;" onclick="clearAll()">DELETE</button>
+      <button class="modal-btn" onclick="closeClearModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxH4-SopczisKZKzbCf0WqWhtAMOqgNC7z9ougf1hhunibW4OIX9A1IUpes5rfxk7O0ew/exec";
 
 let sessionToken = null;
 let sessionTs    = null;
 
-// ── 저장된 세션 복원 (영구 인증) ────────────────────────
+/* ══════════════════════════════════════════
+   주소록 데이터 관리
+══════════════════════════════════════════ */
+function loadAddresses() {
+  try {
+    const raw = localStorage.getItem('togo_addresses');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveAddresses(arr) {
+  localStorage.setItem('togo_addresses', JSON.stringify(arr));
+  renderAddresses(arr);
+}
+
+function addAddress(email) {
+  const arr = loadAddresses();
+  if (!arr.includes(email)) {
+    arr.push(email);
+    saveAddresses(arr);
+  }
+}
+
+/* ══════════════════════════════════════════
+   주소록 렌더링
+══════════════════════════════════════════ */
+function renderAddresses(arr) {
+  // 배지 카운트
+  document.getElementById('addrCount').textContent = arr.length;
+  document.getElementById('addrCountText').textContent = arr.length + ' addresses';
+
+  // 쉼표 구분 텍스트
+  document.getElementById('addrCopyBox').value = arr.join(', ');
+
+  // 개별 목록
+  const list = document.getElementById('addrList');
+  if (arr.length === 0) {
+    list.innerHTML = '<div class="addr-empty">// NO ADDRESSES STORED</div>';
+    return;
+  }
+
+  list.innerHTML = arr.map((email, i) => `
+    <div class="addr-item" id="addrItem${i}" data-idx="${i}">
+      <span class="addr-idx">${i + 1}.</span>
+      <span class="addr-email-text" title="클릭하여 편집" onclick="startEdit(${i})">${email}</span>
+      <input type="email" class="addr-email-input" id="addrInput${i}" value="${email}"
+             onkeydown="handleEditKey(event, ${i})" />
+      <div class="addr-item-btns">
+        <button class="addr-icon-btn edit-btn" title="편집" onclick="startEdit(${i})">✎</button>
+        <button class="addr-icon-btn save" id="saveBtn${i}" title="저장" onclick="saveEdit(${i})">✓</button>
+        <button class="addr-icon-btn cancel-edit" id="cancelBtn${i}" title="취소" onclick="cancelEdit(${i})">✕</button>
+        <button class="addr-icon-btn del" title="삭제" onclick="deleteAddr(${i})">✗</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function startEdit(i) {
+  const item   = document.getElementById('addrItem' + i);
+  const text   = item.querySelector('.addr-email-text');
+  const input  = document.getElementById('addrInput' + i);
+  const editBtn= item.querySelector('.edit-btn');
+  const saveBtn= document.getElementById('saveBtn' + i);
+  const cancelBtn = document.getElementById('cancelBtn' + i);
+
+  text.style.display    = 'none';
+  input.style.display   = 'block';
+  editBtn.style.display = 'none';
+  saveBtn.style.display = 'flex';
+  cancelBtn.style.display = 'flex';
+  item.classList.add('editing');
+  input.focus();
+  input.select();
+}
+
+function cancelEdit(i) {
+  const arr = loadAddresses();
+  renderAddresses(arr); // 재렌더로 원복
+}
+
+function saveEdit(i) {
+  const input = document.getElementById('addrInput' + i);
+  const newVal = input.value.trim();
+  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  if (!emailRegex.test(newVal)) {
+    input.style.borderBottomColor = '#ff3131';
+    input.style.color = '#ff3131';
+    setTimeout(() => {
+      input.style.borderBottomColor = '';
+      input.style.color = '';
+    }, 800);
+    return;
+  }
+  const arr = loadAddresses();
+  arr[i] = newVal;
+  saveAddresses(arr);
+}
+
+function handleEditKey(e, i) {
+  if (e.key === 'Enter')  saveEdit(i);
+  if (e.key === 'Escape') cancelEdit(i);
+}
+
+function deleteAddr(i) {
+  const arr = loadAddresses();
+  arr.splice(i, 1);
+  saveAddresses(arr);
+}
+
+/* ══════════════════════════════════════════
+   전체 텍스트 편집 / 복사
+══════════════════════════════════════════ */
+let editAllMode = false;
+
+function copyAll() {
+  const box = document.getElementById('addrCopyBox');
+  if (!box.value) return;
+  navigator.clipboard.writeText(box.value).then(() => {
+    const fb = document.getElementById('copyFeedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 1800);
+  }).catch(() => {
+    box.select();
+    document.execCommand('copy');
+  });
+}
+
+function editAll() {
+  const box = document.getElementById('addrCopyBox');
+  const btnSave = document.getElementById('btnSaveAll');
+  box.removeAttribute('readonly');
+  box.focus();
+  editAllMode = true;
+  btnSave.style.display = '';
+}
+
+function saveAll() {
+  const box = document.getElementById('addrCopyBox');
+  const val = box.value.trim();
+  const btnSave = document.getElementById('btnSaveAll');
+
+  // 쉼표 또는 줄바꿈 구분, 공백 정리
+  const raw = val.split(/[\n,]+/).map(e => e.trim()).filter(e => e.length > 0);
+  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  const valid = raw.filter(e => emailRegex.test(e));
+
+  saveAddresses(valid);
+  box.setAttribute('readonly', true);
+  editAllMode = false;
+  btnSave.style.display = 'none';
+}
+
+/* ══════════════════════════════════════════
+   전체 삭제
+══════════════════════════════════════════ */
+function confirmClearAll() {
+  openClearModal();
+}
+
+function clearAll() {
+  saveAddresses([]);
+  closeClearModal();
+}
+
+/* ══════════════════════════════════════════
+   직접 추가
+══════════════════════════════════════════ */
+function manualAdd() {
+  const input = document.getElementById('manualAddInput');
+  const email = input.value.trim();
+  const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
+  if (!emailRegex.test(email)) {
+    input.style.borderColor = '#ff3131';
+    setTimeout(() => input.style.borderColor = '', 800);
+    input.focus();
+    return;
+  }
+  addAddress(email);
+  input.value = '';
+  input.focus();
+}
+
+/* ══════════════════════════════════════════
+   탭 전환
+══════════════════════════════════════════ */
+function switchTab(tab) {
+  document.getElementById('tabTransmit').classList.toggle('active', tab === 'transmit');
+  document.getElementById('tabAddr').classList.toggle('active', tab === 'addr');
+  document.getElementById('panelTransmit').classList.toggle('active', tab === 'transmit');
+  document.getElementById('panelAddr').classList.toggle('active', tab === 'addr');
+
+  if (tab === 'addr') {
+    renderAddresses(loadAddresses());
+  }
+}
+
+/* ══════════════════════════════════════════
+   세션 복원
+══════════════════════════════════════════ */
 (function restoreSession() {
   try {
     const saved = localStorage.getItem('togo_session');
@@ -581,16 +1096,55 @@ let sessionTs    = null;
   }
 })();
 
-// ── 뒤로가기 처리 ──────────────────────────────────────
-history.pushState(null, '', location.href);
-window.addEventListener('popstate', function() {
-  if (document.getElementById('modalOverlay').classList.contains('show')) {
+// 초기 주소록 렌더 (배지)
+renderAddresses(loadAddresses());
+
+/* ══════════════════════════════════════════
+   뒤로가기 처리 (스택 최소화)
+   - 모달이 열려 있을 때만 pushState
+   - 탭/화면 자체엔 스택 안 쌓음
+══════════════════════════════════════════ */
+let modalOpen = false;
+let clearModalOpen = false;
+
+function openModal(email) {
+  document.getElementById('modalEmail').textContent = email;
+  document.getElementById('modalOverlay').classList.add('show');
+  if (!modalOpen) {
+    history.pushState({ modal: 'success' }, '');
+    modalOpen = true;
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  modalOpen = false;
+}
+
+function openClearModal() {
+  document.getElementById('clearModal').classList.add('show');
+  if (!clearModalOpen) {
+    history.pushState({ modal: 'clear' }, '');
+    clearModalOpen = true;
+  }
+}
+
+function closeClearModal() {
+  document.getElementById('clearModal').classList.remove('show');
+  clearModalOpen = false;
+}
+
+window.addEventListener('popstate', function(e) {
+  if (modalOpen) {
     closeModal();
-    history.pushState(null, '', location.href);
+  } else if (clearModalOpen) {
+    closeClearModal();
   }
 });
 
-// ── STEP 1: 인증 ────────────────────────────────────────
+/* ══════════════════════════════════════════
+   인증
+══════════════════════════════════════════ */
 async function doAuth() {
   const pw      = document.getElementById('pwInput').value;
   const pwError = document.getElementById('pwError');
@@ -611,11 +1165,7 @@ async function doAuth() {
     if (data.ok) {
       sessionToken = data.token;
       sessionTs    = data.ts;
-
-      // 영구 저장
       localStorage.setItem('togo_session', JSON.stringify({ token: data.token, ts: data.ts }));
-
-      // 화면 전환
       document.getElementById('stepAuth').style.display = 'none';
       document.getElementById('stepSend').style.display = 'block';
       document.getElementById('emailInput').focus();
@@ -634,29 +1184,26 @@ async function doAuth() {
   btn.disabled = false;
 }
 
-// ── 프로그레스 바 애니메이션 ────────────────────────────
+/* ══════════════════════════════════════════
+   프로그레스
+══════════════════════════════════════════ */
 function runProgress() {
   const fill    = document.getElementById('progressFill');
   const pct     = document.getElementById('progressPct');
   const overlay = document.getElementById('progressOverlay');
 
-  // 초기화
   for (let i = 0; i < 5; i++) document.getElementById('log' + i).classList.remove('show');
   fill.style.width = '0%';
   pct.textContent  = '0%';
   overlay.classList.add('show');
 
-  // 로그 라인 순서대로 등장
   const logTimes = [200, 800, 1400, 2000];
   logTimes.forEach((t, i) => {
     setTimeout(() => document.getElementById('log' + i).classList.add('show'), t);
   });
 
-  // 0 → 100% 를 3초 동안 쭉 채움
-  const dur  = 3000;
-  const step = 40;
-  let current = 0;
-  let cb = null;
+  const dur = 3000, step = 40;
+  let current = 0, cb = null;
 
   const timer = setInterval(() => {
     current = Math.min(current + (100 / (dur / step)) + (Math.random() * 0.4), 100);
@@ -675,7 +1222,9 @@ function runProgress() {
   };
 }
 
-// ── STEP 2: 이메일 전송 ─────────────────────────────────
+/* ══════════════════════════════════════════
+   이메일 전송
+══════════════════════════════════════════ */
 async function sendEmail() {
   const input      = document.getElementById('emailInput');
   const email      = input.value.trim();
@@ -702,36 +1251,35 @@ async function sendEmail() {
   status.className = 'status-line active';
   status.innerHTML = '// TRANSMITTING<span class="blink">_</span>';
 
-  // 프로그레스 시작
   const progress = runProgress();
 
-  // GAS 요청 (no-cors — 응답 내용 안 읽음)
   const params = new URLSearchParams({
-    action : 'send',
-    email  : email,
-    token  : sessionToken,
-    ts     : sessionTs
+    action: 'send',
+    email:  email,
+    token:  sessionToken,
+    ts:     sessionTs
   });
   fetch(GAS_URL + '?' + params.toString(), { mode: 'no-cors' }).catch(() => {});
 
-  // 바 100% 되면 무조건 모달 (GAS는 이미 처리 중 or 완료)
   progress.complete(() => {
     document.getElementById('progressOverlay').classList.remove('show');
     status.className = 'status-line';
     status.innerHTML = '// AWAITING INPUT<span class="blink">_</span>';
-    document.getElementById('modalEmail').textContent = email;
-    document.getElementById('modalOverlay').classList.add('show');
+
+    // ★ 주소록에 추가
+    addAddress(email);
     input.value = '';
+
+    // 모달 열기
+    openModal(email);
   });
 
   btn.disabled = false;
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
-}
-
-// ── 키보드 단축키 ───────────────────────────────────────
+/* ══════════════════════════════════════════
+   키보드 단축키
+══════════════════════════════════════════ */
 document.getElementById('pwInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doAuth();
 });
@@ -740,13 +1288,16 @@ document.getElementById('pwInput').addEventListener('input', () => {
   document.getElementById('pwError').classList.remove('show');
 });
 
-document.addEventListener('keydown', e => {
-  const sendStep = document.getElementById('stepSend');
-  if (sendStep.style.display === 'block' && e.key === 'Enter') sendEmail();
-});
-
 document.getElementById('emailInput').addEventListener('input', () => {
   document.getElementById('emailError').classList.remove('show');
+});
+
+document.getElementById('emailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendEmail();
+});
+
+document.getElementById('manualAddInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') manualAdd();
 });
 </script>
 </body>

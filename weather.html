@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7BD3F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="날씨">
+<title>승승 기상청</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(160deg, #E8F7FF 0%, #F4FBF6 50%, #FFF7E8 100%);
+    color: #2C3E50;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+  /* 배경 부드러운 원형 장식 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -100px; right: -100px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(255, 213, 79, 0.35), transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -150px; left: -100px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(123, 211, 247, 0.25), transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+  }
+
+  /* ---------- 헤더 ---------- */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px 14px;
+  }
+  .loc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 10px rgba(123, 211, 247, 0.15);
+    justify-self: start;
+  }
+  .loc-btn:active { transform: scale(0.97); }
+  .loc-btn .pin { font-size: 14px; }
+  .loc-btn .arrow { font-size: 11px; opacity: 0.6; margin-left: 2px; }
+
+
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #7E8B96;
+    justify-self: end;
+  }
+  .header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+  .header-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.2;
+  }
+  #updTime {
+    font-size: 11px;
+    color: #A0AEB8;
+    line-height: 1.2;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #2C3E50;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 10px rgba(123, 211, 247, 0.15);
+  }
+  .icon-btn:active { transform: scale(0.92); }
+  .icon-btn.spinning { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- 현재 날씨 카드 ---------- */
+  .now {
+    text-align: center;
+    padding: 18px 10px 10px;
+    margin-bottom: 16px;
+  }
+  .now .emoji {
+    font-size: 76px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 14px rgba(255, 200, 100, 0.35));
+    margin-bottom: 8px;
+    display: inline-block;
+    animation: float 3.5s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .now .temp {
+    font-family: 'Outfit', 'Pretendard', sans-serif;
+    font-weight: 300;
+    font-size: 84px;
+    line-height: 1;
+    color: #2C3E50;
+    letter-spacing: -3px;
+  }
+  .now .temp .deg { font-size: 56px; opacity: 0.55; vertical-align: top; margin-left: 4px; }
+  .now .sky-text {
+    font-size: 17px;
+    color: #5A6B7A;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .now .sub {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 13.5px;
+    color: #7E8B96;
+    flex-wrap: wrap;
+  }
+  .now .sub span { display: inline-flex; gap: 4px; align-items: center; }
+  .now .sub b { color: #2C3E50; font-weight: 600; }
+
+  /* ---------- 카드 공통 ---------- */
+  .card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 22px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 20px rgba(123, 211, 247, 0.12), 0 1px 3px rgba(0,0,0,0.02);
+    will-change: transform;
+    isolation: isolate;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7E8B96;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---------- 챙길 것 (1순위) ---------- */
+  .pack-card { background: linear-gradient(135deg, rgba(255,232,168,0.6), rgba(255,255,255,0.85)); }
+  .pack-list { display: flex; flex-direction: column; gap: 10px; }
+  .pack-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+  }
+  .pack-item.muted { background: rgba(255,255,255,0.4); }
+  .pack-item .ico { font-size: 28px; flex-shrink: 0; }
+  .pack-item .text { flex: 1; }
+  .pack-item .text .main { font-size: 16px; font-weight: 600; color: #2C3E50; }
+  .pack-item .text .sub { font-size: 12.5px; color: #7E8B96; margin-top: 2px; }
+  .pack-item .text .sub .pm-num {
+    color: #2C3E50;
+    font-weight: 600;
+  }
+  .pack-item .text .sub .pm-num em {
+    font-style: normal;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #1A2A3A;
+    margin-left: 1px;
+  }
+  .pack-item .text .sub .pm-num sub {
+    font-size: 9px;
+    vertical-align: baseline;
+    margin-left: 1px;
+    opacity: 0.7;
+  }
+  .pack-item .text .sub .pm-grade {
+    font-weight: 600;
+    margin-left: 1px;
+  }
+  .pack-item .text .sub .pm-grade.g1 { color: #2D7A4F; }
+  .pack-item .text .sub .pm-grade.g2 { color: #2566A8; }
+  .pack-item .text .sub .pm-grade.g3 { color: #A36400; }
+  .pack-item .text .sub .pm-grade.g4 { color: #B83A33; }
+  .vent-text .desc em {
+    font-style: normal;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #2C3E50;
+    margin-left: 2px;
+  }
+  .vent-text .desc sub {
+    font-size: 9px;
+    vertical-align: baseline;
+    margin-left: 1px;
+    opacity: 0.7;
+  }
+  /* ---------- 환기 (2순위) ---------- */
+  .vent-card { padding: 22px 18px; }
+  .vent-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .vent-circle {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .vent-circle.ok { background: radial-gradient(circle, #C6F2D6, #8FE0AB); outline: 8px solid rgba(143, 224, 171, 0.18); }
+  .vent-circle.no { background: radial-gradient(circle, #FFD0CB, #FF9A95); outline: 8px solid rgba(255, 154, 149, 0.18); }
+  .vent-circle.maybe { background: radial-gradient(circle, #FFE89C, #FFD460); outline: 8px solid rgba(255, 212, 96, 0.18); }
+  .vent-text .head { font-size: 19px; font-weight: 700; color: #2C3E50; }
+  .vent-text .desc { font-size: 13px; color: #7E8B96; margin-top: 4px; }
+
+  /* ---------- 시간별 (3순위) ---------- */
+  .hourly-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0 -18px;
+    padding: 4px 18px 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .hourly-scroll::-webkit-scrollbar { display: none; }
+  .hour-cell {
+    flex: 0 0 auto;
+    width: 60px;
+    text-align: center;
+    padding: 12px 4px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 16px;
+    scroll-snap-align: start;
+    border: 1px solid rgba(255,255,255,0.85);
+  }
+  .hour-cell.now-cell {
+    background: linear-gradient(160deg, #FFE89C, #FFB75E);
+    color: #4A2F00;
+    border-color: rgba(255,200,100,0.6);
+    box-shadow: 0 4px 12px rgba(255, 183, 94, 0.25);
+  }
+  .hour-cell .h-time { font-size: 12px; font-weight: 600; color: #7E8B96; }
+  .hour-cell.now-cell .h-time { color: #6B4500; }
+  .hour-cell .h-emoji { font-size: 22px; margin: 6px 0 4px; line-height: 1; }
+  .hour-cell .h-temp { font-size: 14px; font-weight: 700; color: #2C3E50; font-family: 'Outfit', sans-serif; }
+  .hour-cell.now-cell .h-temp { color: #4A2F00; }
+  .hour-cell .h-pop { font-size: 10.5px; color: #4A90E2; margin-top: 3px; font-weight: 600; min-height: 14px; }
+  .hour-cell.now-cell .h-pop { color: #2A6BC4; }
+
+  /* ---------- 3일 예보 ---------- */
+  .day-list { display: flex; flex-direction: column; }
+  .day-row {
+    display: grid;
+    grid-template-columns: 64px 36px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(126, 139, 150, 0.08);
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-row.today .day-name { color: #B86F00; font-weight: 700; }
+  .day-row .day-label { display: flex; flex-direction: column; }
+  .day-row .day-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.2;
+  }
+  .day-row .day-dow {
+    font-size: 11px;
+    color: #A0AEB8;
+    font-weight: 500;
+    margin-top: 1px;
+  }
+  .day-row .day-emoji {
+    font-size: 22px;
+    text-align: center;
+    line-height: 1;
+  }
+  .day-row .day-pop-wrap {
+    text-align: left;
+    font-size: 11.5px;
+  }
+  .day-row .day-pop {
+    color: #4A90E2;
+    font-weight: 600;
+    background: rgba(74, 144, 226, 0.08);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .day-row .day-temps {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .day-row .t-min { color: #6FA8DC; min-width: 28px; text-align: right; }
+  .day-row .t-max { color: #E07A5F; min-width: 28px; text-align: right; }
+  .day-row .t-sep {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #6FA8DC, #FFB75E, #E07A5F);
+    opacity: 0.5;
+  }
+
+  /* ---------- 대기질 ---------- */
+  .air-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .air-tile {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.9);
+  }
+  .air-tile .label { font-size: 11.5px; color: #7E8B96; font-weight: 600; }
+  .air-tile .val {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-top: 2px;
+    line-height: 1.1;
+  }
+  .air-tile .grade {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .grade-1 { background: #D5F0E2; color: #2D7A4F; }
+  .grade-2 { background: #D6EAFB; color: #2566A8; }
+  .grade-3 { background: #FFE2B0; color: #A36400; }
+  .grade-4 { background: #FFCFCB; color: #B83A33; }
+
+  /* ---------- 모달 (도시 선택) ---------- */
+  .modal-back {
+    position: fixed; inset: 0;
+    background: rgba(30, 50, 70, 0.35);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-back.show { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { font-size: 16px; margin-bottom: 14px; color: #2C3E50; }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: #DDE3E8;
+    border-radius: 999px;
+    margin: 0 auto 14px;
+  }
+  .gps-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #E8F7FF, #F4FBF6);
+    border: 1px solid #D4ECFF;
+    border-radius: 14px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
+  }
+  .gps-btn:active { transform: scale(0.98); }
+  .city-section h4 {
+    font-size: 12px;
+    color: #7E8B96;
+    font-weight: 600;
+    margin: 8px 4px 8px;
+    letter-spacing: 0.3px;
+  }
+  .search-wrap {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .city-search {
+    width: 100%;
+    padding: 13px 38px 13px 38px;
+    background: #F4F7FA;
+    border: 1.5px solid transparent;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #2C3E50;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .city-search:focus { border-color: #7BD3F7; background: #fff; }
+  .search-wrap::before {
+    content: '🔍';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px; height: 28px;
+    border: none;
+    background: rgba(126, 139, 150, 0.15);
+    color: #7E8B96;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 11px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .search-clear.show { display: flex; }
+  .city-list {
+    max-height: 50vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+  .city-list::-webkit-scrollbar { width: 4px; }
+  .city-list::-webkit-scrollbar-thumb { background: #DDE3E8; border-radius: 4px; }
+  .city-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14.5px;
+    color: #2C3E50;
+    transition: background 0.1s ease;
+  }
+  .city-row:hover { background: #F4F7FA; }
+  .city-row:active { background: #E8F0F6; }
+  .city-row.active { background: #FFE89C; color: #4A2F00; font-weight: 700; }
+  .city-row .sido-tag {
+    font-size: 11px;
+    color: #A0AEB8;
+    font-weight: 500;
+    background: rgba(0,0,0,0.04);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .city-row.active .sido-tag { background: rgba(74,47,0,0.12); color: #6B4500; }
+  .city-empty {
+    text-align: center;
+    padding: 30px 16px;
+    color: #A0AEB8;
+    font-size: 13.5px;
+  }
+
+  .loc-btn { max-width: 130px; overflow: hidden; }
+  .loc-btn span:not(.pin):not(.arrow) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+
+  /* ---------- 로딩/에러 ---------- */
+  .loading, .err-box {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7E8B96;
+    font-size: 14px;
+  }
+  .loading .dots { display: inline-block; margin-left: 4px; }
+  .loading .dots::after {
+    content: '';
+    animation: dots 1.4s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; }
+  }
+  .err-box .err-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+  .err-box button {
+    margin-top: 14px;
+    padding: 10px 24px;
+    background: #2C3E50;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .hidden { display: none !important; }
+
+  /* 로드 시 카드 부드럽게 등장 */
+  .card.anim, .now.anim {
+    animation: rise 0.5s ease both;
+    animation-iteration-count: 1;
+  }
+  .card.anim:nth-child(1) { animation-delay: 0.05s; }
+  .card.anim:nth-child(2) { animation-delay: 0.10s; }
+  .card.anim:nth-child(3) { animation-delay: 0.15s; }
+  .card.anim:nth-child(4) { animation-delay: 0.20s; }
+  .card.anim:nth-child(5) { animation-delay: 0.25s; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- 토스트 ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    z-index: 200;
+    background: rgba(44, 62, 80, 0.95);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    line-height: 1.5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <button class="loc-btn" id="locBtn">
+      <span class="pin">📍</span>
+      <span id="locName">위치 선택</span>
+      <span class="arrow">▼</span>
+    </button>
+    <div class="header-right">
+      <div class="header-info">
+        <span class="header-date" id="headerDate"></span>
+        <span id="updTime"></span>
+      </div>
+      <button class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 -->
+  <div id="content">
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🌤</div>
+      날씨 정보를 불러오는 중<span class="dots"></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- 도시 선택 모달 -->
+<div class="modal-back" id="modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <h3>위치 선택</h3>
+    <button class="gps-btn" id="gpsBtn">
+      <span style="font-size:20px;">🎯</span>
+      <span>현재 위치 (GPS)</span>
+    </button>
+    <div class="search-wrap">
+      <input type="text" id="citySearch" class="city-search" placeholder="도시 검색 (예: 세종, 강남, 수원…)" autocomplete="off">
+      <button class="search-clear" id="searchClear" type="button" aria-label="지우기">✕</button>
+    </div>
+    <div class="city-section">
+      <h4 id="cityListTitle">전체 도시 (<span id="cityListCount">0</span>)</h4>
+      <div class="city-list" id="cityList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   날씨/대기질 모바일 웹앱
+   - 기상청 단기예보 API
+   - 에어코리아 측정소/대기질 API
+   ============================================================ */
+
+// 헤더 날짜/요일 표시
+(function() {
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const dow = DAYS[now.getDay()];
+  document.getElementById('headerDate').textContent = `${m}월 ${d}일 ${dow}요일`;
+})();
+
+const SERVICE_KEY = '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25';
+const KMA_BASE = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
+const AIR_BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
+const STN_BASE = 'https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc';
+
+// 캐시 키
+const LS_LOC = 'weather_loc_v1';        // 현재 선택된 위치
+const LS_WX_PREFIX = 'weather_wx_';      // 날씨 캐시 (위치별)
+const LS_AIR_PREFIX = 'weather_air_v2_'; // 대기질 캐시 (시도별, v2: 매칭 로직 변경)
+const LS_STN_PREFIX = 'weather_stn_';    // 측정소 캐시 (시군구별)
+
+const WX_CACHE_MS = 30 * 60 * 1000;      // 30분
+const AIR_CACHE_MS = 30 * 60 * 1000;     // 30분
+const STN_CACHE_MS = 30 * 24 * 60 * 60 * 1000; // 30일 (측정소 위치는 거의 안 바뀜)
+
+/* ---------- 전국 시군구 데이터 ----------
+   { name: 표시명(시군구), sido: 에어코리아 시도, sgg: 측정소 매칭용,
+     nx, ny: 기상청 격자, lat, lon: 대표 위경도 }
+   기상청 동네예보 격자 + 행정구역 대표좌표 기반 */
+const CITIES = [
+  // 서울특별시 (25개 자치구)
+  { name: '서울 종로구', sido: '서울', sgg: '종로구', nx: 60, ny: 127, lat: 37.5735, lon: 126.9788 },
+  { name: '서울 중구',   sido: '서울', sgg: '중구',   nx: 60, ny: 127, lat: 37.5638, lon: 126.9975 },
+  { name: '서울 용산구', sido: '서울', sgg: '용산구', nx: 60, ny: 126, lat: 37.5311, lon: 126.9810 },
+  { name: '서울 성동구', sido: '서울', sgg: '성동구', nx: 61, ny: 127, lat: 37.5634, lon: 127.0371 },
+  { name: '서울 광진구', sido: '서울', sgg: '광진구', nx: 62, ny: 126, lat: 37.5384, lon: 127.0822 },
+  { name: '서울 동대문구', sido: '서울', sgg: '동대문구', nx: 61, ny: 127, lat: 37.5744, lon: 127.0395 },
+  { name: '서울 중랑구', sido: '서울', sgg: '중랑구', nx: 62, ny: 128, lat: 37.6063, lon: 127.0925 },
+  { name: '서울 성북구', sido: '서울', sgg: '성북구', nx: 61, ny: 127, lat: 37.5894, lon: 127.0167 },
+  { name: '서울 강북구', sido: '서울', sgg: '강북구', nx: 61, ny: 128, lat: 37.6396, lon: 127.0257 },
+  { name: '서울 도봉구', sido: '서울', sgg: '도봉구', nx: 61, ny: 129, lat: 37.6688, lon: 127.0471 },
+  { name: '서울 노원구', sido: '서울', sgg: '노원구', nx: 61, ny: 129, lat: 37.6543, lon: 127.0568 },
+  { name: '서울 은평구', sido: '서울', sgg: '은평구', nx: 59, ny: 127, lat: 37.6027, lon: 126.9292 },
+  { name: '서울 서대문구', sido: '서울', sgg: '서대문구', nx: 59, ny: 127, lat: 37.5791, lon: 126.9368 },
+  { name: '서울 마포구', sido: '서울', sgg: '마포구', nx: 59, ny: 127, lat: 37.5663, lon: 126.9019 },
+  { name: '서울 양천구', sido: '서울', sgg: '양천구', nx: 58, ny: 126, lat: 37.5170, lon: 126.8666 },
+  { name: '서울 강서구', sido: '서울', sgg: '강서구', nx: 58, ny: 126, lat: 37.5509, lon: 126.8495 },
+  { name: '서울 구로구', sido: '서울', sgg: '구로구', nx: 58, ny: 125, lat: 37.4955, lon: 126.8874 },
+  { name: '서울 금천구', sido: '서울', sgg: '금천구', nx: 59, ny: 124, lat: 37.4563, lon: 126.8954 },
+  { name: '서울 영등포구', sido: '서울', sgg: '영등포구', nx: 58, ny: 126, lat: 37.5263, lon: 126.8962 },
+  { name: '서울 동작구', sido: '서울', sgg: '동작구', nx: 59, ny: 125, lat: 37.5124, lon: 126.9393 },
+  { name: '서울 관악구', sido: '서울', sgg: '관악구', nx: 59, ny: 125, lat: 37.4784, lon: 126.9516 },
+  { name: '서울 서초구', sido: '서울', sgg: '서초구', nx: 61, ny: 125, lat: 37.4836, lon: 127.0327 },
+  { name: '서울 강남구', sido: '서울', sgg: '강남구', nx: 61, ny: 126, lat: 37.5172, lon: 127.0473 },
+  { name: '서울 송파구', sido: '서울', sgg: '송파구', nx: 62, ny: 126, lat: 37.5145, lon: 127.1059 },
+  { name: '서울 강동구', sido: '서울', sgg: '강동구', nx: 62, ny: 126, lat: 37.5301, lon: 127.1238 },
+
+  // 부산광역시
+  { name: '부산 중구',   sido: '부산', sgg: '중구',   nx: 97,  ny: 74, lat: 35.1063, lon: 129.0322 },
+  { name: '부산 서구',   sido: '부산', sgg: '서구',   nx: 97,  ny: 74, lat: 35.0975, lon: 129.0244 },
+  { name: '부산 동구',   sido: '부산', sgg: '동구',   nx: 98,  ny: 75, lat: 35.1294, lon: 129.0457 },
+  { name: '부산 영도구', sido: '부산', sgg: '영도구', nx: 98,  ny: 74, lat: 35.0911, lon: 129.0680 },
+  { name: '부산 부산진구', sido: '부산', sgg: '부산진구', nx: 97, ny: 75, lat: 35.1628, lon: 129.0531 },
+  { name: '부산 동래구', sido: '부산', sgg: '동래구', nx: 98,  ny: 76, lat: 35.1968, lon: 129.0838 },
+  { name: '부산 남구',   sido: '부산', sgg: '남구',   nx: 98,  ny: 75, lat: 35.1336, lon: 129.0840 },
+  { name: '부산 북구',   sido: '부산', sgg: '북구',   nx: 96,  ny: 76, lat: 35.1972, lon: 129.0145 },
+  { name: '부산 해운대구', sido: '부산', sgg: '해운대구', nx: 99, ny: 75, lat: 35.1631, lon: 129.1635 },
+  { name: '부산 사하구', sido: '부산', sgg: '사하구', nx: 96,  ny: 74, lat: 35.1043, lon: 128.9745 },
+  { name: '부산 금정구', sido: '부산', sgg: '금정구', nx: 98,  ny: 77, lat: 35.2429, lon: 129.0922 },
+  { name: '부산 강서구', sido: '부산', sgg: '강서구', nx: 96,  ny: 76, lat: 35.2122, lon: 128.9806 },
+  { name: '부산 연제구', sido: '부산', sgg: '연제구', nx: 98,  ny: 76, lat: 35.1763, lon: 129.0795 },
+  { name: '부산 수영구', sido: '부산', sgg: '수영구', nx: 99,  ny: 75, lat: 35.1456, lon: 129.1133 },
+  { name: '부산 사상구', sido: '부산', sgg: '사상구', nx: 96,  ny: 75, lat: 35.1496, lon: 128.9912 },
+  { name: '부산 기장군', sido: '부산', sgg: '기장군', nx: 100, ny: 77, lat: 35.2444, lon: 129.2222 },
+
+  // 대구광역시
+  { name: '대구 중구',   sido: '대구', sgg: '중구',   nx: 89, ny: 90, lat: 35.8696, lon: 128.6062 },
+  { name: '대구 동구',   sido: '대구', sgg: '동구',   nx: 90, ny: 91, lat: 35.8868, lon: 128.6353 },
+  { name: '대구 서구',   sido: '대구', sgg: '서구',   nx: 88, ny: 90, lat: 35.8717, lon: 128.5591 },
+  { name: '대구 남구',   sido: '대구', sgg: '남구',   nx: 89, ny: 90, lat: 35.8463, lon: 128.5973 },
+  { name: '대구 북구',   sido: '대구', sgg: '북구',   nx: 89, ny: 91, lat: 35.8859, lon: 128.5828 },
+  { name: '대구 수성구', sido: '대구', sgg: '수성구', nx: 89, ny: 90, lat: 35.8581, lon: 128.6306 },
+  { name: '대구 달서구', sido: '대구', sgg: '달서구', nx: 88, ny: 90, lat: 35.8298, lon: 128.5328 },
+  { name: '대구 달성군', sido: '대구', sgg: '달성군', nx: 88, ny: 89, lat: 35.7747, lon: 128.4314 },
+  { name: '대구 군위군', sido: '대구', sgg: '군위군', nx: 89, ny: 96, lat: 36.2429, lon: 128.5727 },
+
+  // 인천광역시
+  { name: '인천 중구',   sido: '인천', sgg: '중구',   nx: 54, ny: 124, lat: 37.4737, lon: 126.6217 },
+  { name: '인천 동구',   sido: '인천', sgg: '동구',   nx: 55, ny: 124, lat: 37.4738, lon: 126.6432 },
+  { name: '인천 미추홀구', sido: '인천', sgg: '미추홀구', nx: 54, ny: 124, lat: 37.4634, lon: 126.6500 },
+  { name: '인천 연수구', sido: '인천', sgg: '연수구', nx: 55, ny: 123, lat: 37.4101, lon: 126.6788 },
+  { name: '인천 남동구', sido: '인천', sgg: '남동구', nx: 56, ny: 124, lat: 37.4475, lon: 126.7314 },
+  { name: '인천 부평구', sido: '인천', sgg: '부평구', nx: 55, ny: 125, lat: 37.5077, lon: 126.7218 },
+  { name: '인천 계양구', sido: '인천', sgg: '계양구', nx: 56, ny: 126, lat: 37.5374, lon: 126.7378 },
+  { name: '인천 서구',   sido: '인천', sgg: '서구',   nx: 55, ny: 125, lat: 37.5454, lon: 126.6759 },
+  { name: '인천 강화군', sido: '인천', sgg: '강화군', nx: 51, ny: 130, lat: 37.7468, lon: 126.4878 },
+  { name: '인천 옹진군', sido: '인천', sgg: '옹진군', nx: 53, ny: 121, lat: 37.4467, lon: 126.6363 },
+
+  // 광주광역시
+  { name: '광주 동구',   sido: '광주', sgg: '동구',   nx: 60, ny: 74, lat: 35.1462, lon: 126.9230 },
+  { name: '광주 서구',   sido: '광주', sgg: '서구',   nx: 59, ny: 74, lat: 35.1521, lon: 126.8901 },
+  { name: '광주 남구',   sido: '광주', sgg: '남구',   nx: 59, ny: 73, lat: 35.1330, lon: 126.9027 },
+  { name: '광주 북구',   sido: '광주', sgg: '북구',   nx: 59, ny: 75, lat: 35.1745, lon: 126.9120 },
+  { name: '광주 광산구', sido: '광주', sgg: '광산구', nx: 57, ny: 74, lat: 35.1395, lon: 126.7937 },
+
+  // 대전광역시
+  { name: '대전 동구',   sido: '대전', sgg: '동구',   nx: 68, ny: 100, lat: 36.3115, lon: 127.4546 },
+  { name: '대전 중구',   sido: '대전', sgg: '중구',   nx: 67, ny: 100, lat: 36.3257, lon: 127.4214 },
+  { name: '대전 서구',   sido: '대전', sgg: '서구',   nx: 67, ny: 100, lat: 36.3553, lon: 127.3838 },
+  { name: '대전 유성구', sido: '대전', sgg: '유성구', nx: 67, ny: 101, lat: 36.3621, lon: 127.3567 },
+  { name: '대전 대덕구', sido: '대전', sgg: '대덕구', nx: 68, ny: 100, lat: 36.3464, lon: 127.4154 },
+
+  // 울산광역시
+  { name: '울산 중구',   sido: '울산', sgg: '중구',   nx: 102, ny: 84, lat: 35.5694, lon: 129.3326 },
+  { name: '울산 남구',   sido: '울산', sgg: '남구',   nx: 102, ny: 84, lat: 35.5436, lon: 129.3300 },
+  { name: '울산 동구',   sido: '울산', sgg: '동구',   nx: 104, ny: 83, lat: 35.5050, lon: 129.4170 },
+  { name: '울산 북구',   sido: '울산', sgg: '북구',   nx: 103, ny: 85, lat: 35.5826, lon: 129.3613 },
+  { name: '울산 울주군', sido: '울산', sgg: '울주군', nx: 101, ny: 84, lat: 35.5663, lon: 129.2422 },
+
+  // 세종특별자치시
+  { name: '세종',        sido: '세종', sgg: '세종',   nx: 66, ny: 103, lat: 36.4801, lon: 127.2890 },
+
+  // 경기도 (주요 시군)
+  { name: '수원시',      sido: '경기', sgg: '수원',   nx: 60, ny: 121, lat: 37.2636, lon: 127.0286 },
+  { name: '수원 장안구', sido: '경기', sgg: '장안구', nx: 60, ny: 121, lat: 37.3045, lon: 127.0107 },
+  { name: '수원 권선구', sido: '경기', sgg: '권선구', nx: 60, ny: 121, lat: 37.2576, lon: 126.9711 },
+  { name: '수원 팔달구', sido: '경기', sgg: '팔달구', nx: 60, ny: 121, lat: 37.2828, lon: 127.0173 },
+  { name: '수원 영통구', sido: '경기', sgg: '영통구', nx: 61, ny: 121, lat: 37.2588, lon: 127.0461 },
+  { name: '성남시',      sido: '경기', sgg: '성남',   nx: 62, ny: 123, lat: 37.4201, lon: 127.1264 },
+  { name: '성남 수정구', sido: '경기', sgg: '수정구', nx: 61, ny: 124, lat: 37.4500, lon: 127.1467 },
+  { name: '성남 중원구', sido: '경기', sgg: '중원구', nx: 62, ny: 123, lat: 37.4366, lon: 127.1373 },
+  { name: '성남 분당구', sido: '경기', sgg: '분당구', nx: 62, ny: 122, lat: 37.3825, lon: 127.1188 },
+  { name: '의정부시',    sido: '경기', sgg: '의정부', nx: 61, ny: 130, lat: 37.7382, lon: 127.0337 },
+  { name: '안양시',      sido: '경기', sgg: '안양',   nx: 59, ny: 123, lat: 37.3943, lon: 126.9568 },
+  { name: '안양 만안구', sido: '경기', sgg: '만안구', nx: 59, ny: 123, lat: 37.3866, lon: 126.9326 },
+  { name: '안양 동안구', sido: '경기', sgg: '동안구', nx: 59, ny: 123, lat: 37.3920, lon: 126.9572 },
+  { name: '부천시',      sido: '경기', sgg: '부천',   nx: 56, ny: 125, lat: 37.5035, lon: 126.7660 },
+  { name: '광명시',      sido: '경기', sgg: '광명',   nx: 58, ny: 125, lat: 37.4787, lon: 126.8646 },
+  { name: '평택시',      sido: '경기', sgg: '평택',   nx: 62, ny: 114, lat: 36.9921, lon: 127.1129 },
+  { name: '동두천시',    sido: '경기', sgg: '동두천', nx: 61, ny: 134, lat: 37.9036, lon: 127.0606 },
+  { name: '안산시',      sido: '경기', sgg: '안산',   nx: 58, ny: 121, lat: 37.3219, lon: 126.8309 },
+  { name: '안산 상록구', sido: '경기', sgg: '상록구', nx: 58, ny: 121, lat: 37.3022, lon: 126.8651 },
+  { name: '안산 단원구', sido: '경기', sgg: '단원구', nx: 58, ny: 121, lat: 37.3186, lon: 126.8266 },
+  { name: '고양시',      sido: '경기', sgg: '고양',   nx: 57, ny: 128, lat: 37.6584, lon: 126.8320 },
+  { name: '고양 덕양구', sido: '경기', sgg: '덕양구', nx: 58, ny: 128, lat: 37.6376, lon: 126.8323 },
+  { name: '고양 일산동구', sido: '경기', sgg: '일산동구', nx: 56, ny: 129, lat: 37.6587, lon: 126.7716 },
+  { name: '고양 일산서구', sido: '경기', sgg: '일산서구', nx: 56, ny: 129, lat: 37.6738, lon: 126.7501 },
+  { name: '과천시',      sido: '경기', sgg: '과천',   nx: 60, ny: 124, lat: 37.4292, lon: 126.9876 },
+  { name: '구리시',      sido: '경기', sgg: '구리',   nx: 62, ny: 127, lat: 37.5944, lon: 127.1296 },
+  { name: '남양주시',    sido: '경기', sgg: '남양주', nx: 64, ny: 128, lat: 37.6360, lon: 127.2165 },
+  { name: '오산시',      sido: '경기', sgg: '오산',   nx: 61, ny: 118, lat: 37.1499, lon: 127.0773 },
+  { name: '시흥시',      sido: '경기', sgg: '시흥',   nx: 57, ny: 123, lat: 37.3800, lon: 126.8030 },
+  { name: '군포시',      sido: '경기', sgg: '군포',   nx: 59, ny: 122, lat: 37.3617, lon: 126.9352 },
+  { name: '의왕시',      sido: '경기', sgg: '의왕',   nx: 60, ny: 122, lat: 37.3447, lon: 126.9683 },
+  { name: '하남시',      sido: '경기', sgg: '하남',   nx: 63, ny: 126, lat: 37.5392, lon: 127.2147 },
+  { name: '용인시',      sido: '경기', sgg: '용인',   nx: 64, ny: 119, lat: 37.2410, lon: 127.1775 },
+  { name: '용인 처인구', sido: '경기', sgg: '처인구', nx: 64, ny: 119, lat: 37.2342, lon: 127.2014 },
+  { name: '용인 기흥구', sido: '경기', sgg: '기흥구', nx: 63, ny: 120, lat: 37.2806, lon: 127.1153 },
+  { name: '용인 수지구', sido: '경기', sgg: '수지구', nx: 62, ny: 121, lat: 37.3217, lon: 127.0978 },
+  { name: '파주시',      sido: '경기', sgg: '파주',   nx: 56, ny: 131, lat: 37.7600, lon: 126.7800 },
+  { name: '이천시',      sido: '경기', sgg: '이천',   nx: 68, ny: 121, lat: 37.2722, lon: 127.4350 },
+  { name: '안성시',      sido: '경기', sgg: '안성',   nx: 65, ny: 115, lat: 37.0080, lon: 127.2797 },
+  { name: '김포시',      sido: '경기', sgg: '김포',   nx: 55, ny: 128, lat: 37.6152, lon: 126.7158 },
+  { name: '화성시',      sido: '경기', sgg: '화성',   nx: 57, ny: 119, lat: 37.1995, lon: 126.8312 },
+  { name: '광주시',      sido: '경기', sgg: '광주',   nx: 65, ny: 123, lat: 37.4291, lon: 127.2549 },
+  { name: '양주시',      sido: '경기', sgg: '양주',   nx: 61, ny: 131, lat: 37.7855, lon: 127.0458 },
+  { name: '포천시',      sido: '경기', sgg: '포천',   nx: 64, ny: 134, lat: 37.8949, lon: 127.2003 },
+  { name: '여주시',      sido: '경기', sgg: '여주',   nx: 71, ny: 121, lat: 37.2982, lon: 127.6371 },
+  { name: '연천군',      sido: '경기', sgg: '연천',   nx: 61, ny: 138, lat: 38.0967, lon: 127.0750 },
+  { name: '가평군',      sido: '경기', sgg: '가평',   nx: 69, ny: 133, lat: 37.8315, lon: 127.5101 },
+  { name: '양평군',      sido: '경기', sgg: '양평',   nx: 69, ny: 125, lat: 37.4914, lon: 127.4875 },
+
+  // 강원특별자치도
+  { name: '춘천시',      sido: '강원', sgg: '춘천',   nx: 73, ny: 134, lat: 37.8813, lon: 127.7298 },
+  { name: '원주시',      sido: '강원', sgg: '원주',   nx: 76, ny: 122, lat: 37.3422, lon: 127.9202 },
+  { name: '강릉시',      sido: '강원', sgg: '강릉',   nx: 92, ny: 131, lat: 37.7519, lon: 128.8761 },
+  { name: '동해시',      sido: '강원', sgg: '동해',   nx: 97, ny: 127, lat: 37.5247, lon: 129.1144 },
+  { name: '태백시',      sido: '강원', sgg: '태백',   nx: 95, ny: 119, lat: 37.1641, lon: 128.9856 },
+  { name: '속초시',      sido: '강원', sgg: '속초',   nx: 87, ny: 141, lat: 38.2070, lon: 128.5918 },
+  { name: '삼척시',      sido: '강원', sgg: '삼척',   nx: 98, ny: 125, lat: 37.4500, lon: 129.1656 },
+  { name: '홍천군',      sido: '강원', sgg: '홍천',   nx: 75, ny: 130, lat: 37.6970, lon: 127.8889 },
+  { name: '횡성군',      sido: '강원', sgg: '횡성',   nx: 77, ny: 125, lat: 37.4915, lon: 127.9853 },
+  { name: '영월군',      sido: '강원', sgg: '영월',   nx: 86, ny: 119, lat: 37.1834, lon: 128.4612 },
+  { name: '평창군',      sido: '강원', sgg: '평창',   nx: 84, ny: 123, lat: 37.3705, lon: 128.3902 },
+  { name: '정선군',      sido: '강원', sgg: '정선',   nx: 89, ny: 123, lat: 37.3805, lon: 128.6608 },
+  { name: '철원군',      sido: '강원', sgg: '철원',   nx: 65, ny: 139, lat: 38.1462, lon: 127.3133 },
+  { name: '화천군',      sido: '강원', sgg: '화천',   nx: 72, ny: 139, lat: 38.1063, lon: 127.7081 },
+  { name: '양구군',      sido: '강원', sgg: '양구',   nx: 77, ny: 139, lat: 38.1099, lon: 127.9898 },
+  { name: '인제군',      sido: '강원', sgg: '인제',   nx: 80, ny: 138, lat: 38.0696, lon: 128.1707 },
+  { name: '고성군(강원)', sido: '강원', sgg: '고성',   nx: 85, ny: 145, lat: 38.3806, lon: 128.4677 },
+  { name: '양양군',      sido: '강원', sgg: '양양',   nx: 88, ny: 138, lat: 38.0754, lon: 128.6190 },
+
+  // 충청북도
+  { name: '청주시',      sido: '충북', sgg: '청주',   nx: 69, ny: 106, lat: 36.6424, lon: 127.4890 },
+  { name: '청주 상당구', sido: '충북', sgg: '상당구', nx: 69, ny: 106, lat: 36.6324, lon: 127.4892 },
+  { name: '청주 서원구', sido: '충북', sgg: '서원구', nx: 69, ny: 106, lat: 36.6203, lon: 127.4677 },
+  { name: '청주 흥덕구', sido: '충북', sgg: '흥덕구', nx: 68, ny: 107, lat: 36.6391, lon: 127.4407 },
+  { name: '청주 청원구', sido: '충북', sgg: '청원구', nx: 69, ny: 107, lat: 36.6750, lon: 127.4868 },
+  { name: '충주시',      sido: '충북', sgg: '충주',   nx: 76, ny: 114, lat: 36.9910, lon: 127.9259 },
+  { name: '제천시',      sido: '충북', sgg: '제천',   nx: 81, ny: 118, lat: 37.1326, lon: 128.1910 },
+  { name: '보은군',      sido: '충북', sgg: '보은',   nx: 73, ny: 103, lat: 36.4894, lon: 127.7295 },
+  { name: '옥천군',      sido: '충북', sgg: '옥천',   nx: 71, ny: 99,  lat: 36.3063, lon: 127.5715 },
+  { name: '영동군',      sido: '충북', sgg: '영동',   nx: 74, ny: 97,  lat: 36.1751, lon: 127.7836 },
+  { name: '증평군',      sido: '충북', sgg: '증평',   nx: 71, ny: 110, lat: 36.7853, lon: 127.5814 },
+  { name: '진천군',      sido: '충북', sgg: '진천',   nx: 68, ny: 111, lat: 36.8554, lon: 127.4351 },
+  { name: '괴산군',      sido: '충북', sgg: '괴산',   nx: 74, ny: 111, lat: 36.8154, lon: 127.7869 },
+  { name: '음성군',      sido: '충북', sgg: '음성',   nx: 72, ny: 113, lat: 36.9402, lon: 127.6904 },
+  { name: '단양군',      sido: '충북', sgg: '단양',   nx: 84, ny: 115, lat: 36.9846, lon: 128.3654 },
+
+  // 충청남도
+  { name: '천안시',      sido: '충남', sgg: '천안',   nx: 63, ny: 110, lat: 36.8151, lon: 127.1140 },
+  { name: '천안 동남구', sido: '충남', sgg: '동남구', nx: 63, ny: 110, lat: 36.7917, lon: 127.1519 },
+  { name: '천안 서북구', sido: '충남', sgg: '서북구', nx: 63, ny: 110, lat: 36.8341, lon: 127.1118 },
+  { name: '공주시',      sido: '충남', sgg: '공주',   nx: 60, ny: 103, lat: 36.4467, lon: 127.1192 },
+  { name: '보령시',      sido: '충남', sgg: '보령',   nx: 54, ny: 100, lat: 36.3494, lon: 126.5979 },
+  { name: '아산시',      sido: '충남', sgg: '아산',   nx: 60, ny: 110, lat: 36.7898, lon: 127.0019 },
+  { name: '서산시',      sido: '충남', sgg: '서산',   nx: 51, ny: 110, lat: 36.7848, lon: 126.4503 },
+  { name: '논산시',      sido: '충남', sgg: '논산',   nx: 62, ny: 97,  lat: 36.1872, lon: 127.0985 },
+  { name: '계룡시',      sido: '충남', sgg: '계룡',   nx: 65, ny: 99,  lat: 36.2745, lon: 127.2487 },
+  { name: '당진시',      sido: '충남', sgg: '당진',   nx: 54, ny: 112, lat: 36.8898, lon: 126.6457 },
+  { name: '금산군',      sido: '충남', sgg: '금산',   nx: 69, ny: 95,  lat: 36.1089, lon: 127.4880 },
+  { name: '부여군',      sido: '충남', sgg: '부여',   nx: 59, ny: 99,  lat: 36.2755, lon: 126.9098 },
+  { name: '서천군',      sido: '충남', sgg: '서천',   nx: 55, ny: 94,  lat: 36.0803, lon: 126.6917 },
+  { name: '청양군',      sido: '충남', sgg: '청양',   nx: 57, ny: 103, lat: 36.4595, lon: 126.8019 },
+  { name: '홍성군',      sido: '충남', sgg: '홍성',   nx: 55, ny: 106, lat: 36.6017, lon: 126.6608 },
+  { name: '예산군',      sido: '충남', sgg: '예산',   nx: 58, ny: 107, lat: 36.6809, lon: 126.8447 },
+  { name: '태안군',      sido: '충남', sgg: '태안',   nx: 48, ny: 109, lat: 36.7456, lon: 126.2980 },
+
+  // 전라북도(전북특별자치도)
+  { name: '전주시',      sido: '전북', sgg: '전주',   nx: 63, ny: 89,  lat: 35.8242, lon: 127.1480 },
+  { name: '전주 완산구', sido: '전북', sgg: '완산구', nx: 63, ny: 89,  lat: 35.8073, lon: 127.1190 },
+  { name: '전주 덕진구', sido: '전북', sgg: '덕진구', nx: 63, ny: 89,  lat: 35.8467, lon: 127.1339 },
+  { name: '군산시',      sido: '전북', sgg: '군산',   nx: 56, ny: 92,  lat: 35.9676, lon: 126.7368 },
+  { name: '익산시',      sido: '전북', sgg: '익산',   nx: 60, ny: 91,  lat: 35.9483, lon: 126.9576 },
+  { name: '정읍시',      sido: '전북', sgg: '정읍',   nx: 58, ny: 83,  lat: 35.5697, lon: 126.8559 },
+  { name: '남원시',      sido: '전북', sgg: '남원',   nx: 68, ny: 80,  lat: 35.4163, lon: 127.3905 },
+  { name: '김제시',      sido: '전북', sgg: '김제',   nx: 59, ny: 88,  lat: 35.8035, lon: 126.8807 },
+  { name: '완주군',      sido: '전북', sgg: '완주',   nx: 63, ny: 89,  lat: 35.9046, lon: 127.1620 },
+  { name: '진안군',      sido: '전북', sgg: '진안',   nx: 68, ny: 88,  lat: 35.7917, lon: 127.4248 },
+  { name: '무주군',      sido: '전북', sgg: '무주',   nx: 72, ny: 93,  lat: 36.0070, lon: 127.6610 },
+  { name: '장수군',      sido: '전북', sgg: '장수',   nx: 70, ny: 85,  lat: 35.6477, lon: 127.5212 },
+  { name: '임실군',      sido: '전북', sgg: '임실',   nx: 66, ny: 84,  lat: 35.6177, lon: 127.2890 },
+  { name: '순창군',      sido: '전북', sgg: '순창',   nx: 63, ny: 79,  lat: 35.3744, lon: 127.1373 },
+  { name: '고창군',      sido: '전북', sgg: '고창',   nx: 56, ny: 80,  lat: 35.4357, lon: 126.7020 },
+  { name: '부안군',      sido: '전북', sgg: '부안',   nx: 56, ny: 87,  lat: 35.7316, lon: 126.7332 },
+
+  // 전라남도
+  { name: '목포시',      sido: '전남', sgg: '목포',   nx: 50, ny: 67,  lat: 34.8118, lon: 126.3922 },
+  { name: '여수시',      sido: '전남', sgg: '여수',   nx: 73, ny: 66,  lat: 34.7604, lon: 127.6622 },
+  { name: '순천시',      sido: '전남', sgg: '순천',   nx: 70, ny: 70,  lat: 34.9506, lon: 127.4872 },
+  { name: '나주시',      sido: '전남', sgg: '나주',   nx: 56, ny: 71,  lat: 35.0156, lon: 126.7108 },
+  { name: '광양시',      sido: '전남', sgg: '광양',   nx: 73, ny: 70,  lat: 34.9407, lon: 127.6957 },
+  { name: '담양군',      sido: '전남', sgg: '담양',   nx: 61, ny: 78,  lat: 35.3214, lon: 126.9881 },
+  { name: '곡성군',      sido: '전남', sgg: '곡성',   nx: 66, ny: 77,  lat: 35.2820, lon: 127.2920 },
+  { name: '구례군',      sido: '전남', sgg: '구례',   nx: 69, ny: 75,  lat: 35.2025, lon: 127.4634 },
+  { name: '고흥군',      sido: '전남', sgg: '고흥',   nx: 66, ny: 62,  lat: 34.6111, lon: 127.2848 },
+  { name: '보성군',      sido: '전남', sgg: '보성',   nx: 62, ny: 66,  lat: 34.7714, lon: 127.0800 },
+  { name: '화순군',      sido: '전남', sgg: '화순',   nx: 61, ny: 72,  lat: 35.0644, lon: 126.9866 },
+  { name: '장흥군',      sido: '전남', sgg: '장흥',   nx: 59, ny: 64,  lat: 34.6816, lon: 126.9070 },
+  { name: '강진군',      sido: '전남', sgg: '강진',   nx: 57, ny: 63,  lat: 34.6420, lon: 126.7672 },
+  { name: '해남군',      sido: '전남', sgg: '해남',   nx: 54, ny: 61,  lat: 34.5734, lon: 126.5993 },
+  { name: '영암군',      sido: '전남', sgg: '영암',   nx: 56, ny: 66,  lat: 34.8001, lon: 126.6964 },
+  { name: '무안군',      sido: '전남', sgg: '무안',   nx: 52, ny: 71,  lat: 34.9905, lon: 126.4816 },
+  { name: '함평군',      sido: '전남', sgg: '함평',   nx: 52, ny: 72,  lat: 35.0656, lon: 126.5168 },
+  { name: '영광군',      sido: '전남', sgg: '영광',   nx: 52, ny: 77,  lat: 35.2773, lon: 126.5118 },
+  { name: '장성군',      sido: '전남', sgg: '장성',   nx: 57, ny: 77,  lat: 35.3018, lon: 126.7853 },
+  { name: '완도군',      sido: '전남', sgg: '완도',   nx: 57, ny: 56,  lat: 34.3110, lon: 126.7553 },
+  { name: '진도군',      sido: '전남', sgg: '진도',   nx: 48, ny: 59,  lat: 34.4869, lon: 126.2632 },
+  { name: '신안군',      sido: '전남', sgg: '신안',   nx: 50, ny: 66,  lat: 34.8332, lon: 126.3506 },
+
+  // 경상북도
+  { name: '포항시',      sido: '경북', sgg: '포항',   nx: 102, ny: 94, lat: 36.0190, lon: 129.3435 },
+  { name: '포항 남구',   sido: '경북', sgg: '남구',   nx: 102, ny: 94, lat: 35.9898, lon: 129.3845 },
+  { name: '포항 북구',   sido: '경북', sgg: '북구',   nx: 102, ny: 95, lat: 36.0410, lon: 129.3653 },
+  { name: '경주시',      sido: '경북', sgg: '경주',   nx: 100, ny: 91, lat: 35.8562, lon: 129.2247 },
+  { name: '김천시',      sido: '경북', sgg: '김천',   nx: 80,  ny: 96, lat: 36.1397, lon: 128.1135 },
+  { name: '안동시',      sido: '경북', sgg: '안동',   nx: 91,  ny: 106, lat: 36.5684, lon: 128.7294 },
+  { name: '구미시',      sido: '경북', sgg: '구미',   nx: 84,  ny: 96, lat: 36.1196, lon: 128.3441 },
+  { name: '영주시',      sido: '경북', sgg: '영주',   nx: 89,  ny: 111, lat: 36.8056, lon: 128.6242 },
+  { name: '영천시',      sido: '경북', sgg: '영천',   nx: 95,  ny: 93, lat: 35.9733, lon: 128.9385 },
+  { name: '상주시',      sido: '경북', sgg: '상주',   nx: 81,  ny: 102, lat: 36.4108, lon: 128.1591 },
+  { name: '문경시',      sido: '경북', sgg: '문경',   nx: 81,  ny: 106, lat: 36.5867, lon: 128.1867 },
+  { name: '경산시',      sido: '경북', sgg: '경산',   nx: 91,  ny: 90,  lat: 35.8251, lon: 128.7411 },
+  { name: '의성군',      sido: '경북', sgg: '의성',   nx: 90,  ny: 101, lat: 36.3528, lon: 128.6970 },
+  { name: '청송군',      sido: '경북', sgg: '청송',   nx: 96,  ny: 103, lat: 36.4361, lon: 129.0571 },
+  { name: '영양군',      sido: '경북', sgg: '영양',   nx: 97,  ny: 108, lat: 36.6669, lon: 129.1124 },
+  { name: '영덕군',      sido: '경북', sgg: '영덕',   nx: 102, ny: 103, lat: 36.4150, lon: 129.3653 },
+  { name: '청도군',      sido: '경북', sgg: '청도',   nx: 91,  ny: 86,  lat: 35.6473, lon: 128.7349 },
+  { name: '고령군',      sido: '경북', sgg: '고령',   nx: 83,  ny: 87,  lat: 35.7261, lon: 128.2630 },
+  { name: '성주군',      sido: '경북', sgg: '성주',   nx: 83,  ny: 91,  lat: 35.9192, lon: 128.2829 },
+  { name: '칠곡군',      sido: '경북', sgg: '칠곡',   nx: 85,  ny: 93,  lat: 35.9956, lon: 128.4015 },
+  { name: '예천군',      sido: '경북', sgg: '예천',   nx: 86,  ny: 107, lat: 36.6580, lon: 128.4517 },
+  { name: '봉화군',      sido: '경북', sgg: '봉화',   nx: 90,  ny: 113, lat: 36.8932, lon: 128.7327 },
+  { name: '울진군',      sido: '경북', sgg: '울진',   nx: 102, ny: 115, lat: 36.9930, lon: 129.4002 },
+  { name: '울릉군',      sido: '경북', sgg: '울릉',   nx: 127, ny: 127, lat: 37.4845, lon: 130.9059 },
+
+  // 경상남도
+  { name: '창원시',      sido: '경남', sgg: '창원',   nx: 91,  ny: 77, lat: 35.2280, lon: 128.6810 },
+  { name: '창원 의창구', sido: '경남', sgg: '의창구', nx: 90,  ny: 77, lat: 35.2540, lon: 128.6398 },
+  { name: '창원 성산구', sido: '경남', sgg: '성산구', nx: 91,  ny: 76, lat: 35.2206, lon: 128.6790 },
+  { name: '창원 마산합포구', sido: '경남', sgg: '마산합포구', nx: 89, ny: 76, lat: 35.1994, lon: 128.5647 },
+  { name: '창원 마산회원구', sido: '경남', sgg: '마산회원구', nx: 90, ny: 77, lat: 35.2271, lon: 128.5770 },
+  { name: '창원 진해구', sido: '경남', sgg: '진해구', nx: 92,  ny: 75, lat: 35.1380, lon: 128.7037 },
+  { name: '진주시',      sido: '경남', sgg: '진주',   nx: 81,  ny: 75, lat: 35.1800, lon: 128.1076 },
+  { name: '통영시',      sido: '경남', sgg: '통영',   nx: 87,  ny: 68, lat: 34.8544, lon: 128.4331 },
+  { name: '사천시',      sido: '경남', sgg: '사천',   nx: 80,  ny: 71, lat: 35.0034, lon: 128.0644 },
+  { name: '김해시',      sido: '경남', sgg: '김해',   nx: 95,  ny: 77, lat: 35.2285, lon: 128.8893 },
+  { name: '밀양시',      sido: '경남', sgg: '밀양',   nx: 92,  ny: 83, lat: 35.5034, lon: 128.7464 },
+  { name: '거제시',      sido: '경남', sgg: '거제',   nx: 90,  ny: 69, lat: 34.8806, lon: 128.6213 },
+  { name: '양산시',      sido: '경남', sgg: '양산',   nx: 97,  ny: 79, lat: 35.3353, lon: 129.0376 },
+  { name: '의령군',      sido: '경남', sgg: '의령',   nx: 83,  ny: 78, lat: 35.3221, lon: 128.2618 },
+  { name: '함안군',      sido: '경남', sgg: '함안',   nx: 86,  ny: 77, lat: 35.2724, lon: 128.4063 },
+  { name: '창녕군',      sido: '경남', sgg: '창녕',   nx: 87,  ny: 83, lat: 35.5447, lon: 128.4923 },
+  { name: '고성군(경남)', sido: '경남', sgg: '고성',   nx: 85,  ny: 71, lat: 34.9730, lon: 128.3225 },
+  { name: '남해군',      sido: '경남', sgg: '남해',   nx: 77,  ny: 68, lat: 34.8378, lon: 127.8923 },
+  { name: '하동군',      sido: '경남', sgg: '하동',   nx: 74,  ny: 73, lat: 35.0671, lon: 127.7517 },
+  { name: '산청군',      sido: '경남', sgg: '산청',   nx: 76,  ny: 80, lat: 35.4158, lon: 127.8732 },
+  { name: '함양군',      sido: '경남', sgg: '함양',   nx: 74,  ny: 82, lat: 35.5204, lon: 127.7256 },
+  { name: '거창군',      sido: '경남', sgg: '거창',   nx: 77,  ny: 86, lat: 35.6868, lon: 127.9095 },
+  { name: '합천군',      sido: '경남', sgg: '합천',   nx: 81,  ny: 84, lat: 35.5667, lon: 128.1659 },
+
+  // 제주특별자치도
+  { name: '제주시',      sido: '제주', sgg: '제주',   nx: 53, ny: 38, lat: 33.4996, lon: 126.5312 },
+  { name: '서귀포시',    sido: '제주', sgg: '서귀포', nx: 52, ny: 33, lat: 33.2541, lon: 126.5601 },
+];
+
+/* ============================================================
+   유틸: 위경도 → 기상청 격자 (LCC DFS 변환식)
+   기상청 공식 변환 알고리즘
+   ============================================================ */
+function dfsXyConv(lat, lon) {
+  const RE = 6371.00877;
+  const GRID = 5.0;
+  const SLAT1 = 30.0, SLAT2 = 60.0;
+  const OLON = 126.0, OLAT = 38.0;
+  const XO = 43, YO = 136;
+  const DEGRAD = Math.PI / 180.0;
+
+  const re = RE / GRID;
+  const slat1 = SLAT1 * DEGRAD;
+  const slat2 = SLAT2 * DEGRAD;
+  const olon = OLON * DEGRAD;
+  const olat = OLAT * DEGRAD;
+
+  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
+  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn;
+  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
+  ro = (re * sf) / Math.pow(ro, sn);
+
+  let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
+  ra = (re * sf) / Math.pow(ra, sn);
+  let theta = lon * DEGRAD - olon;
+  if (theta > Math.PI) theta -= 2.0 * Math.PI;
+  if (theta < -Math.PI) theta += 2.0 * Math.PI;
+  theta *= sn;
+
+  const nx = Math.floor(ra * Math.sin(theta) + XO + 0.5);
+  const ny = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
+  return { nx, ny };
+}
+
+/* ============================================================
+   날짜/시각 헬퍼
+   ============================================================ */
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function fmtKstNow() {
+  const now = new Date();
+  return {
+    yyyymmdd: now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()),
+    hh: pad(now.getHours()),
+    mm: pad(now.getMinutes()),
+    obj: now
+  };
+}
+
+// 단기예보 base_time: 02, 05, 08, 11, 14, 17, 20, 23 (발표 후 약 10분 지난 시점부터 가용)
+function vilageFcstBase() {
+  const now = new Date();
+  // 안전마진 위해 base 시각보다 30분 이상 지난 가장 최근 발표시각 사용
+  const candidates = [2, 5, 8, 11, 14, 17, 20, 23];
+  const cutoff = new Date(now.getTime() - 30 * 60 * 1000);
+  const cy = cutoff.getFullYear();
+  const cmo = cutoff.getMonth();
+  const cd = cutoff.getDate();
+  const ch = cutoff.getHours();
+  let base = null;
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    if (ch >= candidates[i]) {
+      base = new Date(cy, cmo, cd, candidates[i], 0, 0);
+      break;
+    }
+  }
+  if (!base) {
+    // 새벽 02시 이전 → 어제 23시 발표
+    const yest = new Date(cy, cmo, cd - 1, 23, 0, 0);
+    base = yest;
+  }
+  return {
+    base_date: base.getFullYear() + pad(base.getMonth()+1) + pad(base.getDate()),
+    base_time: pad(base.getHours()) + '00'
+  };
+}
+
+// 초단기실황 base_time: 매시 40분 이후부터 해당 시각 사용 가능
+function ultraNcstBase() {
+  const now = new Date();
+  const safe = new Date(now.getTime() - 40 * 60 * 1000);
+  return {
+    base_date: safe.getFullYear() + pad(safe.getMonth()+1) + pad(safe.getDate()),
+    base_time: pad(safe.getHours()) + '00'
+  };
+}
+
+/* ============================================================
+   API 호출 (모두 fetch JSON)
+   ============================================================ */
+async function fetchKmaUltraNcst(nx, ny) {
+  const { base_date, base_time } = ultraNcstBase();
+  const url = `${KMA_BASE}/getUltraSrtNcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('초단기실황 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('초단기실황: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items.item;
+}
+
+async function fetchKmaVilageFcst(nx, ny) {
+  const { base_date, base_time } = vilageFcstBase();
+  const url = `${KMA_BASE}/getVilageFcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('단기예보 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('단기예보: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items.item;
+}
+
+// 시도별 실시간 측정값 → 측정소 이름으로 필터
+async function fetchAirBySido(sidoName) {
+  const url = `${AIR_BASE}/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=200&pageNo=1&sidoName=${encodeURIComponent(sidoName)}&ver=1.0`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('대기질 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('대기질: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+// TM 좌표 변환 (주소 → TM)
+async function fetchTmCoord(umdName) {
+  const url = `${STN_BASE}/getTMStdrCrdnt?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=10&pageNo=1&umdName=${encodeURIComponent(umdName)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('TM좌표 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('TM좌표: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+// 근접 측정소
+async function fetchNearbyStation(tmX, tmY) {
+  const url = `${STN_BASE}/getNearbyMsrstnList?serviceKey=${SERVICE_KEY}&returnType=json&tmX=${tmX}&tmY=${tmY}&ver=1.1`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('근접측정소 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('근접측정소: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+/* ============================================================
+   캐시 헬퍼
+   ============================================================ */
+function getCache(key, maxAge) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (Date.now() - o.t > maxAge) return null;
+    return o.v;
+  } catch { return null; }
+}
+function setCache(key, value) {
+  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value })); } catch {}
+}
+
+/* ============================================================
+   데이터 정규화
+   ============================================================ */
+function parseKmaItems(ncstItems, fcstItems) {
+  // 현재값 (실황)
+  const now = {};
+  ncstItems.forEach(it => { now[it.category] = parseFloat(it.obsrValue); });
+  // T1H 기온, REH 습도, RN1 강수량, PTY 강수형태, WSD 풍속
+
+  // 예보 (시간별)
+  // SKY: 1맑음 3구름많음 4흐림 / PTY: 0없음 1비 2비/눈 3눈 4소나기
+  // POP: 강수확률 / TMP: 1시간 기온
+  const fcstByTime = {};
+  fcstItems.forEach(it => {
+    const k = it.fcstDate + it.fcstTime; // YYYYMMDDHHMM
+    if (!fcstByTime[k]) fcstByTime[k] = { fcstDate: it.fcstDate, fcstTime: it.fcstTime };
+    fcstByTime[k][it.category] = it.fcstValue;
+  });
+  const hourly = Object.keys(fcstByTime).sort().map(k => fcstByTime[k]);
+
+  return { now, hourly };
+}
+
+function parseAirForStation(items, stationName) {
+  if (!items || !items.length) return null;
+  const found = items.find(it => it.stationName === stationName);
+  if (found) return normalizeAir(found);
+  // fallback: 첫번째 측정소 (시도 평균 못 잡으면)
+  return normalizeAir(items[0]);
+}
+
+function normalizeAir(it) {
+  const num = (v) => {
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  };
+  return {
+    stationName: it.stationName,
+    dataTime: it.dataTime,
+    pm10: num(it.pm10Value),
+    pm25: num(it.pm25Value),
+    o3: num(it.o3Value),
+    no2: num(it.no2Value),
+    co: num(it.coValue),
+    so2: num(it.so2Value),
+    pm10Grade: it.pm10Grade ? parseInt(it.pm10Grade) : null,
+    pm25Grade: it.pm25Grade ? parseInt(it.pm25Grade) : null,
+    khaiValue: num(it.khaiValue),
+    khaiGrade: it.khaiGrade ? parseInt(it.khaiGrade) : null
+  };
+}
+
+// 측정소 응답이 유효한지 (PM 결측 아닌지)
+function validAirItem(it) {
+  const v25 = parseFloat(it.pm25Value);
+  const v10 = parseFloat(it.pm10Value);
+  return !isNaN(v25) || !isNaN(v10);
+}
+
+// PM 농도 → 등급 (환경부 기준)
+function pm25Grade(v) {
+  if (v == null || isNaN(v)) return null;
+  if (v <= 15) return 1;
+  if (v <= 35) return 2;
+  if (v <= 75) return 3;
+  return 4;
+}
+function pm10Grade(v) {
+  if (v == null || isNaN(v)) return null;
+  if (v <= 30) return 1;
+  if (v <= 80) return 2;
+  if (v <= 150) return 3;
+  return 4;
+}
+
+// 시도 전체 평균 계산 (가장 보편적인 표시값)
+function computeSidoAverage(items, sidoName) {
+  const valid = items.filter(validAirItem);
+  if (!valid.length) return null;
+
+  const avg = (key) => {
+    const vals = valid.map(it => parseFloat(it[key])).filter(v => !isNaN(v));
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  };
+
+  const pm25 = avg('pm25Value');
+  const pm10 = avg('pm10Value');
+  const o3 = avg('o3Value');
+  const khai = avg('khaiValue');
+
+  return {
+    stationName: sidoName + ' 평균',
+    dataTime: valid[0].dataTime,
+    pm10: pm10 != null ? Math.round(pm10) : null,
+    pm25: pm25 != null ? Math.round(pm25) : null,
+    o3: o3,
+    no2: avg('no2Value'),
+    co: avg('coValue'),
+    so2: avg('so2Value'),
+    pm10Grade: pm10Grade(pm10),
+    pm25Grade: pm25Grade(pm25),
+    khaiValue: khai != null ? Math.round(khai) : null,
+    khaiGrade: pm25Grade(pm25) // 통합지수 등급은 PM2.5 등급으로 대체 (단순화)
+  };
+}
+
+/* ============================================================
+   판단 로직
+   ============================================================ */
+const SKY_MAP = { 1: '맑음', 3: '구름많음', 4: '흐림' };
+const PTY_MAP = { 0: '없음', 1: '비', 2: '비/눈', 3: '눈', 4: '소나기', 5: '빗방울', 6: '빗방울눈날림', 7: '눈날림' };
+
+function emojiFor(sky, pty) {
+  const ptyN = parseInt(pty || 0);
+  const skyN = parseInt(sky || 1);
+  if (ptyN === 1 || ptyN === 4 || ptyN === 5) return '🌧️';
+  if (ptyN === 2 || ptyN === 6) return '🌨️';
+  if (ptyN === 3 || ptyN === 7) return '❄️';
+  if (skyN === 1) {
+    const h = new Date().getHours();
+    if (h < 6 || h >= 19) return '🌙';
+    return '☀️';
+  }
+  if (skyN === 3) return '⛅';
+  if (skyN === 4) return '☁️';
+  return '🌤';
+}
+
+function gradeText(g) {
+  return ['', '좋음', '보통', '나쁨', '매우나쁨'][g] || '-';
+}
+
+// 향후 N시간 예보 슬라이스
+function nextHours(hourly, n = 12) {
+  const now = new Date();
+  const nowKey = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + pad(now.getHours()) + '00';
+  return hourly.filter(h => (h.fcstDate + h.fcstTime) >= nowKey).slice(0, n);
+}
+
+// 일별 요약 (오늘/내일/모레/글피)
+function dailySummary(hourly) {
+  // fcstDate 기준으로 그룹핑
+  const byDate = {};
+  hourly.forEach(h => {
+    const d = h.fcstDate;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(h);
+  });
+
+  const today = new Date();
+  const todayStr = today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate());
+
+  const dates = Object.keys(byDate).sort();
+  const result = [];
+
+  for (const d of dates) {
+    const items = byDate[d];
+
+    // 최고/최저 기온: TMX/TMN이 일별 한 번씩만 있음, 없으면 TMP에서 계산
+    let tmax = null, tmin = null;
+    items.forEach(h => {
+      if (h.TMX != null) {
+        const v = parseFloat(h.TMX);
+        if (!isNaN(v)) tmax = v;
+      }
+      if (h.TMN != null) {
+        const v = parseFloat(h.TMN);
+        if (!isNaN(v)) tmin = v;
+      }
+    });
+    // fallback: TMP 시간별 값에서 min/max
+    if (tmax == null || tmin == null) {
+      const tmps = items.map(h => parseFloat(h.TMP)).filter(v => !isNaN(v));
+      if (tmps.length) {
+        if (tmax == null) tmax = Math.max(...tmps);
+        if (tmin == null) tmin = Math.min(...tmps);
+      }
+    }
+
+    // 최대 강수확률
+    const pops = items.map(h => parseInt(h.POP || 0)).filter(v => !isNaN(v));
+    const maxPop = pops.length ? Math.max(...pops) : 0;
+
+    // 대표 하늘상태 (낮 시간 12~15시 우선, 없으면 가장 빈번한 값)
+    const dayItems = items.filter(h => {
+      const hh = parseInt(h.fcstTime.substring(0,2));
+      return hh >= 12 && hh <= 15;
+    });
+    const refItems = dayItems.length ? dayItems : items;
+    // PTY 우선 (강수형태 있으면 그게 대표)
+    let ptyMode = null, skyMode = null;
+    const ptyCount = {}, skyCount = {};
+    refItems.forEach(h => {
+      const p = parseInt(h.PTY || 0);
+      if (p > 0) ptyCount[p] = (ptyCount[p] || 0) + 1;
+      const s = parseInt(h.SKY || 1);
+      skyCount[s] = (skyCount[s] || 0) + 1;
+    });
+    const ptyKeys = Object.keys(ptyCount);
+    if (ptyKeys.length) {
+      ptyMode = ptyKeys.reduce((a, b) => ptyCount[a] >= ptyCount[b] ? a : b);
+    }
+    const skyKeys = Object.keys(skyCount);
+    if (skyKeys.length) {
+      skyMode = skyKeys.reduce((a, b) => skyCount[a] >= skyCount[b] ? a : b);
+    }
+
+    // 라벨
+    const dateObj = new Date(parseInt(d.substring(0,4)), parseInt(d.substring(4,6))-1, parseInt(d.substring(6,8)));
+    const diffDays = Math.round((dateObj - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (24*60*60*1000));
+    let label;
+    if (diffDays === 0) label = '오늘';
+    else if (diffDays === 1) label = '내일';
+    else if (diffDays === 2) label = '모레';
+    else if (diffDays === 3) label = '글피';
+    else label = (dateObj.getMonth()+1) + '/' + dateObj.getDate();
+
+    const dayOfWeek = ['일','월','화','수','목','금','토'][dateObj.getDay()];
+
+    result.push({
+      date: d,
+      label,
+      dayOfWeek,
+      tmax: tmax != null ? Math.round(tmax) : null,
+      tmin: tmin != null ? Math.round(tmin) : null,
+      maxPop,
+      sky: skyMode,
+      pty: ptyMode,
+      isPast: d < todayStr
+    });
+  }
+
+  // 오늘 포함 4일 (오늘/내일/모레/글피)
+  return result.filter(r => !r.isPast).slice(0, 4);
+}
+
+// "챙길 것" 판단
+function decidePack(hourly, air) {
+  const next12 = nextHours(hourly, 12);
+  // 우산: 향후 12시간 중 강수확률 50% 이상 OR 강수형태 발생 OR 강수량 발생
+  let umbrella = false;
+  let umbrellaReason = '';
+  let maxPop = 0;
+  for (const h of next12) {
+    const pop = parseInt(h.POP || 0);
+    const pty = parseInt(h.PTY || 0);
+    if (pop > maxPop) maxPop = pop;
+    if (pop >= 50 || pty > 0) {
+      umbrella = true;
+    }
+  }
+  if (umbrella) {
+    umbrellaReason = `오늘 비 가능성 (최대 ${maxPop}%)`;
+  } else if (maxPop > 0) {
+    umbrellaReason = `오늘 강수확률 낮음 (최대 ${maxPop}%)`;
+  } else {
+    umbrellaReason = '오늘 비 예보 없음';
+  }
+
+  // 마스크: PM2.5 ≥ 36(나쁨) OR PM10 ≥ 81(나쁨)
+  let mask = false;
+  let maskReason = '';
+  let maskHtml = ''; // HTML 버전 (수치 강조용)
+  if (air) {
+    const bad25 = (air.pm25 != null && air.pm25 >= 36) || air.pm25Grade >= 3;
+    const bad10 = (air.pm10 != null && air.pm10 >= 81) || air.pm10Grade >= 3;
+    const fmt = (v) => v == null ? '-' : v;
+    const pm25Html = `<b class="pm-num">PM<sub>2.5</sub> <em>${fmt(air.pm25)}</em></b>`;
+    const pm10Html = `<b class="pm-num">PM<sub>10</sub> <em>${fmt(air.pm10)}</em></b>`;
+    const gradeSpan = (g) => `<span class="pm-grade g${g || 1}">${gradeText(g)}</span>`;
+    if (bad25 || bad10) {
+      mask = true;
+    }
+    maskHtml = `${pm25Html} ${gradeSpan(air.pm25Grade)} · ${pm10Html} ${gradeSpan(air.pm10Grade)}`;
+    maskReason = maskHtml; // 호환
+  } else {
+    maskReason = '대기질 정보 없음';
+    maskHtml = '대기질 정보 없음';
+  }
+
+  return { umbrella, umbrellaReason, mask, maskReason, maskHtml };
+}
+
+// 환기 판단
+function decideVent(hourly, air) {
+  const next3 = nextHours(hourly, 3);
+  const willRain = next3.some(h => parseInt(h.PTY || 0) > 0);
+  const highPop = next3.some(h => parseInt(h.POP || 0) >= 50);
+
+  if (!air) return { state: 'maybe', head: '판단 어려움', desc: '대기질 정보 없음' };
+
+  const fmt = (v) => v == null ? '-' : v;
+  const pm25Html = `PM<sub>2.5</sub> <em>${fmt(air.pm25)}</em>`;
+  const pm10Html = `PM<sub>10</sub> <em>${fmt(air.pm10)}</em>`;
+
+  const pm25Bad = (air.pm25 != null && air.pm25 > 35) || air.pm25Grade >= 3;
+  const pm10Bad = (air.pm10 != null && air.pm10 > 80) || air.pm10Grade >= 3;
+
+  if (pm25Bad || pm10Bad) {
+    return {
+      state: 'no',
+      head: '환기 비추천',
+      desc: `미세먼지 나쁨 · ${pm25Html} · ${pm10Html}`
+    };
+  }
+  if (willRain) {
+    return { state: 'maybe', head: '곧 비 예보', desc: `${pm25Html} · ${pm10Html} · 비 오기 전 잠깐만` };
+  }
+  if (highPop) {
+    return { state: 'maybe', head: '비 가능성', desc: `${pm25Html} · ${pm10Html} · 짧게 환기` };
+  }
+  return {
+    state: 'ok',
+    head: '환기 좋아요',
+    desc: `${pm25Html} · ${pm10Html} · 비 없음`
+  };
+}
+
+/* ============================================================
+   렌더
+   ============================================================ */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render(loc, weather, air) {
+  const { now, hourly } = weather;
+
+  const t1h = parseFloat(now.T1H);
+  const reh = parseFloat(now.REH);
+  const wsd = parseFloat(now.WSD);
+  const pty = now.PTY;
+
+  // 현재 SKY는 실황엔 없고 예보에서 가까운 시각 SKY 가져옴
+  const sortedHourly = hourly;
+  const nowDate = new Date();
+  const nowKey = nowDate.getFullYear() + pad(nowDate.getMonth()+1) + pad(nowDate.getDate()) + pad(nowDate.getHours()) + '00';
+  const closestFcst = sortedHourly.find(h => (h.fcstDate + h.fcstTime) >= nowKey) || sortedHourly[0] || {};
+  const sky = closestFcst.SKY || 1;
+  const nowEmoji = emojiFor(sky, pty);
+  const skyText = parseInt(pty) > 0 ? PTY_MAP[parseInt(pty)] : SKY_MAP[parseInt(sky)] || '';
+
+  const pack = decidePack(hourly, air);
+  const vent = decideVent(hourly, air);
+
+  // 시간별 12시간
+  const hourCells = nextHours(hourly, 12).map((h, i) => {
+    const hh = parseInt(h.fcstTime.substring(0, 2));
+    const isFirst = i === 0;
+    const emo = emojiFor(h.SKY, h.PTY);
+    const tmp = h.TMP != null ? Math.round(parseFloat(h.TMP)) : '-';
+    const pop = parseInt(h.POP || 0);
+    return `
+      <div class="hour-cell ${isFirst ? 'now-cell' : ''}">
+        <div class="h-time">${isFirst ? '지금' : hh + '시'}</div>
+        <div class="h-emoji">${emo}</div>
+        <div class="h-temp">${tmp}°</div>
+        <div class="h-pop">${pop >= 30 ? '💧' + pop + '%' : ''}</div>
+      </div>`;
+  }).join('');
+
+  // 3일 예보 카드 (오늘 포함, 단기예보는 글피까지 가능)
+  const days = dailySummary(hourly);
+  let dailyHtml = '';
+  if (days.length >= 2) {
+    const dayRows = days.map(d => {
+      const emo = emojiFor(d.sky, d.pty);
+      const tmaxStr = d.tmax != null ? `${d.tmax}°` : '-';
+      const tminStr = d.tmin != null ? `${d.tmin}°` : '-';
+      const popHtml = d.maxPop >= 30 ? `<span class="day-pop">💧 ${d.maxPop}%</span>` : '';
+      return `
+        <div class="day-row ${d.label === '오늘' ? 'today' : ''}">
+          <div class="day-label">
+            <div class="day-name">${d.label}</div>
+            <div class="day-dow">${d.dayOfWeek}</div>
+          </div>
+          <div class="day-emoji">${emo}</div>
+          <div class="day-pop-wrap">${popHtml}</div>
+          <div class="day-temps">
+            <span class="t-min">${tminStr}</span>
+            <span class="t-sep"></span>
+            <span class="t-max">${tmaxStr}</span>
+          </div>
+        </div>`;
+    }).join('');
+    dailyHtml = `
+      <div class="card">
+        <div class="card-title">📅 ${days.length}일 예보</div>
+        <div class="day-list">${dayRows}</div>
+      </div>`;
+  }
+
+  const updTime = `${pad(nowDate.getHours())}:${pad(nowDate.getMinutes())} 기준`;
+  document.getElementById('updTime').textContent = updTime;
+
+  // 위치 표시
+  document.getElementById('locName').textContent = loc.name;
+
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <!-- 현재 -->
+    <div class="now">
+      <div class="emoji">${nowEmoji}</div>
+      <div class="temp">${isNaN(t1h) ? '-' : Math.round(t1h)}<span class="deg">°</span></div>
+      <div class="sky-text">${skyText}</div>
+      <div class="sub">
+        <span>💧 습도 <b>${isNaN(reh) ? '-' : Math.round(reh)}%</b></span>
+        <span>💨 바람 <b>${isNaN(wsd) ? '-' : wsd.toFixed(1)}m/s</b></span>
+      </div>
+    </div>
+
+    <!-- 챙길 것 -->
+    <div class="card pack-card">
+      <div class="card-title">🎒 챙기세요</div>
+      <div class="pack-list">
+        <div class="pack-item ${pack.umbrella ? '' : 'muted'}">
+          <div class="ico">☂️</div>
+          <div class="text">
+            <div class="main">${pack.umbrella ? '우산 챙기세요' : '우산 불필요'}</div>
+            <div class="sub">${escapeHtml(pack.umbrellaReason)}</div>
+          </div>
+        </div>
+        <div class="pack-item ${pack.mask ? '' : 'muted'}">
+          <div class="ico">😷</div>
+          <div class="text">
+            <div class="main">${pack.mask ? '마스크 챙기세요' : '마스크 불필요'}</div>
+            <div class="sub">${pack.maskHtml}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 환기 -->
+    <div class="card vent-card">
+      <div class="card-title">💨 환기</div>
+      <div class="vent-main">
+        <div class="vent-circle ${vent.state}">${vent.state === 'ok' ? '✓' : vent.state === 'no' ? '✕' : '~'}</div>
+        <div class="vent-text">
+          <div class="head">${escapeHtml(vent.head)}</div>
+          <div class="desc">${vent.desc}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간별 -->
+    <div class="card">
+      <div class="card-title">⏰ 시간별 예보</div>
+      <div class="hourly-scroll">${hourCells}</div>
+    </div>
+
+    <!-- 3일 예보 -->
+    ${dailyHtml}
+
+    <!-- 대기질 -->
+    <div class="card">
+      <div class="card-title">🌫 대기질 ${air ? '· ' + escapeHtml(air.stationName) : ''}</div>
+      ${air ? `
+      <div class="air-grid">
+        <div class="air-tile">
+          <div class="label">초미세먼지 PM2.5</div>
+          <div class="val">${air.pm25 ?? '-'}</div>
+          <span class="grade grade-${air.pm25Grade || 0}">${gradeText(air.pm25Grade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">미세먼지 PM10</div>
+          <div class="val">${air.pm10 ?? '-'}</div>
+          <span class="grade grade-${air.pm10Grade || 0}">${gradeText(air.pm10Grade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">통합대기지수</div>
+          <div class="val">${air.khaiValue ?? '-'}</div>
+          <span class="grade grade-${air.khaiGrade || 0}">${gradeText(air.khaiGrade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">오존 O₃</div>
+          <div class="val">${air.o3 != null ? air.o3.toFixed(3) : '-'}</div>
+          <span class="grade grade-1">ppm</span>
+        </div>
+      </div>
+      ` : `<div style="color:#7E8B96; font-size:13px;">대기질 정보를 불러올 수 없어요.</div>`}
+    </div>
+  `;
+  // 애니메이션을 렌더 직후 한 번만 실행 (다음 프레임에 클래스 부착)
+  requestAnimationFrame(() => {
+    contentEl.querySelectorAll('.card, .now').forEach(el => el.classList.add('anim'));
+  });
+}
+
+/* ============================================================
+   메인 흐름
+   ============================================================ */
+async function loadAndRender(loc, force = false) {
+  document.getElementById('content').innerHTML = `
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🌤</div>
+      ${escapeHtml(loc.name)} 정보를 불러오는 중<span class="dots"></span>
+    </div>`;
+
+  document.getElementById('locName').textContent = loc.name;
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.classList.add('spinning');
+
+  try {
+    // 캐시 키
+    const wxKey = LS_WX_PREFIX + loc.nx + '_' + loc.ny;
+    const airKey = LS_AIR_PREFIX + loc.sido + '_' + (loc.sgg || '');
+
+    // 날씨
+    let weather;
+    if (!force) weather = getCache(wxKey, WX_CACHE_MS);
+    if (!weather) {
+      const [ncstItems, fcstItems] = await Promise.all([
+        fetchKmaUltraNcst(loc.nx, loc.ny),
+        fetchKmaVilageFcst(loc.nx, loc.ny)
+      ]);
+      weather = parseKmaItems(ncstItems, fcstItems);
+      setCache(wxKey, weather);
+    }
+
+    // 대기질 (시도별 호출 후 측정소 매칭)
+    let air = null;
+    let airList;
+    if (!force) airList = getCache(airKey, AIR_CACHE_MS);
+    if (!airList) {
+      try {
+        airList = await fetchAirBySido(loc.sido);
+        setCache(airKey, airList);
+      } catch (e) {
+        console.warn('대기질 로드 실패', e);
+      }
+    }
+    if (airList && airList.length) {
+      // 측정소 매칭 우선순위:
+      // 1) sgg와 정확히 일치 (예: 서울 종로구 → "종로구")
+      // 2) 우선 매칭 테이블 (도시별 대표 측정소)
+      // 3) sgg를 포함하는 측정소
+      // 4) GPS면 위경도 거리 기반 (loc.lat/lon이 있는 경우 → 측정소정보 호출은 비용 ↑이라 일단 생략)
+      // 5) 시도 전체 평균값 계산 (네이버/에어코리아 표시 방식과 가까움)
+
+      // 도시별 대표 측정소 (시군구명이 측정소명과 다른 경우)
+      const STATION_OVERRIDE = {
+        '세종': ['신흥동', '아름동', '전의', '조치원', '연기'],
+        '제주': ['이도동', '연동', '노형'],
+        '서귀포': ['동홍동'],
+      };
+
+      let target = null;
+
+      // 1) 정확 일치
+      target = airList.find(it => it.stationName === loc.sgg);
+
+      // 2) 오버라이드 테이블 우선순위로 검색
+      if (!target && STATION_OVERRIDE[loc.sgg]) {
+        for (const stnName of STATION_OVERRIDE[loc.sgg]) {
+          target = airList.find(it => it.stationName === stnName && validAirItem(it));
+          if (target) break;
+        }
+      }
+
+      // 3) 부분 일치 (단, 의미있는 매칭 - sgg 길이 2 이상일 때만)
+      if (!target && loc.sgg && loc.sgg.length >= 2) {
+        target = airList.find(it => it.stationName && it.stationName.includes(loc.sgg) && validAirItem(it));
+      }
+
+      // 4) 시도 평균값 계산 (가장 합리적인 fallback)
+      if (target) {
+        air = normalizeAir(target);
+      } else {
+        air = computeSidoAverage(airList, loc.sido);
+      }
+    }
+
+    render(loc, weather, air);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('content').innerHTML = `
+      <div class="err-box">
+        <span class="err-emoji">😢</span>
+        <div>날씨를 불러오지 못했어요.</div>
+        <div style="font-size:12px; color:#A0AEB8; margin-top:6px;">${escapeHtml(e.message || 'unknown')}</div>
+        <button onclick="window.__retry()">다시 시도</button>
+      </div>`;
+    window.__retry = () => loadAndRender(loc, true);
+  } finally {
+    refreshBtn.classList.remove('spinning');
+  }
+}
+
+/* ============================================================
+   GPS → 위치 변환 (위경도 거리 기반, 외부 API 0번)
+   ============================================================ */
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+async function resolveByGps() {
+  if (!navigator.geolocation) throw new Error('GPS 미지원 브라우저');
+  const pos = await new Promise((res, rej) => {
+    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000, maximumAge: 5*60*1000, enableHighAccuracy: false });
+  });
+  const { latitude, longitude, accuracy } = pos.coords;
+  const { nx, ny } = dfsXyConv(latitude, longitude);
+
+  // 위경도 실거리 기반으로 가장 가까운 시군구 찾기
+  let nearest = CITIES[0];
+  let bestKm = Infinity;
+  for (const c of CITIES) {
+    const km = haversineKm(latitude, longitude, c.lat, c.lon);
+    if (km < bestKm) { bestKm = km; nearest = c; }
+  }
+
+  return {
+    name: nearest.name,
+    nx, ny,
+    lat: latitude,
+    lon: longitude,
+    accuracy: Math.round(accuracy),
+    distKm: bestKm.toFixed(1),
+    sido: nearest.sido,
+    sgg: nearest.sgg,
+    isGps: true
+  };
+}
+
+/* ============================================================
+   UI 핸들러
+   ============================================================ */
+function showModal() {
+  document.getElementById('modal').classList.add('show');
+  // 모달 열 때 history에 상태 추가 → 뒤로가기 시 페이지 종료가 아니라 모달만 닫힘
+  if (!history.state || !history.state.modal) {
+    history.pushState({ modal: true }, '');
+  }
+  // 모달 열릴 때 입력창 자동 포커스 (모바일에서 키보드는 약간 지연 후)
+  setTimeout(() => {
+    const inp = document.getElementById('citySearch');
+    if (inp) inp.focus();
+  }, 250);
+}
+function hideModal() {
+  const el = document.getElementById('modal');
+  if (!el.classList.contains('show')) return;
+  el.classList.remove('show');
+  // 만약 history에 modal 상태가 있다면 빼냄 (사용자가 X/배경 클릭으로 닫은 경우)
+  if (history.state && history.state.modal) {
+    history.back();
+  }
+}
+
+// 뒤로가기 이벤트: 모달이 열려있으면 모달만 닫음
+window.addEventListener('popstate', () => {
+  const el = document.getElementById('modal');
+  if (el.classList.contains('show')) {
+    el.classList.remove('show');
+  }
+});
+
+function renderCityList(filter) {
+  const cur = getSavedLoc();
+  const q = (filter || '').trim();
+  // 정규화: 공백 제거, 소문자
+  const norm = s => s.replace(/\s+/g, '').toLowerCase();
+  const qn = norm(q);
+
+  let list;
+  if (!qn) {
+    list = CITIES;
+  } else {
+    list = CITIES.filter(c => {
+      return norm(c.name).includes(qn)
+          || norm(c.sido).includes(qn)
+          || norm(c.sgg).includes(qn);
+    });
+  }
+
+  document.getElementById('cityListCount').textContent = list.length;
+  document.getElementById('cityListTitle').firstChild.textContent = qn ? '검색 결과 (' : '전체 도시 (';
+
+  const listEl = document.getElementById('cityList');
+  if (!list.length) {
+    listEl.innerHTML = `<div class="city-empty">"${escapeHtml(q)}"에 해당하는 도시가 없어요</div>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(c => {
+    const isActive = cur && !cur.isGps && cur.name === c.name;
+    return `
+      <div class="city-row ${isActive ? 'active' : ''}" data-name="${escapeHtml(c.name)}">
+        <span>${escapeHtml(c.name)}</span>
+        <span class="sido-tag">${escapeHtml(c.sido)}</span>
+      </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('.city-row').forEach(el => {
+    el.addEventListener('click', () => {
+      const c = CITIES.find(x => x.name === el.dataset.name);
+      if (!c) return;
+      // GPS 정보 제거하고 도시로 저장
+      saveLoc({ name: c.name, nx: c.nx, ny: c.ny, sido: c.sido, sgg: c.sgg, lat: c.lat, lon: c.lon, isGps: false });
+      hideModal();
+      loadAndRender(getSavedLoc());
+    });
+  });
+}
+
+function getSavedLoc() {
+  try { return JSON.parse(localStorage.getItem(LS_LOC) || 'null'); } catch { return null; }
+}
+function saveLoc(loc) { localStorage.setItem(LS_LOC, JSON.stringify(loc)); }
+
+document.getElementById('locBtn').addEventListener('click', () => {
+  document.getElementById('citySearch').value = '';
+  document.getElementById('searchClear').classList.remove('show');
+  renderCityList('');
+  showModal();
+});
+document.getElementById('modal').addEventListener('click', hideModal);
+
+// 검색 핸들러
+const searchInput = document.getElementById('citySearch');
+const searchClear = document.getElementById('searchClear');
+searchInput.addEventListener('input', (e) => {
+  const v = e.target.value;
+  if (v) searchClear.classList.add('show');
+  else searchClear.classList.remove('show');
+  renderCityList(v);
+});
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.classList.remove('show');
+  searchInput.focus();
+  renderCityList('');
+});
+// Enter 누르면 첫 번째 결과 선택
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const first = document.querySelector('#cityList .city-row');
+    if (first) first.click();
+  }
+});
+
+// 토스트 표시
+let _toastTimer = null;
+function showToast(msg, ms = 3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, ms);
+}
+
+document.getElementById('gpsBtn').addEventListener('click', async () => {
+  hideModal();
+  // 로딩 표시는 헤더 위치명만 살짝 바꿈 (기존 컨텐츠는 유지)
+  const prevLocName = document.getElementById('locName').textContent;
+  document.getElementById('locName').textContent = 'GPS 찾는 중…';
+
+  try {
+    const loc = await resolveByGps();
+    saveLoc(loc);
+    loadAndRender(loc);
+  } catch (e) {
+    // 헤더 위치명 복구
+    document.getElementById('locName').textContent = prevLocName;
+    // 토스트로 안내
+    showToast('GPS를 불러올 수 없으니 직접 도시를 선택해주세요');
+    console.warn('GPS 실패:', e.message || e);
+  }
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  const loc = getSavedLoc();
+  if (loc) loadAndRender(loc, true);
+});
+
+/* ============================================================
+   시작
+   ============================================================ */
+(function init() {
+  const saved = getSavedLoc();
+  if (saved) {
+    loadAndRender(saved);
+  } else {
+    // 첫 진입: 서울 중구 기본
+    const def = CITIES.find(c => c.name === '서울 중구') || CITIES[0];
+    const loc = { name: def.name, nx: def.nx, ny: def.ny, sido: def.sido, sgg: def.sgg, lat: def.lat, lon: def.lon, isGps: false };
+    saveLoc(loc);
+    loadAndRender(loc);
+  }
+})();
+</script>
+</body>
+</html>

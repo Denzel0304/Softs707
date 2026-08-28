@@ -422,6 +422,7 @@
       <div class="mp_status_dot" id="mp_status_dot"></div>
       <span id="mp_status_text">로컬 저장소</span>
     </div>
+    <span id="mp_import_date" style="font-size:11px;color:var(--text-muted);"></span>
     <span id="mp_total_count" style="font-size:11px;">0개</span>
   </div>
 
@@ -437,6 +438,7 @@
           <input type="checkbox" id="mp_chk_id"> 아이디
         </label>
       </div>
+      <span id="mp_search_count" style="margin-left:auto;font-size:11px;color:var(--sky-mid);font-weight:700;white-space:nowrap;"></span>
     </div>
   </div>
 
@@ -658,12 +660,17 @@ let S = {
   _skipPop: false
 };
 
+const MP_IMPORT_KEY = 'mp_last_import_v1';
+
 /* ── STORAGE ── */
 function mpSave() { localStorage.setItem(MP_KEY, JSON.stringify(S.items)); }
 function mpLoad() {
   try { S.items = JSON.parse(localStorage.getItem(MP_KEY) || '[]'); }
   catch { S.items = []; }
 }
+function mpSaveImportTime() { localStorage.setItem(MP_IMPORT_KEY, Date.now().toString()); }
+function mpLoadImportTime() { return parseInt(localStorage.getItem(MP_IMPORT_KEY) || '0') || 0; }
+function mpClearImportTime() { localStorage.removeItem(MP_IMPORT_KEY); }
 
 /* ── HELPERS ── */
 function esc(s) {
@@ -798,11 +805,15 @@ function applyFilter() {
           || (i.url||'').toLowerCase().includes(q);
     }
     // 체크된 필드들에서 AND 검색
-    // (둘 다 체크 → 두 필드 모두에서 q를 찾아야 함)
-    const urlOk = chkUrl  ? (i.url||'').toLowerCase().includes(q) : true;
-    const idOk  = chkId   ? ((i.email||'').toLowerCase().includes(q) || (i.username||'').toLowerCase().includes(q)) : true;
+    const urlOk = chkUrl ? (i.url||'').toLowerCase().includes(q) : true;
+    const idOk  = chkId  ? ((i.email||'').toLowerCase().includes(q) || (i.username||'').toLowerCase().includes(q)) : true;
     return urlOk && idOk;
   });
+
+  // 검색 결과 갯수 표시
+  const countEl = document.getElementById('mp_search_count');
+  if (countEl) countEl.textContent = q ? `${S.filtered.length}개` : '';
+
   renderList();
   updateStatusBar();
 }
@@ -842,13 +853,27 @@ function renderList() {
   });
 }
 
+function fmtImportDate(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const yy = d.getFullYear();
+  const mo = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `가져오기 ${yy}.${mo}.${dd} ${hh}:${mi}`;
+}
+
 function updateStatusBar() {
   const dot = document.getElementById('mp_status_dot');
   const txt = document.getElementById('mp_status_text');
   const total = document.getElementById('mp_total_count');
+  const importDate = document.getElementById('mp_import_date');
   dot.className = S.items.length ? 'mp_status_dot' : 'mp_status_dot empty';
-  txt.textContent = `로컬 저장소`;
+  txt.textContent = '로컬 저장소';
   total.textContent = `${S.items.length}개`;
+  const ts = mpLoadImportTime();
+  importDate.textContent = fmtImportDate(ts);
 }
 
 /* ── HISTORY / BACK ── */
@@ -1065,6 +1090,7 @@ async function deleteAll() {
   if (!ok) return;
   S.items = [];
   mpSave();
+  mpClearImportTime();
   S.activeVault = '__all__';
   applyFilter();
   renderTabs();
@@ -1184,11 +1210,11 @@ async function importCSV(file) {
 
   S.items = sortItems(S.items);
   mpSave();
-  // 첫 import면 첫 vault로 이동
+  mpSaveImportTime();
   if (S.activeVault!=='__all__' && !getVaults().includes(S.activeVault)) S.activeVault='__all__';
   applyFilter();
   renderTabs();
-  toast(`임포트 완료: 신규 ${added}개, 업데이트 ${updated}개, 변동없음 ${skipped}개`);
+  toast(`가져오기 완료: 신규 ${added}개, 업데이트 ${updated}개, 변동없음 ${skipped}개`);
 }
 
 /* ── EXPORT ── */

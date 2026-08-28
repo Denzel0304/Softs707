@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<title>하루 감정</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;touch-action:none;}
+body{font-family:'Gamja Flower',cursive;background:#fdf6ee;overscroll-behavior:none;}
+:root{
+  --cream:#fdf6ee;--warm1:#f5e6d3;--warm2:#e8c9a8;
+  --brown1:#c9956a;--brown2:#8b6347;--brown3:#5a3e2b;
+  --text1:#3d2b1f;--text2:#7a5c47;--text3:#b89880;
+  --font-round:'Gamja Flower',cursive;--font-body:'Gamja Flower',cursive;
+}
+#app{width:100%;max-width:430px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--cream);overflow:hidden;position:relative;}
+.header{padding:13px 20px 9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--cream);border-bottom:1px solid var(--warm2);position:relative;}
+.header h1{font-size:22px;font-weight:400;color:var(--brown2);letter-spacing:3px;font-family:var(--font-round);display:flex;align-items:center;gap:8px;}
+.header-icon{font-size:22px;line-height:1;}
+.header-date{position:absolute;right:16px;font-size:15px;font-weight:700;color:var(--brown2);line-height:1.3;text-align:right;}
+.tabs{display:flex;flex-shrink:0;background:var(--warm1);border-bottom:2px solid var(--warm2);}
+.tab{flex:1;padding:11px 0;text-align:center;font-size:16px;font-weight:400;color:var(--text3);cursor:pointer;transition:all 0.2s;position:relative;font-family:var(--font-round);letter-spacing:1px;}
+.tab.active{color:var(--brown2);background:var(--cream);}
+.tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--brown1);}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.tab-panel{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0;}
+.tab-panel.active{display:flex;}
+.input-area{padding:11px 12px;background:var(--warm1);border-bottom:1px solid var(--warm2);flex-shrink:0;}
+.input-row{display:flex;gap:7px;align-items:center;}
+.type-select{border:1.5px solid var(--warm2);border-radius:20px;padding:10px 10px 8px 10px;font-size:15px;font-family:var(--font-round);background:#fff;color:var(--brown3);outline:none;cursor:pointer;min-width:82px;flex-shrink:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23b89880'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;line-height:1.5;}
+.emotion-input{flex:1;min-width:0;border:1.5px solid var(--warm2);border-radius:20px;padding:9px 14px;font-size:16px;font-family:var(--font-round);background:#fff;color:var(--text1);outline:none;transition:border-color 0.2s;}
+.emotion-input:focus{border-color:var(--brown1);}
+.add-btn{width:42px;height:42px;border-radius:50%;background:var(--brown1);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,transform 0.1s;line-height:1;}
+.add-btn:active{background:var(--brown2);transform:scale(0.93);}
+.tree-area{flex:1;overflow:hidden;position:relative;user-select:none;}
+#tree-svg{width:100%;height:100%;display:block;touch-action:none;}
+#delete-zone{position:absolute;bottom:0;left:0;right:0;height:72px;display:flex;align-items:center;justify-content:center;background:transparent;border-top:2px dashed transparent;transition:all 0.25s;pointer-events:none;font-size:14px;color:#c62828;font-family:var(--font-round);letter-spacing:1px;opacity:0;}
+#delete-zone.active{background:rgba(255,210,210,0.6);border-top-color:#e88;opacity:1;}
+#delete-zone.over{background:rgba(255,150,150,0.78);border-top-color:#c62828;}
+#drag-ghost{position:fixed;pointer-events:none;z-index:9999;display:none;transform:translate(-50%,-60%);}
+.drag-hint{position:absolute;top:7px;left:0;right:0;text-align:center;font-size:11px;color:var(--text3);font-family:var(--font-round);opacity:0;transition:opacity 0.4s;pointer-events:none;}
+.drag-hint.show{opacity:1;}
+.scroll-panel{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 14px 24px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+.period-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 14px;background:var(--warm1);border-radius:12px;border:1px solid var(--warm2);}
+.nav-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--warm2);background:#fff;color:var(--brown2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.nav-btn:active{background:var(--warm2);}
+.nav-btn:disabled{opacity:0.3;cursor:default;}
+.period-label{font-size:15px;color:var(--brown2);text-align:center;font-family:var(--font-round);}
+.period-sub{font-size:11px;color:var(--text3);text-align:center;margin-top:2px;}
+.summary-card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--warm2);}
+.summary-title{font-size:14px;color:var(--text3);margin-bottom:8px;}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.badge{padding:5px 12px;border-radius:20px;font-size:14px;font-weight:700;}
+.badge-pos{background:#e8f5e9;color:#2e7d32;}
+.badge-neg{background:#fce4ec;color:#c62828;}
+.summary-comment{font-size:15px;color:var(--brown2);line-height:1.6;font-family:var(--font-round);}
+.chart-card{background:#fff;border-radius:14px;padding:14px 12px 10px;margin-bottom:12px;border:1px solid var(--warm2);}
+.chart-card-title{font-size:15px;font-weight:700;color:var(--brown2);margin-bottom:12px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.bar-label{width:70px;font-size:14px;color:var(--text2);text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;background:var(--warm1);border-radius:8px;height:24px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;min-width:20px;}
+.bar-num{font-size:13px;font-weight:700;color:var(--brown3);}
+.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.time-cell{background:var(--warm1);border-radius:8px;padding:9px 4px;text-align:center;border:1px solid transparent;}
+.time-cell.has-data{border-color:var(--warm2);}
+.time-cell-label{font-size:13px;color:var(--text3);display:block;margin-bottom:3px;font-family:var(--font-round);}
+.time-cell-count{font-size:19px;font-weight:700;}
+.no-data{text-align:center;color:var(--text3);font-size:16px;padding:60px 0;font-family:var(--font-round);}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header"><button onclick="confirmReset()" style="position:absolute;left:12px;background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">🗑️</button>
+    <h1><span class="header-icon">🌳</span>하루 감정</h1>
+    <span class="header-date" id="header-date"></span>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="today" onclick="switchTab('today')">오늘</div>
+    <div class="tab" data-tab="week" onclick="switchTab('week')">이번 주</div>
+    <div class="tab" data-tab="month" onclick="switchTab('month')">이번 달</div>
+  </div>
+  <div class="content">
+    <div class="tab-panel active" id="panel-today">
+      <div class="input-area">
+        <div class="input-row">
+          <input class="emotion-input" id="emotion-input" placeholder="지금 감정은?" maxlength="8"/>
+          <select class="type-select" id="emotion-type">
+            <option value="+">😊 긍정</option>
+            <option value="-">😔 부정</option>
+          </select>
+          <button class="add-btn" onclick="addEmotion()">+</button>
+        </div>
+      </div>
+      <div class="tree-area" id="tree-area">
+        <div class="drag-hint" id="drag-hint">길게 눌러 아래로 드래그하면 삭제돼요</div>
+        <canvas id="leaf-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;"></canvas>
+        <svg id="tree-svg" viewBox="0 0 390 540" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:1;"></svg>
+        <div id="delete-zone">🗑 여기로 드래그하면 삭제돼요</div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-week">
+      <div class="scroll-panel">
+        <div class="period-nav">
+          <button class="nav-btn" id="week-prev" onclick="changeWeek(-1)">‹</button>
+          <div><div class="period-label" id="week-label"></div><div class="period-sub" id="week-sub"></div></div>
+          <button class="nav-btn" id="week-next" onclick="changeWeek(1)">›</button>
+        </div>
+        <div id="week-content"></div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-month">
+      <div class="scroll-panel">
+        <div class="period-nav">
+          <button class="nav-btn" id="month-prev" onclick="changeMonth(-1)">‹</button>
+          <div><div class="period-label" id="month-label"></div><div class="period-sub" id="month-sub"></div></div>
+          <button class="nav-btn" id="month-next" onclick="changeMonth(1)">›</button>
+        </div>
+        <div id="month-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<svg id="drag-ghost" width="80" height="80" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<script>
+(function(){
+'use strict';
+const SK='haruemotion_v4';
+const SK_DATE='haruemotion_lastdate';
+let records=[];
+function loadData(){
+  try{const s=localStorage.getItem(SK);if(s)records=JSON.parse(s);}catch(e){records=[];}
+  midnightRollover();
+}
+function saveData(){pruneOldData();try{localStorage.setItem(SK,JSON.stringify(records));localStorage.setItem(SK_DATE,todayStr());}catch(e){}}
+
+// 자정 롤오버: 마지막 저장일 != 오늘이면 어제 열매를 오늘 날짜로 복사(count:0), 어제 기록은 그대로 보존
+function midnightRollover(){
+  const today=todayStr();
+  const lastDate=localStorage.getItem(SK_DATE);
+  // 이미 오늘 날짜로 롤오버됐거나, 첫 실행이면 스킵
+  if(!lastDate||lastDate===today)return;
+  // lastDate 기준 살아있던 열매(삭제 안 된 것)를 오늘 날짜로 복사
+  const prevFruits=records.filter(r=>r.date===lastDate&&r.deletedAt!==lastDate);
+  prevFruits.forEach(fr=>{
+    // 오늘 날짜에 같은 slot이 이미 없을 때만 복사
+    const already=records.some(r=>r.date===today&&r.slot===fr.slot);
+    if(!already){
+      records.push({
+        date:today,
+        label:fr.label,
+        type:fr.type,
+        count:0,
+        times:[],
+        ts:Date.now(),
+        slot:fr.slot,
+        colorIdx:fr.colorIdx
+      });
+    }
+  });
+  localStorage.setItem(SK_DATE,today);
+  try{localStorage.setItem(SK,JSON.stringify(records));}catch(e){}
+}
+
+// 앱이 켜진 채로 자정을 넘길 때 자동 롤오버
+function scheduleNextMidnight(){
+  const now=new Date();
+  const next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,1);
+  const ms=next-now;
+  setTimeout(function(){
+    midnightRollover();
+    drawTree();
+    // 헤더 날짜 갱신
+    const d=new Date(),days=['일','월','화','수','목','금','토'];
+    document.getElementById('header-date').innerHTML=`${d.getMonth()+1}월 ${d.getDate()}일<br><span style="font-size:13px;color:var(--text3)">${days[d.getDay()]}요일</span>`;
+    scheduleNextMidnight();
+  },ms);
+}
+function pruneOldData(){const c=new Date();c.setFullYear(c.getFullYear()-1);const cs=dStr(c);records=records.filter(r=>r.date>=cs);}
+loadData();
+
+function dStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${day}`;}
+function todayStr(){return dStr(new Date());}
+function parseDate(s){return new Date(s+'T00:00:00');}
+function weekRange(off){
+  const now=new Date(),day=now.getDay();
+  // 월~일 기준. 일요일(0)은 주의 마지막(+6)으로 처리
+  const diffToMon=day===0?-6:-(day-1);
+  const mon=new Date(now);mon.setDate(now.getDate()+diffToMon+off*7);mon.setHours(0,0,0,0);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);sun.setHours(23,59,59,999);
+  return{start:mon,end:sun};
+}
+function monthRange(y,m){return{start:new Date(y,m,1),end:new Date(y,m+1,0)};}
+
+let weekOffset=0,monthYear=new Date().getFullYear(),monthMonth=new Date().getMonth();
+
+(function(){
+  const now=new Date(),days=['일','월','화','수','목','금','토'];
+  const el=document.getElementById('header-date');
+  el.innerHTML=`${now.getMonth()+1}월 ${now.getDate()}일<br><span style="font-size:13px;color:var(--text3)">${days[now.getDay()]}요일</span>`;
+})();
+
+window.switchTab=function(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='week'){weekOffset=0;renderWeek();}
+  if(tab==='month'){monthYear=new Date().getFullYear();monthMonth=new Date().getMonth();renderMonth();}
+};
+
+function getTodayEmotions(){const t=todayStr();return records.filter(r=>r.date===t&&r.deletedAt!==t);}
+
+window.addEmotion=function(){
+  const input=document.getElementById('emotion-input');
+  const type=document.getElementById('emotion-type').value;
+  const label=input.value.trim();
+  if(!label)return;
+  const td=todayStr(),hour=new Date().getHours();
+  const todayList=getTodayEmotions();
+  if(todayList.length>=13){alert('오늘 열매는 최대 13개까지 달 수 있어요 🌳');return;}
+  // 이미 같은 이름+타입이 있어도 무조건 새 열매로 추가
+  const usedSlots=new Set(todayList.map(r=>r.slot));
+  let freeSlot=-1;
+  for(let i=0;i<13;i++){if(!usedSlots.has(i)){freeSlot=i;break;}}
+  if(freeSlot<0)return;
+  const colorIdx=freeSlot%7;
+  // count:0 — 열매 생성 자체는 카운트 아님. 탭할 때 1이 됨
+  records.push({date:td,label,type,count:0,times:[],ts:Date.now(),slot:freeSlot,colorIdx});
+  saveData();input.value='';drawTree();
+  const h=document.getElementById('drag-hint');
+  h.classList.add('show');setTimeout(()=>h.classList.remove('show'),3500);
+};
+
+/* === DRAG-TO-DELETE === */
+let dragState=null,longPressTimer=null;
+
+function startLP(e,label,type,slot){
+  const t=e.touches?e.touches[0]:e;
+  longPressTimer=setTimeout(()=>{
+    dragState={label,type,slot,moved:false};
+    showDZ(true);updateGhost(t.clientX,t.clientY,label,type);
+    document.getElementById('drag-ghost').style.display='block';
+    if(navigator.vibrate)navigator.vibrate(40);
+  },480);
+}
+function cancelLP(){if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}}
+function showDZ(v){document.getElementById('delete-zone').classList.toggle('active',v);}
+function overDZ(cy){const r=document.getElementById('delete-zone').getBoundingClientRect();return cy>=r.top;}
+function updateGhost(cx,cy,label,type){
+  const g=document.getElementById('drag-ghost');
+  g.style.left=cx+'px';g.style.top=cy+'px';
+  const col=type==='+'?'#b5d99c':'#f5b8b8';
+  g.innerHTML=`<circle cx="40" cy="40" r="34" fill="${col}" opacity="0.92"/>
+    <text x="40" y="45" text-anchor="middle" font-size="13" fill="#3d2b1f" font-family="'Gamja Flower',cursive">${label}</text>`;
+}
+
+const treeArea=document.getElementById('tree-area');
+treeArea.addEventListener('touchstart',function(e){
+  const el=e.target.closest('[data-fruit]');
+  if(!el)return;
+  startLP(e,el.dataset.fruit,el.dataset.type,el.dataset.slot);
+},{passive:true});
+treeArea.addEventListener('touchmove',function(e){
+  if(!dragState){cancelLP();return;}
+  e.preventDefault();
+  const t=e.touches[0];
+  dragState.moved=true;
+  updateGhost(t.clientX,t.clientY,dragState.label,dragState.type);
+  document.getElementById('delete-zone').classList.toggle('over',overDZ(t.clientY));
+},{passive:false});
+treeArea.addEventListener('touchend',function(e){
+  cancelLP();
+  if(!dragState)return;
+  document.getElementById('drag-ghost').style.display='none';
+  const t=e.changedTouches[0];
+  if(dragState.moved&&overDZ(t.clientY)){
+    deleteFruit(dragState.label,dragState.type,dragState.slot);
+  }
+  // 단순 탭은 여기서 처리 안 함 — click 이벤트 위임이 처리
+  dragState=null;showDZ(false);
+  document.getElementById('delete-zone').classList.remove('over');
+},{passive:true});
+treeArea.addEventListener('touchcancel',function(){
+  cancelLP();
+  if(dragState){document.getElementById('drag-ghost').style.display='none';showDZ(false);dragState=null;}
+},{passive:true});
+
+// 클릭 이벤트 위임 (터치/마우스 모두 처리, 단 드래그 중엔 무시)
+treeArea.addEventListener('click',function(e){
+  if(dragState)return;
+  const el=e.target.closest('[data-fruit]');
+  if(!el)return;
+  clickFruit(el.dataset.fruit,el.dataset.type,el.dataset.slot);
+});
+
+function clickFruit(label,type,slot){
+  const today=todayStr();
+  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type&&r.slot===parseInt(slot)&&r.deletedAt!==today);
+  if(!rec)return;
+  rec.count=(rec.count||0)+1;
+  rec.times=rec.times||[];rec.times.push(new Date().getHours());
+  saveData();drawTree();
+}
+window.clickFruitDesktop=clickFruit;
+
+function deleteFruit(label,type,slot){
+  const today=todayStr();
+  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type&&r.slot===parseInt(slot)&&r.deletedAt!==today);
+  if(!rec)return;
+  // 오늘 열매만 삭제 플래그. 과거 날짜 기록은 건드리지 않아 이번주/달 통계 보존
+  rec.deletedAt=today;
+  saveData();drawTree();
+}
+
+/* === TREE === */
+const PP=['#b5d99c','#aec6e8','#f5e4a0','#d4b8e8','#a8d8c8','#f5c2a8','#c8e0b8'];
+const NP=['#f5b8b8','#d4a8c8','#e8c4a8','#c8a8d8','#f5d0a8','#b8c8e8','#e8b8c8'];
+const R=34; // 고정 반지름
+
+// 슬롯 13개: 중심간 최소 거리 R*2+14=82 이상, 나뭇잎 안에 균형 배치
+const FIXED_SLOTS=[
+  {x:195,y:112},   // 0: 꼭대기 중앙
+  {x:118,y:168},   // 1: 좌상
+  {x:272,y:163},   // 2: 우상
+  {x:195,y:205},   // 3: 중앙 상
+  {x:76, y:248},   // 4: 좌중
+  {x:314,y:242},   // 5: 우중
+  {x:152,y:262},   // 6: 좌중하
+  {x:238,y:258},   // 7: 우중하
+  {x:195,y:308},   // 8: 중앙 중하
+  {x:94, y:326},   // 9: 좌하
+  {x:296,y:321},   // 10: 우하
+  {x:152,y:362},   // 11: 좌 최하
+  {x:238,y:358},   // 12: 우 최하
+];
+
+function drawTree(){
+  const svg=document.getElementById('tree-svg');
+  const fruits=getTodayEmotions();
+  let o='';
+
+  // 그림자
+  o+=`<ellipse cx="195" cy="494" rx="82" ry="13" fill="#d4c4a8" opacity="0.3"/>`;
+  // 줄기
+  o+=`<path d="M174,496 C175,430 179,368 181,328" stroke="#c8a97a" stroke-width="26" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M216,496 C215,430 211,368 209,328" stroke="#b8956a" stroke-width="19" fill="none" stroke-linecap="round"/>`;
+  // 가지
+  o+=`<path d="M181,328 C158,286 122,242 84,198" stroke="#c8a97a" stroke-width="12" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M196,302 C220,260 258,226 296,194" stroke="#c8a97a" stroke-width="11" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M183,344 C150,328 115,306 82,268" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M207,340 C242,324 278,304 308,268" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M190,275 C192,234 191,192 192,152" stroke="#c8a97a" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M192,165 C172,148 145,135 118,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M192,165 C214,148 240,135 264,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+
+  // 잎사귀
+  [
+    {cx:195,cy:255,rx:155,ry:138,op:0.17,c:'#5fa85f'},
+    {cx:148,cy:232,rx:135,ry:120,op:0.19,c:'#6ab86a'},
+    {cx:244,cy:228,rx:132,ry:118,op:0.19,c:'#6ab86a'},
+    {cx:195,cy:218,rx:145,ry:128,op:0.23,c:'#78c878'},
+    {cx:162,cy:200,rx:118,ry:106,op:0.27,c:'#88d288'},
+    {cx:230,cy:196,rx:115,ry:103,op:0.27,c:'#88d288'},
+    {cx:195,cy:178,rx:128,ry:114,op:0.30,c:'#96dc96'},
+    {cx:172,cy:164,rx:100,ry:90, op:0.28,c:'#a4e0a4'},
+    {cx:220,cy:161,rx:97, ry:87, op:0.28,c:'#a4e0a4'},
+    {cx:195,cy:142,rx:102,ry:92, op:0.32,c:'#b0e6b0'},
+    {cx:176,cy:128,rx:78, ry:70, op:0.28,c:'#bceabc'},
+    {cx:215,cy:125,rx:75, ry:67, op:0.28,c:'#bceabc'},
+    {cx:195,cy:110,rx:65, ry:58, op:0.30,c:'#c6eec6'},
+  ].forEach(f=>o+=`<ellipse cx="${f.cx}" cy="${f.cy}" rx="${f.rx}" ry="${f.ry}" fill="${f.c}" opacity="${f.op}"/>`);
+
+  // 열매: onclick 없음 — 터치/클릭은 이벤트 위임으로만 처리
+  fruits.forEach((fr)=>{
+    const si=typeof fr.slot==='number'?fr.slot:0;
+    if(si>=FIXED_SLOTS.length)return;
+    const p=FIXED_SLOTS[si];
+    const ci=typeof fr.colorIdx==='number'?fr.colorIdx:(si%7);
+    const col=fr.type==='+'?PP[ci]:NP[ci];
+    const tcol=fr.type==='+'?'#2e7d32':'#c62828';
+    const tc=fr.type==='+'?'+':'−';
+    const le=fr.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&apos;');
+    // 줄기
+    o+=`<line x1="${p.x}" y1="${p.y-R}" x2="${p.x+5}" y2="${p.y-R-14}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
+    // 히트박스 — onclick 제거, data 속성만 (이벤트 위임으로 처리)
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}" data-slot="${si}"/>`;
+    // 열매 본체
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R}" fill="${col}" stroke="rgba(0,0,0,0.06)" stroke-width="1" pointer-events="none"/>`;
+    // 텍스트: 볼드, 글자수별 크기
+    const ll=fr.label.length;
+    const fs=ll<=1?22:ll===2?19:16;
+    o+=`<text x="${p.x}" y="${p.y+fs*0.38}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#3d2b1f" font-family="'Gamja Flower',cursive" pointer-events="none">${fr.label}</text>`;
+    // +/- 뱃지
+    o+=`<circle cx="${p.x-R+12}" cy="${p.y-R+12}" r="12" fill="${fr.type==='+'?'#c8e6c9':'#ffcdd2'}" pointer-events="none"/>`;
+    o+=`<text x="${p.x-R+12}" y="${p.y-R+17}" text-anchor="middle" font-size="14" fill="${tcol}" font-weight="700" pointer-events="none">${tc}</text>`;
+    // 카운트 뱃지: 항상 표시 (0부터 시작)
+    const badgeCol=fr.type==='+'?'#2e7d32':'#c62828';
+    const cnt2=fr.count||0;
+    o+=`<circle cx="${p.x+R-11}" cy="${p.y-R+11}" r="13" fill="${badgeCol}" pointer-events="none"/>`;
+    o+=`<text x="${p.x+R-11}" y="${p.y-R+16}" text-anchor="middle" font-size="12" fill="white" font-weight="700" pointer-events="none">${cnt2>99?'99+':cnt2}</text>`;
+  });
+
+  svg.innerHTML=o;
+}
+
+/* === STATS === */
+window.changeWeek=function(d){weekOffset=Math.max(-51,Math.min(0,weekOffset+d));renderWeek();};
+window.changeMonth=function(d){
+  monthMonth+=d;
+  if(monthMonth>11){monthMonth=0;monthYear++;}
+  if(monthMonth<0){monthMonth=11;monthYear--;}
+  const now=new Date(),mY=now.getFullYear()-1,mM=now.getMonth();
+  if(monthYear<mY||(monthYear===mY&&monthMonth<mM)){monthMonth=mM;monthYear=mY;}
+  if(monthYear>now.getFullYear()||(monthYear===now.getFullYear()&&monthMonth>now.getMonth())){monthMonth=now.getMonth();monthYear=now.getFullYear();}
+  renderMonth();
+};
+
+function getRange(s,e){const ss=dStr(s),ee=dStr(e);return records.filter(r=>{if(r.date<ss||r.date>ee)return false;if(r.deletedAt&&r.deletedAt===r.date)return false;return true;});}
+function buildEM(recs){
+  const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=(r.count||0);});
+  return Object.values(m).sort((a,b)=>b.count-a.count);
+}
+function buildDD(recs,days){
+  return days.map(day=>{
+    const it=recs.filter(r=>r.date===day);
+    return{day,p:it.filter(r=>r.type==='+').reduce((a,r)=>a+(r.count||0),0),n:it.filter(r=>r.type==='-').reduce((a,r)=>a+(r.count||0),0)};
+  });
+}
+function buildHD(recs){
+  return [{label:'새벽',h:[0,1,2,3,4,5]},{label:'오전',h:[6,7,8,9,10,11]},{label:'낮',h:[12,13,14,15,16,17]},{label:'저녁',h:[18,19,20,21,22,23]}].map(s=>{
+    let p=0,n=0;recs.forEach(r=>{(r.times||[]).forEach(h=>{if(s.h.includes(h)){if(r.type==='+')p++;else n++;}});});
+    return{label:s.label,p,n,total:p+n};
+  });
+}
+
+function renderStats(recs,days){
+  if(!recs.length)return '<div class="no-data">이 기간엔 기록된 감정이 없어요 🌱</div>';
+  let pos=0,neg=0;recs.forEach(r=>{if(r.type==='+')pos+=(r.count||0);else neg+=(r.count||0);});
+  const tot=pos+neg;
+  const pr=tot>0?Math.round(pos/tot*100):0,nr=tot>0?(100-pr):0;
+  const cmt=pos>neg*1.5?'긍정적인 감정이 풍부했던 기간이에요 🌸':neg>pos*1.5?'힘든 감정이 많았어요. 수고 많으셨어요 💙':'긍정과 부정이 균형을 이뤘어요 🌿';
+  let html=`<div class="summary-card"><div class="summary-title">감정 요약</div>
+    <div class="badge-row"><span class="badge badge-pos">긍정 ${pos}회 (${pr}%)</span><span class="badge badge-neg">부정 ${neg}회 (${nr}%)</span></div>
+    <div class="summary-comment">${cmt}</div></div>`;
+  const el=buildEM(recs),mc=Math.max(...el.map(e=>e.count),1);
+  html+=`<div class="chart-card"><div class="chart-card-title">감정별 기록 횟수</div>`;
+  el.forEach(e=>{
+    const pct=Math.max(14,Math.round(e.count/mc*100)),col=e.type==='+'?'#b5d99c':'#f5b8b8';
+    html+=`<div class="bar-row"><div class="bar-label">${e.label}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col};"><span class="bar-num">${e.count}</span></div></div></div>`;
+  });
+  html+=`</div>`;
+  const dd=buildDD(recs,days);
+  if(dd.some(d=>d.p>0||d.n>0)){
+    const mv=Math.max(...dd.map(d=>Math.max(d.p,d.n)),1);
+    const CW=340,CH=162,PL=28,PR=14,PT=14,PB=28,W=CW-PL-PR,H=CH-PT-PB,n=days.length;
+    const sx=n>1?W/(n-1):W/2,tx=i=>PL+i*sx,ty=v=>PT+H-(v/mv*H);
+    const yt=[...new Set([0,Math.round(mv/2),mv])];
+    let pp='',np='',pc='',nc='',xl='';
+    dd.forEach((d,i)=>{
+      pp+=(i===0?'M':'L')+tx(i).toFixed(1)+','+ty(d.p).toFixed(1);
+      np+=(i===0?'M':'L')+tx(i).toFixed(1)+','+ty(d.n).toFixed(1);
+      if(d.p>0||d.n>0){pc+=`<circle cx="${tx(i).toFixed(1)}" cy="${ty(d.p).toFixed(1)}" r="3.5" fill="#7db87d"/>`;nc+=`<circle cx="${tx(i).toFixed(1)}" cy="${ty(d.n).toFixed(1)}" r="3.5" fill="#e8a0a0"/>`;}
+      if(i===0||i===n-1||i%Math.max(1,Math.floor(n/5))===0){
+        const dd2=parseDate(d.day),lb=days.length<=7?['월','화','수','목','금','토','일'][(dd2.getDay()+6)%7]:dd2.getDate()+'일';
+        xl+=`<text x="${tx(i).toFixed(1)}" y="${(PT+H+16).toFixed(1)}" text-anchor="middle" font-size="10" fill="#b89880" font-family="'Gamja Flower',cursive">${lb}</text>`;
+      }
+    });
+    const ytl=yt.map(v=>`<line x1="${PL}" y1="${ty(v).toFixed(1)}" x2="${PL+W}" y2="${ty(v).toFixed(1)}" stroke="#f0ddd0" stroke-width="1"/><text x="${PL-4}" y="${(ty(v)+4).toFixed(1)}" text-anchor="end" font-size="10" fill="#b89880" font-family="'Gamja Flower',cursive">${v}</text>`).join('');
+    html+=`<div class="chart-card"><div class="chart-card-title">날짜별 감정 추이</div><div style="overflow-x:auto;"><svg width="${CW}" height="${CH}" viewBox="0 0 ${CW} ${CH}" style="display:block;min-width:${CW}px;">${ytl}<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+H}" stroke="#e8cdb8" stroke-width="1"/><line x1="${PL}" y1="${PT+H}" x2="${PL+W}" y2="${PT+H}" stroke="#e8cdb8" stroke-width="1"/><path d="${pp}" fill="none" stroke="#7db87d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="${np}" fill="none" stroke="#e8a0a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pc}${nc}${xl}<circle cx="${PL+W-52}" cy="${PT+9}" r="5" fill="#7db87d"/><text x="${PL+W-44}" y="${PT+13}" font-size="11" fill="#7db87d" font-family="'Gamja Flower',cursive">긍정</text><circle cx="${PL+W-16}" cy="${PT+9}" r="5" fill="#e8a0a0"/><text x="${PL+W-8}" y="${PT+13}" font-size="11" fill="#e8a0a0" font-family="'Gamja Flower',cursive">부정</text></svg></div></div>`;
+  }
+  const hd=buildHD(recs),mh=Math.max(...hd.map(h=>h.total),1);
+  html+=`<div class="chart-card"><div class="chart-card-title">시간대별 감정 기록</div><div class="time-grid">`;
+  hd.forEach(h=>{
+    const bg=h.total===0?'#f5ebe0':`rgba(180,210,160,${0.15+Math.round(h.total/mh*100)/100*0.7})`;
+    const pc2=h.p>=h.n?'#2e7d32':'#c62828';
+    html+=`<div class="time-cell ${h.total>0?'has-data':''}" style="background:${bg};"><span class="time-cell-label">${h.label}</span><span class="time-cell-count" style="color:${h.total>0?pc2:'#c4a992'}">${h.total||'·'}</span></div>`;
+  });
+  html+=`</div></div>`;return html;
+}
+
+function renderWeek(){
+  const {start,end}=weekRange(weekOffset),m1=start.getMonth()+1,d1=start.getDate(),m2=end.getMonth()+1,d2=end.getDate();
+  document.getElementById('week-label').textContent=weekOffset===0?'이번 주':`${start.getFullYear()}년 ${m1}월`;
+  document.getElementById('week-sub').textContent=`${m1}/${d1} – ${m2}/${d2}`;
+  document.getElementById('week-prev').disabled=weekOffset<=-51;
+  document.getElementById('week-next').disabled=weekOffset>=0;
+  const days=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))days.push(dStr(new Date(d)));
+  document.getElementById('week-content').innerHTML=renderStats(getRange(start,end),days);
+}
+function renderMonth(){
+  const {start,end}=monthRange(monthYear,monthMonth),now=new Date();
+  const isCur=monthYear===now.getFullYear()&&monthMonth===now.getMonth();
+  document.getElementById('month-label').textContent=isCur?'이번 달':`${monthYear}년 ${monthMonth+1}월`;
+  document.getElementById('month-sub').textContent=`${monthYear}.${String(monthMonth+1).padStart(2,'0')}`;
+  const mY=now.getFullYear()-1,mM=now.getMonth();
+  document.getElementById('month-prev').disabled=monthYear<mY||(monthYear===mY&&monthMonth<=mM);
+  document.getElementById('month-next').disabled=isCur;
+  const days=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))days.push(dStr(new Date(d)));
+  document.getElementById('month-content').innerHTML=renderStats(getRange(start,end),days);
+}
+
+document.getElementById('emotion-input').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addEmotion();}});
+document.querySelectorAll('.scroll-panel').forEach(el=>el.addEventListener('touchmove',function(e){e.stopPropagation();},{passive:true}));
+
+drawTree();
+scheduleNextMidnight();
+
+window.confirmReset=function(){
+  if(confirm("저장된 모든 감정 기록을 삭제할까요?\n이 작업은 되돌릴 수 없어요.")){
+    localStorage.removeItem("haruemotion_v4");
+    localStorage.removeItem("haruemotion_lastdate");
+    records=[];
+    drawTree();
+    alert("초기화 완료! 새로 시작해요 🌱");
+  }
+};
+})();
+</script>
+</body>
+</html>
+
+<script>
+/* ===== 낙엽 애니메이션 ===== */
+(function(){
+  const canvas=document.getElementById('leaf-canvas');
+  const ctx=canvas.getContext('2d');
+  const area=document.getElementById('tree-area');
+
+  function resize(){
+    canvas.width=area.clientWidth;
+    canvas.height=area.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  const COLORS=['#78c878','#96dc96','#a4e0a4','#b5d99c','#88d288','#6ab86a','#bceabc','#c6eec6'];
+
+  function drawLeaf(x,y,size,angle,alpha,color){
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(x,y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.ellipse(0,0,size*0.42,size*0.22,0,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-size*0.38,0);ctx.lineTo(size*0.38,0);
+    ctx.strokeStyle='rgba(60,120,60,0.35)';
+    ctx.lineWidth=0.7;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const MAX_LEAVES=18;
+  const MAX_PILE=40;
+  let leaves=[];
+  let pile=[];
+
+  function spawnLeaf(){
+    if(leaves.length>=MAX_LEAVES)return;
+    const w=canvas.width;
+    const x=w*0.18+Math.random()*w*0.64;
+    const y=canvas.height*0.05+Math.random()*canvas.height*0.42;
+    leaves.push({
+      x,y,
+      vx:(Math.random()-0.5)*0.5,
+      vy:0.35+Math.random()*0.45,
+      angle:Math.random()*Math.PI*2,
+      va:(Math.random()-0.5)*0.04,
+      swing:Math.random()*Math.PI*2,
+      swingSpeed:0.018+Math.random()*0.018,
+      swingAmp:0.6+Math.random()*0.9,
+      size:7+Math.random()*7,
+      alpha:0.55+Math.random()*0.3,
+      color:COLORS[Math.floor(Math.random()*COLORS.length)],
+    });
+  }
+
+  let frameCount=0;
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    frameCount++;
+    if(frameCount%90===0){spawnLeaf();}
+    const floor=canvas.height-14;
+    pile.forEach(p=>drawLeaf(p.x,p.y,p.size,p.angle,p.alpha*0.65,p.color));
+    leaves=leaves.filter(l=>{
+      l.swing+=l.swingSpeed;
+      l.x+=l.vx+Math.sin(l.swing)*l.swingAmp*0.3;
+      l.y+=l.vy;
+      l.angle+=l.va;
+      if(l.y>=floor){
+        l.y=floor;
+        if(pile.length<MAX_PILE)pile.push({x:l.x,y:l.y,size:l.size,angle:l.angle,alpha:l.alpha,color:l.color});
+        return false;
+      }
+      drawLeaf(l.x,l.y,l.size,l.angle,l.alpha,l.color);
+      return true;
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+</script>

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dollar Trade</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #10b981;
+    --primary-light: #a7f3d0;
+    --primary-dark: #059669;
+    --primary-bg: #f0fdf9;
+    --accent: #34d399;
+    --surface: #FFFFFF;
+    --surface2: #f0fdf9;
+    --border: #6ee7b7;
+    --border-light: #d1fae5;
+    --text: #0f2d24;
+    --text2: #4b7a68;
+    --text3: #84b0a0;
+    --danger: #EF4444;
+    --success: #059669;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(16,185,129,0.10);
+    --shadow-md: 0 8px 32px rgba(16,185,129,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; font-family: 'Pretendard', sans-serif; background: var(--primary-bg); color: var(--text); overflow: hidden; }
+
+  /* ── APP SHELL ── */
+  #app { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; background: var(--surface); position: relative; overflow: hidden; }
+
+  /* ── HEADER ── */
+  header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); padding: 14px 20px 0; border-bottom: none; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .logo { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+  .logo-icon { font-size: 30px; }
+  /* Gear button */
+  .gear-wrap { position: relative; }
+  .gear-btn { width: 38px; height: 38px; border-radius: 50%; background: #ffffff; border: none; color: var(--primary-dark); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .gear-btn:active { background: #f0fdf9; transform: rotate(30deg); }
+  .gear-menu { position: absolute; top: 46px; right: 0; background: #ffffff; border: 1.5px solid #e2f5ef; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; min-width: 150px; opacity: 0; pointer-events: none; transform: translateY(-8px) scale(0.96); transition: all 0.18s cubic-bezier(0.32,0.72,0,1); z-index: 50; }
+  .gear-menu.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+  .gear-menu-item { display: flex; align-items: center; gap: 9px; padding: 13px 16px; font-size: 14px; font-weight: 600; color: #1a3a2e; cursor: pointer; transition: background 0.1s; white-space: nowrap; }
+  .gear-menu-item:not(:last-child) { border-bottom: 1px solid #e8f8f1; }
+  .gear-menu-item:active { background: #f3fdf8; }
+  /* hide old actions */
+  .header-actions { display: none; }
+  .icon-btn { display: none; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 6px; background: transparent; border-radius: 12px 12px 0 0; padding: 6px 6px 0; }
+  .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; background: #6ea8f0; color: #ffffff; }
+  .tab[data-tab="done"] { background: #e07070; color: #ffffff; }
+  .tab.active { background: #ffffff; color: #555555; border-bottom-color: transparent; font-weight: 700; }
+  .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; background: rgba(255,255,255,0.3); color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
+  .tab.active .tab-badge { background: #e0e0e0; color: #555555; }
+
+  /* ── LIST AREA ── */
+  .list-area { flex: 1; overflow-y: auto; padding: 16px 16px 100px; -webkit-overflow-scrolling: touch; }
+  .list-area::-webkit-scrollbar { display: none; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 12px; color: var(--text3); }
+  .empty-icon { font-size: 48px; opacity: 0.4; }
+  .empty-text { font-size: 15px; font-weight: 500; }
+  .empty-sub { font-size: 13px; }
+
+  /* ── TRADE CARD ── */
+  .trade-card { background: var(--surface); border: 1.5px solid #34d399; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 8px rgba(16,185,129,0.06); position: relative; }
+  .trade-card:active { transform: scale(0.985); box-shadow: var(--shadow); }
+  .trade-card-left { flex: 1; min-width: 0; }
+  .trade-card-date { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  /* Buy card main row */
+  .trade-card-buy-row { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; flex-wrap: nowrap; }
+  .buy-field { display: flex; flex-direction: column; align-items: flex-start; }
+  .buy-field-label { font-size: 10px; color: var(--text3); font-weight: 600; margin-bottom: 1px; }
+  .buy-field-val { font-size: 14px; font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .buy-field-val.total { color: var(--primary-dark); }
+  .buy-field-sep { width: 1px; height: 28px; background: var(--border-light); align-self: center; flex-shrink: 0; }
+  /* Done card */
+  .trade-card-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 5px; }
+  .info-cell { display: flex; flex-direction: column; }
+  .info-label { font-size: 10px; color: var(--text3); font-weight: 600; }
+  .info-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; }
+  .info-val.total { color: var(--primary-dark); }
+  .info-val.pnl-positive { color: #e03131; }
+  .info-val.pnl-negative { color: #1971c2; }
+  .del-btn { width: 30px; height: 30px; border-radius: 8px; background: #FEE2E2; border: none; color: var(--danger); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+  .del-btn:active { transform: scale(0.9); background: #FECACA; }
+
+  /* Completed card extras */
+  .trade-card.completed { border-color: #D1FAE5; background: #F0FDF4; }
+
+  /* ── FAB ── */
+  .fab { position: absolute; bottom: 28px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--primary-dark)); border: none; color: #fff; font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,0.45); transition: all 0.2s; z-index: 10; }
+  .fab:active { transform: scale(0.92); }
+
+  /* ── OVERLAY ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s; display: flex; align-items: flex-end; justify-content: center; max-width: 480px; margin: 0 auto; }
+  .overlay.visible { opacity: 1; pointer-events: all; }
+
+  /* ── BOTTOM SHEET ── */
+  .sheet { background: var(--surface); border-radius: 22px 22px 0 0; width: 100%; padding: 0 0 env(safe-area-inset-bottom, 16px); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); max-height: 92dvh; overflow-y: auto; }
+  .sheet::-webkit-scrollbar { display: none; }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px; }
+  .sheet-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .sheet-close { width: 30px; height: 30px; border-radius: 8px; background: var(--primary-bg); border: 1.5px solid var(--border); color: var(--text2); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* ── FORM ── */
+  .sheet-body { padding: 8px 20px 20px; }
+  .form-section { margin-bottom: 20px; }
+  .form-section-title { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border-light); border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); background: var(--primary-bg); outline: none; transition: border-color 0.15s; }
+  .form-input:focus { border-color: var(--primary); background: #fff; }
+  .date-btn { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border-light); border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); background: var(--primary-bg); text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.15s; }
+  .date-btn:active { border-color: var(--primary); }
+  .date-btn .cal-icon { font-size: 16px; }
+  .divider { height: 1.5px; background: var(--border-light); margin: 18px 0; border-radius: 1px; }
+  .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), var(--primary-dark)); border: none; border-radius: var(--radius-sm); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-sell { background: linear-gradient(135deg, #20e3b2, #0d9488); margin-top: 8px; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-outline { flex: 1; padding: 14px; background: var(--primary-bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--primary-dark); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .btn-outline:active { background: var(--primary-light); }
+
+  /* ── CALENDAR OVERLAY ── */
+  .cal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; max-width: 480px; margin: 0 auto; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .cal-overlay.visible { opacity: 1; pointer-events: all; }
+  .calendar { background: var(--surface); border-radius: var(--radius); padding: 20px; width: calc(100% - 40px); max-width: 340px; box-shadow: var(--shadow-md); }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-month { font-size: 16px; font-weight: 700; color: var(--text); }
+  .cal-arrow { width: 32px; height: 32px; border-radius: 8px; background: var(--primary-bg); border: 1.5px solid var(--border); color: var(--primary); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .cal-arrow:active { background: var(--primary-light); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--text3); padding: 4px 0 8px; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; color: var(--text); transition: all 0.1s; }
+  .cal-day:active { background: var(--primary-light); }
+  .cal-day.today { color: var(--primary); font-weight: 700; }
+  .cal-day.selected { background: var(--primary); color: #fff; font-weight: 700; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.other-month { color: var(--text3); }
+  .cal-footer { margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px; }
+  .cal-cancel { padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--primary-bg); color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .cal-confirm { padding: 8px 16px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+  /* ── CONFIRM MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; max-width: 480px; margin: 0 auto; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+  .modal-box { background: var(--surface); border-radius: var(--radius); padding: 24px 20px 18px; width: calc(100% - 60px); max-width: 300px; box-shadow: var(--shadow-md); text-align: center; }
+  .modal-icon { font-size: 32px; margin-bottom: 10px; }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .modal-msg { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--primary-bg); color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-confirm { flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--danger); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.85); z-index: 400; background: rgba(28,25,23,0.92); color: #fff; padding: 16px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 600; text-align: center; line-height: 1.5; max-width: 280px; opacity: 0; pointer-events: none; transition: all 0.25s; backdrop-filter: blur(10px); max-width: 480px; }
+  .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+  /* Import warning */
+  .warn-confirm { flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  @media (prefers-color-scheme: dark) {
+    /* keep light mode intentionally */
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="logo"><span class="logo-icon">💵</span> Dollar Trade</div>
+      <div class="gear-wrap">
+        <button class="gear-btn" id="gearBtn">⚙️</button>
+        <div class="gear-menu" id="gearMenu">
+          <div class="gear-menu-item" id="exportBtn">📤 내보내기</div>
+          <div class="gear-menu-item" id="importBtn">📥 가져오기</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" style="display:none">hidden</button>
+        <input type="file" id="importFile" accept=".dtrade" style="display:none">
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="buy">매수 <span class="tab-badge" id="buyBadge">0</span></div>
+      <div class="tab" data-tab="done">완료 <span class="tab-badge" id="doneBadge">0</span></div>
+    </div>
+  </header>
+
+  <!-- LIST -->
+  <div class="list-area" id="listArea"></div>
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn">+</button>
+</div>
+
+<!-- SHEET OVERLAY -->
+<div class="overlay" id="sheetOverlay">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="sheetTitle">매수 기록</div>
+      <button class="sheet-close" id="sheetClose">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-section">
+        <div class="form-section-title">📈 매수 정보</div>
+        <div class="form-row">
+          <label class="form-label">날짜</label>
+          <button class="date-btn" id="buyDateBtn">
+            <span id="buyDateLabel">--</span>
+            <span class="cal-icon">📅</span>
+          </button>
+        </div>
+        <div class="form-row">
+          <label class="form-label">환율 (원/달러)</label>
+          <input class="form-input" type="number" id="buyRate" placeholder="예: 1380" inputmode="decimal">
+        </div>
+        <div class="form-row">
+          <label class="form-label">수량 (달러)</label>
+          <input class="form-input" type="number" id="buyQty" placeholder="예: 500" inputmode="decimal">
+        </div>
+      </div>
+
+      <!-- SELL SECTION (hidden for new) -->
+      <div id="sellSection" style="display:none">
+        <div class="divider"></div>
+        <div class="form-section">
+          <div class="form-section-title">📉 매도 정보</div>
+          <div class="form-row">
+            <label class="form-label">날짜</label>
+            <button class="date-btn" id="sellDateBtn">
+              <span id="sellDateLabel">--</span>
+              <span class="cal-icon">📅</span>
+            </button>
+          </div>
+          <div class="form-row">
+            <label class="form-label">환율 (원/달러)</label>
+            <input class="form-input" type="number" id="sellRate" placeholder="예: 1420" inputmode="decimal">
+          </div>
+          <div class="form-row">
+            <label class="form-label">수량 (달러)</label>
+            <input class="form-input" type="number" id="sellQty" placeholder="예: 500" inputmode="decimal">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row" id="btnRow">
+        <button class="btn-primary" id="saveBtn">저장</button>
+      </div>
+      <button class="btn-primary btn-sell" id="sellBtn" style="display:none">매도 완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR OVERLAY -->
+<div class="cal-overlay" id="calOverlay">
+  <div class="calendar">
+    <div class="cal-nav">
+      <button class="cal-arrow" id="calPrev">‹</button>
+      <div class="cal-month" id="calMonth"></div>
+      <button class="cal-arrow" id="calNext">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-cancel" id="calCancel">취소</button>
+      <button class="cal-confirm" id="calConfirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">삭제하시겠어요?</div>
+    <div class="modal-msg">이 거래 기록이 영구적으로<br>삭제됩니다.</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" id="deleteCancelBtn">취소</button>
+      <button class="modal-confirm" id="deleteConfirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT WARN MODAL -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title" id="importModalTitle">파일 오류</div>
+    <div class="modal-msg" id="importModalMsg">올바른 DollarTrade 파일이 아닙니다.</div>
+    <div class="modal-btns" id="importModalBtns">
+      <button class="modal-cancel" id="importModalClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const FILE_SIG = 'DOLLARTRADE_V1';
+let trades = [];
+let currentTab = 'buy';
+let editingId = null;
+let deleteTargetId = null;
+let calTarget = null; // 'buy' | 'sell'
+let calSelectedDate = null;
+let calViewYear, calViewMonth;
+
+function loadData() {
+  try { trades = JSON.parse(localStorage.getItem('dt_trades') || '[]'); } catch { trades = []; }
+}
+function saveData() {
+  localStorage.setItem('dt_trades', JSON.stringify(trades));
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  return `${y}.${m}.${d}`;
+}
+function fmtNum(n) { return Number(n).toLocaleString('ko-KR'); }
+function fmtKrw(n) { return fmtNum(Math.round(n)) + '원'; }
+
+// ═══════════════════════════════════════════════
+// HISTORY STACK (for back navigation)
+// ═══════════════════════════════════════════════
+// Levels: 0=main, 1=sheet, 2=calendar(within sheet), 3=deleteModal
+// We push states to history.pushState so device back button works.
+
+function pushState(level) {
+  history.pushState({ level }, '');
+}
+
+window.addEventListener('popstate', (e) => {
+  if (e.state?.level === 'gear') {
+    closeGearMenu();
+    return;
+  }
+  if (gearMenuOpen) {
+    closeGearMenu();
+    return;
+  }
+  const level = e.state?.level ?? 0;
+  handleBack(level);
+});
+
+function handleBack(level) {
+  // level is what we're going BACK TO
+  if (level === 2) {
+    // calendar was open (level 2), back to sheet (level 1)
+    closeCalOnly();
+  } else if (level === 1) {
+    // were at delete modal or cal within sheet, going back to sheet
+    if (isDeleteModalOpen()) closeDeleteModal();
+    else if (isCalOpen()) closeCalOnly();
+    else { /* stay at sheet */ pushState(1); }
+  } else if (level === 0) {
+    // going back to main
+    if (isDeleteModalOpen()) { closeDeleteModal(); if (isSheetOpen()) pushState(1); }
+    else if (isCalOpen()) { closeCalOnly(); if (isSheetOpen()) pushState(1); }
+    else if (isSheetOpen()) closeSheetOnly();
+    else { /* truly at main, ensure we stay */ history.replaceState({ level: 0 }, ''); }
+  } else {
+    // level undefined — treat as 0
+    if (isDeleteModalOpen()) { closeDeleteModal(); if (isSheetOpen()) pushState(1); }
+    else if (isCalOpen()) { closeCalOnly(); if (isSheetOpen()) pushState(1); }
+    else if (isSheetOpen()) closeSheetOnly();
+    else { history.replaceState({ level: 0 }, ''); }
+  }
+}
+
+function isSheetOpen() { return sheetOverlay.classList.contains('visible'); }
+function isCalOpen() { return calOverlay.classList.contains('visible'); }
+function isDeleteModalOpen() { return deleteModal.classList.contains('visible'); }
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function sortedTrades(tab) {
+  return trades
+    .filter(t => tab === 'buy' ? !t.sold : t.sold)
+    .sort((a,b) => (b.buyDate > a.buyDate ? 1 : b.buyDate < a.buyDate ? -1 : 0) || (b.createdAt - a.createdAt));
+}
+
+function renderList() {
+  const list = sortedTrades(currentTab);
+  const buyCount = trades.filter(t=>!t.sold).length;
+  const doneCount = trades.filter(t=>t.sold).length;
+  document.getElementById('buyBadge').textContent = buyCount;
+  document.getElementById('doneBadge').textContent = doneCount;
+
+  const area = document.getElementById('listArea');
+  if (list.length === 0) {
+    area.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">${currentTab==='buy'?'💵':'✅'}</div>
+      <div class="empty-text">${currentTab==='buy'?'매수 기록이 없어요':'완료된 거래가 없어요'}</div>
+      <div class="empty-sub">${currentTab==='buy'?'+ 버튼으로 매수를 기록해보세요':''}</div>
+    </div>`;
+    return;
+  }
+
+  area.innerHTML = list.map(t => {
+    const total = t.buyRate * t.buyQty;
+    const isBuy = !t.sold;
+
+    if (isBuy) {
+      // 매수 카드: 매수가 / 총수량 / 총금액 세 줄
+      return `<div class="trade-card" data-id="${t.id}">
+        <div class="trade-card-left">
+          <div class="trade-card-date">${fmtDate(t.buyDate)}</div>
+          <div class="trade-card-buy-row">
+            <div class="buy-field">
+              <div class="buy-field-label">매수가</div>
+              <div class="buy-field-val">${fmtNum(t.buyRate)}원</div>
+            </div>
+            <div class="buy-field-sep"></div>
+            <div class="buy-field">
+              <div class="buy-field-label">수량</div>
+              <div class="buy-field-val">$${fmtNum(t.buyQty)}</div>
+            </div>
+            <div class="buy-field-sep"></div>
+            <div class="buy-field">
+              <div class="buy-field-label">총 금액</div>
+              <div class="buy-field-val total">${fmtKrw(total)}</div>
+            </div>
+          </div>
+        </div>
+        <button class="del-btn" data-del="${t.id}" aria-label="삭제">✕</button>
+      </div>`;
+    } else {
+      // 완료 카드: 매수가 / 매도가 / 총금액 / 손익 그리드
+      const pnl = (t.sellRate - t.buyRate) * t.sellQty;
+      const pnlCls = pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
+      const sign = pnl >= 0 ? '+' : '';
+      const sellTotal = t.sellRate * t.sellQty;
+      return `<div class="trade-card completed" data-id="${t.id}">
+        <div class="trade-card-left">
+          <div class="trade-card-date">${fmtDate(t.buyDate)} → ${fmtDate(t.sellDate)}</div>
+          <div class="trade-card-info-grid">
+            <div class="info-cell">
+              <div class="info-label">매수가</div>
+              <div class="info-val">${fmtNum(t.buyRate)}원</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label">매도가</div>
+              <div class="info-val">${fmtNum(t.sellRate)}원</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label">총금액</div>
+              <div class="info-val total">${fmtKrw(sellTotal)}</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label">손익</div>
+              <div class="info-val ${pnlCls}">${sign}${fmtKrw(pnl)}</div>
+            </div>
+          </div>
+        </div>
+        <button class="del-btn" data-del="${t.id}" aria-label="삭제">✕</button>
+      </div>`;
+    }
+  }).join('');
+
+  // events
+  area.querySelectorAll('.trade-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.del-btn')) return;
+      openSheet(card.dataset.id);
+    });
+  });
+  area.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDeleteModal(btn.dataset.del);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// SHEET
+// ═══════════════════════════════════════════════
+const sheetOverlay = document.getElementById('sheetOverlay');
+const sheet = document.getElementById('sheet');
+
+function openSheet(id = null) {
+  editingId = id;
+  const isEdit = id !== null;
+  const t = isEdit ? trades.find(x=>x.id===id) : null;
+
+  document.getElementById('sheetTitle').textContent = isEdit ? '거래 편집' : '매수 기록';
+  document.getElementById('buyRate').value = t ? t.buyRate : '';
+  document.getElementById('buyQty').value = t ? t.buyQty : '';
+
+  const bd = t ? t.buyDate : today();
+  document.getElementById('buyDateLabel').textContent = fmtDate(bd);
+  document.getElementById('buyDateBtn').dataset.date = bd;
+
+  const sellSection = document.getElementById('sellSection');
+  const sellBtn = document.getElementById('sellBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const btnRow = document.getElementById('btnRow');
+
+  // 모든 필드 초기화 (활성/비활성/readonly)
+  function setFieldReadonly(id, val) {
+    const el = document.getElementById(id);
+    el.value = val ?? '';
+    el.readOnly = true;
+    el.disabled = false;
+    el.style.opacity = '';
+    el.style.cursor = 'default';
+    el.style.pointerEvents = 'none';
+  }
+  function setFieldEditable(id, val) {
+    const el = document.getElementById(id);
+    el.value = val ?? '';
+    el.readOnly = false;
+    el.disabled = false;
+    el.style.opacity = '';
+    el.style.cursor = '';
+    el.style.pointerEvents = '';
+  }
+
+  if (isEdit && t && t.sold) {
+    // ── 완료 카드: 조회만 가능, 수정 불가 ──
+    document.getElementById('sheetTitle').textContent = '거래 상세';
+    sellSection.style.display = '';
+    btnRow.style.display = 'none';
+    sellBtn.style.display = 'none';
+
+    // 매수 정보 readonly
+    setFieldReadonly('buyRate', t.buyRate);
+    setFieldReadonly('buyQty', t.buyQty);
+    document.getElementById('buyDateBtn').style.pointerEvents = 'none';
+
+    // 매도 정보 readonly
+    const sd = t.sellDate || '';
+    document.getElementById('sellDateLabel').textContent = fmtDate(sd);
+    document.getElementById('sellDateBtn').dataset.date = sd;
+    document.getElementById('sellDateBtn').style.pointerEvents = 'none';
+    setFieldReadonly('sellRate', t.sellRate);
+    setFieldReadonly('sellQty', t.sellQty);
+
+  } else if (isEdit) {
+    // ── 매수 카드: 날짜·가격만 수정 가능, 수량 고정 ──
+    sellSection.style.display = '';
+    btnRow.style.display = 'flex';
+    sellBtn.style.display = '';
+    saveBtn.textContent = '수정 저장';
+
+    // 날짜·가격은 편집 가능
+    document.getElementById('buyDateBtn').style.pointerEvents = '';
+    setFieldEditable('buyRate', t.buyRate);
+
+    // 매수 수량 비활성화
+    const buyQtyInput = document.getElementById('buyQty');
+    buyQtyInput.value = t.buyQty;
+    buyQtyInput.readOnly = true;
+    buyQtyInput.style.opacity = '0.5';
+    buyQtyInput.style.cursor = 'not-allowed';
+    buyQtyInput.style.pointerEvents = 'none';
+
+    const sd = t.sellDate || today();
+    document.getElementById('sellDateLabel').textContent = fmtDate(sd);
+    document.getElementById('sellDateBtn').dataset.date = sd;
+    document.getElementById('sellDateBtn').style.pointerEvents = '';
+    setFieldEditable('sellRate', t.sellRate || '');
+
+    // 매도 수량 고정
+    const sellQtyInput = document.getElementById('sellQty');
+    sellQtyInput.value = t.buyQty;
+    sellQtyInput.readOnly = true;
+    sellQtyInput.style.opacity = '0.5';
+    sellQtyInput.style.cursor = 'not-allowed';
+    sellQtyInput.style.pointerEvents = 'none';
+
+  } else {
+    // ── 새 매수 기록 ──
+    sellSection.style.display = 'none';
+    sellBtn.style.display = 'none';
+    btnRow.style.display = 'flex';
+    saveBtn.textContent = '저장';
+    document.getElementById('buyDateBtn').style.pointerEvents = '';
+    setFieldEditable('buyRate', '');
+    setFieldEditable('buyQty', '');
+  }
+
+  sheetOverlay.classList.add('visible');
+  sheet.scrollTop = 0;
+  requestAnimationFrame(() => sheet.classList.add('open'));
+  pushState(1);
+}
+
+function closeSheetOnly() {
+  sheet.classList.remove('open');
+  setTimeout(() => sheetOverlay.classList.remove('visible'), 300);
+  editingId = null;
+}
+
+document.getElementById('sheetClose').addEventListener('click', () => {
+  history.back();
+});
+sheetOverlay.addEventListener('click', (e) => {
+  if (e.target === sheetOverlay) history.back();
+});
+
+document.getElementById('fabBtn').addEventListener('click', () => openSheet(null));
+
+// Save
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const rate = parseFloat(document.getElementById('buyRate').value);
+  const qty = parseFloat(document.getElementById('buyQty').value);
+  const date = document.getElementById('buyDateBtn').dataset.date;
+  if (!rate || !qty || !date) { showToast('매수 정보를 모두 입력해주세요.'); return; }
+
+  if (editingId) {
+    const t = trades.find(x=>x.id===editingId);
+    t.buyRate = rate; t.buyQty = qty; t.buyDate = date;
+    // 완료 항목이면 매도 정보도 저장
+    if (t.sold) {
+      const sellRate = parseFloat(document.getElementById('sellRate').value);
+      const sellQty = parseFloat(document.getElementById('sellQty').value);
+      const sellDate = document.getElementById('sellDateBtn').dataset.date;
+      if (sellRate) t.sellRate = sellRate;
+      if (sellQty) t.sellQty = sellQty;
+      if (sellDate) t.sellDate = sellDate;
+    }
+  } else {
+    trades.push({ id: genId(), buyDate: date, buyRate: rate, buyQty: qty, sold: false, createdAt: Date.now() });
+  }
+  saveData(); renderList();
+  history.back();
+});
+
+// Sell
+document.getElementById('sellBtn').addEventListener('click', () => {
+  const sellRate = parseFloat(document.getElementById('sellRate').value);
+  const sellQty = parseFloat(document.getElementById('sellQty').value);
+  const sellDate = document.getElementById('sellDateBtn').dataset.date;
+  if (!sellRate || !sellQty || !sellDate) { showToast('매도 정보를 모두 입력해주세요.'); return; }
+
+  const t = trades.find(x=>x.id===editingId);
+  t.sellRate = sellRate; t.sellQty = sellQty; t.sellDate = sellDate; t.sold = true;
+  saveData(); renderList();
+  closeSheetOnly();
+  // no history.back() here — just close, show toast
+  setTimeout(() => showToast('물량이 매도되어, 완료탭으로 이동합니다.'), 150);
+  // Remove the sheet history entry we pushed
+  history.replaceState({ level: 0 }, '');
+});
+
+// ═══════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════
+const calOverlay = document.getElementById('calOverlay');
+
+function openCal(target) {
+  calTarget = target;
+  const btn = document.getElementById(target === 'buy' ? 'buyDateBtn' : 'sellDateBtn');
+  const existing = btn.dataset.date || today();
+  const [y,m] = existing.split('-').map(Number);
+  calViewYear = y; calViewMonth = m - 1;
+  calSelectedDate = existing;
+  renderCal();
+  calOverlay.classList.add('visible');
+  pushState(2);
+}
+
+function closeCalOnly() {
+  calOverlay.classList.remove('visible');
+}
+
+function renderCal() {
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('calMonth').textContent = `${calViewYear}년 ${months[calViewMonth]}`;
+  const grid = document.getElementById('calGrid');
+  const dows = ['일','월','화','수','목','금','토'];
+  let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first = new Date(calViewYear, calViewMonth, 1).getDay();
+  const days = new Date(calViewYear, calViewMonth+1, 0).getDate();
+  const td = today();
+  for (let i=0; i<first; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d=1; d<=days; d++) {
+    const ds = `${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cls = [ds===calSelectedDate?'selected':'', ds===td&&ds!==calSelectedDate?'today':''].filter(Boolean).join(' ');
+    html += `<div class="cal-day ${cls}" data-date="${ds}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.cal-day[data-date]').forEach(el => {
+    el.addEventListener('click', () => {
+      calSelectedDate = el.dataset.date;
+      renderCal();
+    });
+  });
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calViewMonth--; if (calViewMonth<0){calViewMonth=11;calViewYear--;}
+  renderCal();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calViewMonth++; if (calViewMonth>11){calViewMonth=0;calViewYear++;}
+  renderCal();
+});
+document.getElementById('calCancel').addEventListener('click', () => history.back());
+document.getElementById('calConfirm').addEventListener('click', () => {
+  if (!calSelectedDate) return;
+  const btn = document.getElementById(calTarget==='buy'?'buyDateBtn':'sellDateBtn');
+  const label = document.getElementById(calTarget==='buy'?'buyDateLabel':'sellDateLabel');
+  btn.dataset.date = calSelectedDate;
+  label.textContent = fmtDate(calSelectedDate);
+  history.back();
+});
+
+document.getElementById('buyDateBtn').addEventListener('click', () => openCal('buy'));
+document.getElementById('sellDateBtn').addEventListener('click', () => openCal('sell'));
+
+// ═══════════════════════════════════════════════
+// DELETE MODAL
+// ═══════════════════════════════════════════════
+const deleteModal = document.getElementById('deleteModal');
+
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  deleteModal.classList.add('visible');
+  pushState(isSheetOpen() ? 2 : 1);
+}
+function closeDeleteModal() {
+  deleteModal.classList.remove('visible');
+  deleteTargetId = null;
+}
+
+document.getElementById('deleteCancelBtn').addEventListener('click', () => history.back());
+document.getElementById('deleteConfirmBtn').addEventListener('click', () => {
+  trades = trades.filter(t=>t.id!==deleteTargetId);
+  saveData(); renderList();
+  deleteModal.classList.remove('visible');
+  deleteTargetId = null;
+  // close sheet too if open
+  if (isSheetOpen()) closeSheetOnly();
+  // reset history to clean base state
+  history.replaceState({ level: 0 }, '');
+});
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    renderList();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+const toastEl = document.getElementById('toast');
+function showToast(msg, duration=2800) {
+  clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+}
+
+// ═══════════════════════════════════════════════
+// GEAR MENU
+// ═══════════════════════════════════════════════
+const gearBtn = document.getElementById('gearBtn');
+const gearMenu = document.getElementById('gearMenu');
+
+let gearMenuOpen = false;
+
+function openGearMenu() {
+  if (gearMenuOpen) return;
+  gearMenuOpen = true;
+  gearMenu.classList.add('open');
+  history.pushState({ level: 'gear' }, '');
+}
+
+function closeGearMenu() {
+  if (!gearMenuOpen) return;
+  gearMenuOpen = false;
+  gearMenu.classList.remove('open');
+}
+
+gearBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (gearMenuOpen) {
+    history.back();
+  } else {
+    openGearMenu();
+  }
+});
+document.addEventListener('click', (e) => {
+  if (gearMenuOpen && !gearBtn.contains(e.target) && !gearMenu.contains(e.target)) {
+    history.back();
+  }
+});
+
+// ═══════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (gearMenuOpen) history.back();
+  const payload = { sig: FILE_SIG, version: 1, exportedAt: new Date().toISOString(), trades };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `DollarTrade_${today()}.dtrade`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('내보내기 완료!');
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  if (gearMenuOpen) history.back();
+  document.getElementById('importFile').value = '';
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.sig !== FILE_SIG) throw new Error('wrong sig');
+      const importModal = document.getElementById('importModal');
+      document.getElementById('importModalTitle').textContent = '데이터 가져오기';
+      document.getElementById('importModalMsg').textContent = `${data.trades?.length || 0}개의 거래 기록을 불러옵니다.\n기존 데이터는 유지됩니다.`;
+      document.getElementById('importModalBtns').innerHTML = `
+        <button class="modal-cancel" id="importModalClose">취소</button>
+        <button class="warn-confirm" id="importModalOk">가져오기</button>`;
+      importModal.classList.add('visible');
+      pushState(1);
+
+      document.getElementById('importModalClose').onclick = () => { importModal.classList.remove('visible'); history.back(); };
+      document.getElementById('importModalOk').onclick = () => {
+        const incoming = data.trades || [];
+        const existingIds = new Set(trades.map(t=>t.id));
+        incoming.forEach(t => { if (!existingIds.has(t.id)) trades.push(t); });
+        saveData(); renderList();
+        importModal.classList.remove('visible');
+        history.back();
+        showToast(`${incoming.length}개 가져오기 완료!`);
+      };
+    } catch {
+      const importModal = document.getElementById('importModal');
+      document.getElementById('importModalTitle').textContent = '파일 오류';
+      document.getElementById('importModalMsg').textContent = '올바른 DollarTrade 파일(.dtrade)이 아닙니다.\n다른 파일을 선택해주세요.';
+      document.getElementById('importModalBtns').innerHTML = `<button class="modal-cancel" id="importModalClose" style="flex:1">확인</button>`;
+      importModal.classList.add('visible');
+      pushState(1);
+      document.getElementById('importModalClose').onclick = () => { importModal.classList.remove('visible'); history.back(); };
+    }
+  };
+  reader.readAsText(file);
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+loadData();
+renderList();
+// Push initial state so first back doesn't exit immediately
+history.replaceState({ level: 0 }, '');
+</script>
+</body>
+</html>

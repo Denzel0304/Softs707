@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>나만의 레시피 앱</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #F4A460;
+    --sky-light: #fde8d0;
+    --sky-dark: #e07830;
+    --sky-deep: #c45e18;
+    --white: #ffffff;
+    --card-bg: rgba(255,255,255,0.92);
+    --text: #2e1a0e;
+    --text-muted: #9a6b4b;
+    --border: #f0c8a0;
+    --accent: #e8732a;
+    --accent-light: #fdeee4;
+    --danger: #e05c5c;
+    --success: #4caf7d;
+    --shadow: 0 4px 20px rgba(196,94,24,0.15);
+    --shadow-lg: 0 8px 40px rgba(196,94,24,0.22);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: linear-gradient(160deg, #fde8d0 0%, #f4c090 40%, #f0a86a 80%, #fde0c0 100%);
+    min-height: 100dvh;
+    color: var(--text);
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.6);
+    padding: 14px 16px 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(196,94,24,0.12);
+  }
+  .header-top {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .app-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  /* ── GEAR MENU ── */
+  .header-top {
+    position: relative;
+  }
+  .btn-gear {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    color: var(--text-muted);
+    transition: background 0.15s, transform 0.3s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .btn-gear:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .btn-gear.open { transform: translateY(-50%) rotate(60deg); color: var(--sky-deep); }
+
+  .gear-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(196,94,24,0.22), 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 150;
+    min-width: 148px;
+    display: none;
+    animation: menuPop 0.18s ease;
+  }
+  .gear-menu.open { display: block; }
+  @keyframes menuPop {
+    from { opacity: 0; transform: scale(0.92) translateY(-6px); transform-origin: top right; }
+    to   { opacity: 1; transform: scale(1)    translateY(0);     transform-origin: top right; }
+  }
+  .gear-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: background 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .gear-menu-item:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .gear-menu-item + .gear-menu-item { border-top: 1px solid var(--border); }
+  .gear-menu-icon { font-size: 1rem; }
+
+  .search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 6px;
+  }
+  .search-bar .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 10px 16px 10px 38px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-bar input:focus { border-color: var(--sky-dark); }
+  .search-bar .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: var(--text-muted);
+  }
+
+  /* ── MAIN ── */
+  .main-container { padding: 16px; }
+
+  .sort-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+
+  /* ── RECIPE CARD ── */
+  .recipe-list { display: flex; flex-direction: column; gap: 12px; }
+  .recipe-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(255,255,255,0.8);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .recipe-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  .recipe-card.drag-over {
+    border: 2px dashed var(--sky-dark);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 14px 12px;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card-title-area { flex: 1; min-width: 0; }
+  .card-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-stars { display: flex; gap: 1px; margin-top: 2px; }
+  .star { font-size: 0.9rem; color: #ddd; }
+  .star.filled { color: #f5b842; }
+  .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .card-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .card-btn:hover { background: var(--sky-light); }
+  .card-btn.delete:hover { background: #fdeaea; }
+
+  /* card-preview removed – click directly opens view */
+
+  /* ── FAB (검색바 우측 인라인 배치) ── */
+  .fab {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+    color: white;
+    font-size: 1.2rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(196,94,24,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    line-height: 1;
+    padding: 0;
+  }
+  .fab:hover { transform: scale(1.08); box-shadow: 0 5px 16px rgba(196,94,24,0.45); }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,50,80,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-overlay.center-modal { align-items: center; }
+
+  /* ── EDIT MODAL (bottom sheet) ── */
+  .edit-sheet {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s ease;
+    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+    overflow: hidden;
+    min-height: 0;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--sky-light);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .sheet-title {
+    flex: 1;
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sheet-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    background: #fafdff;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--sky-dark); background: white; }
+
+  /* ── STAR RATING (edit) ── */
+  .star-rating-edit { display: flex; gap: 6px; padding: 4px 0; }
+  .star-edit {
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: #ddd;
+    transition: color 0.12s, transform 0.12s;
+    user-select: none;
+  }
+  .star-edit.filled { color: #f5b842; }
+  .star-edit:hover { transform: scale(1.2); }
+
+  /* ── SECTION BLOCK (양념장/메모) ── */
+  .section-block {
+    background: #f4f9fd;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-block.dragging { opacity: 0.5; }
+  .section-block.drag-over-section { border: 2px dashed var(--sky-dark); }
+  .section-block-header {
+    display: flex;
+    align-items: center;
+    background: var(--sky-light);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    /* cursor은 handle에만 적용 */
+  }
+  .section-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    min-width: 38px;
+    align-self: stretch;        /* 헤더 전체 높이만큼 터치 영역 확보 */
+    cursor: grab;
+    touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    border-right: 1px solid var(--border);
+    background: rgba(0,0,0,0.03);
+    user-select: none;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+  }
+  .section-drag-handle:hover { background: rgba(91,168,212,0.15); color: var(--sky-deep); }
+  .section-drag-handle:active { cursor: grabbing; }
+  .section-block-header-inner {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 9px 10px 9px 0;
+    gap: 8px;
+  }
+  .section-block-title {
+    flex: 1;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+  }
+  .section-block-body { padding: 12px; }
+  .btn-remove-section {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--danger);
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── SAUCE ROWS ── */
+  .sauce-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .sauce-row.dragging { opacity: 0.4; }
+  .sauce-row.drag-over-row { border-top: 2px solid var(--sky-dark); }
+  .sauce-drag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 36px;           /* 재료 input과 동일한 높이 */
+    background: #f0f7fd;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    user-select: none;
+    transition: background 0.12s, color 0.12s;
+  }
+  .sauce-drag:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .sauce-drag:active { cursor: grabbing; }
+  .sauce-name {
+    flex: 2;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    min-width: 0;
+  }
+  .sauce-name:focus { border-color: var(--sky-dark); }
+  .sauce-amount {
+    width: 62px;
+    padding: 8px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    text-align: center;
+  }
+  .sauce-amount:focus { border-color: var(--sky-dark); }
+  .sauce-unit-wrap { position: relative; flex-shrink: 0; }
+  .sauce-unit {
+    padding: 8px 22px 8px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .sauce-unit:focus { border-color: var(--sky-dark); }
+  .sauce-unit-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .sauce-del {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #ccc;
+    flex-shrink: 0;
+    padding: 2px;
+  }
+  .sauce-del:hover { color: var(--danger); }
+
+  /* ── SAUCE NAME QUICK-PICK DROPDOWN ── */
+  .sauce-name-wrap {
+    flex: 2;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sauce-name-wrap .sauce-name {
+    flex: none;
+    width: 100%;
+  }
+  .sauce-quickpick-wrap { position: relative; }
+  .sauce-quickpick {
+    width: 100%;
+    padding: 4px 20px 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-muted);
+    background: var(--sky-light);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .sauce-quickpick:focus { border-color: var(--sky-dark); }
+  .sauce-quickpick-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .btn-add-row {
+    background: none;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    color: var(--sky-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn-add-row:hover { background: var(--sky-light); }
+
+  /* ── MEMO TEXTAREA ── */
+  .memo-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+    background: white;
+    line-height: 1.7;
+  }
+  .memo-textarea:focus { border-color: var(--sky-dark); }
+
+  /* ── ADD SECTION BUTTONS ── */
+  .add-section-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .btn-add-section {
+    flex: 1;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-add-section:hover { background: var(--sky-light); border-color: var(--sky-dark); }
+
+  /* ── SHEET FOOTER ── */
+  .sheet-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--sky-light);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    background: white;
+  }
+  .btn-cancel {
+    flex: 1;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .btn-save {
+    flex: 2;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 4px 14px rgba(196,94,24,0.3);
+  }
+
+  /* ── VIEW MODAL ── */
+  .view-sheet {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s ease;
+    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+    overflow: hidden;
+    min-height: 0;
+  }
+  .view-header {
+    flex-shrink: 0;
+    padding: 6px 20px 12px;
+    border-bottom: 1px solid var(--sky-light);
+    background: white;
+  }
+  .view-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 20px 4px;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+  .view-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .view-stars { display: flex; gap: 3px; }
+  .view-star { font-size: 1.2rem; color: #ddd; }
+  .view-star.filled { color: #f5b842; }
+  .view-section {
+    margin-bottom: 20px;
+  }
+  .view-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--sky-light);
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+  .view-sauce-table { width: 100%; border-collapse: collapse; }
+  .view-sauce-table td {
+    padding: 6px 8px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid #f0f7fc;
+  }
+  .view-sauce-table td:first-child { color: var(--text); font-weight: 500; }
+  .view-sauce-table td:last-child { color: var(--text-muted); text-align: right; white-space: nowrap; }
+  .view-memo {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text);
+    background: #f8fcff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--sky-light);
+  }
+  .view-memo-line {
+    display: flex;
+    align-items: flex-start;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .view-memo-num {
+    flex-shrink: 0;
+    margin-right: 0;
+  }
+  .view-memo-text {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .view-memo-plain {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .view-close {
+    margin: 0 20px 20px;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--sky-light);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    width: calc(100% - 40px);
+    flex-shrink: 0;
+  }
+
+  /* ── CONFIRM MODAL ── */
+  .confirm-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .confirm-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .confirm-msg { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .btn-no {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-muted);
+  }
+  .btn-yes {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    background: var(--danger);
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ── ALERT MODAL ── */
+  .alert-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s ease;
+  }
+  .alert-icon { font-size: 2rem; margin-bottom: 10px; }
+  .alert-title { font-family: 'Gowun Batang', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--danger); }
+  .alert-msg { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+  .btn-alert-ok {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--sky-dark);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; line-height: 1.7; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-top" style="position:relative;">
+    <span class="app-title">🍳 나만의 레시피</span>
+    <button class="btn-gear" id="gearBtn" onclick="toggleGearMenu()" title="설정" aria-label="메뉴">⚙️</button>
+    <div class="gear-menu" id="gearMenu">
+      <button class="gear-menu-item" onclick="exportData(); closeGearMenu()"><span class="gear-menu-icon">📤</span>내보내기</button>
+      <button class="gear-menu-item" onclick="document.getElementById('importFile').click(); closeGearMenu()"><span class="gear-menu-icon">📥</span>가져오기</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="레시피 검색..." oninput="renderList()">
+    </div>
+    <button class="fab" onclick="openEdit(null)" title="레시피 추가">＋</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-container">
+  <div class="recipe-list" id="recipeList"></div>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="emoji">🍽️</div>
+    <p>아직 레시피가 없어요.<br>아래 + 버튼을 눌러 추가해보세요!</p>
+  </div>
+</div>
+
+<!-- ═══════════ EDIT MODAL ═══════════ -->
+<div class="modal-overlay" id="editModal">
+  <div class="edit-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="editModalTitle">새 레시피</span>
+      <button class="card-btn" onclick="closeEdit()" style="font-size:1.2rem">✕</button>
+    </div>
+    <div class="sheet-body" id="editBody">
+      <!-- 동적 생성 -->
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeEdit()">취소</button>
+      <button class="btn-save" onclick="saveRecipe()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ VIEW MODAL ═══════════ -->
+<div class="modal-overlay" id="viewModal">
+  <div class="view-sheet">
+    <div class="sheet-handle"></div>
+    <div class="view-header" id="viewHeader"></div>
+    <div class="view-body" id="viewBody"></div>
+    <button class="view-close" onclick="closeView()">닫기</button>
+  </div>
+</div>
+
+<!-- ═══════════ CONFIRM MODAL ═══════════ -->
+<div class="modal-overlay center-modal" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">정말 삭제할까요?</div>
+    <div class="confirm-msg" id="confirmMsg">삭제된 레시피는 복구할 수 없어요.</div>
+    <div class="confirm-actions">
+      <button class="btn-no" onclick="closeConfirm(false)">취소</button>
+      <button class="btn-yes" onclick="closeConfirm(true)">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ALERT MODAL ═══════════ -->
+<div class="modal-overlay center-modal" id="alertModal">
+  <div class="alert-box">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-title" id="alertTitle">형식 오류</div>
+    <div class="alert-msg" id="alertMsg"></div>
+    <button class="btn-alert-ok" onclick="closeAlert()">확인</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const FILE_SIGNATURE = 'RECIPE_APP_V1';
+let recipes = loadRecipes();
+let editingId = null;
+let confirmCallback = null;
+
+// ── MODAL HISTORY MANAGEMENT ──
+const modalStack = []; // tracks open modals: array of element IDs
+
+// ── GEAR MENU ──
+let gearMenuOpen = false;
+
+function toggleGearMenu() {
+  if (gearMenuOpen) {
+    history.back();
+  } else {
+    openGearMenu();
+  }
+}
+
+function openGearMenu() {
+  if (gearMenuOpen) return;
+  gearMenuOpen = true;
+  document.getElementById('gearMenu').classList.add('open');
+  document.getElementById('gearBtn').classList.add('open');
+  history.pushState({ gear: true }, '');
+}
+
+function closeGearMenu() {
+  if (!gearMenuOpen) return;
+  gearMenuOpen = false;
+  document.getElementById('gearMenu').classList.remove('open');
+  document.getElementById('gearBtn').classList.remove('open');
+}
+
+// 외부 클릭 시 닫기
+document.addEventListener('click', function(e) {
+  if (gearMenuOpen && !document.getElementById('gearBtn').contains(e.target) && !document.getElementById('gearMenu').contains(e.target)) {
+    history.back();
+  }
+});
+
+window.addEventListener('popstate', function() {
+  if (gearMenuOpen) {
+    closeGearMenu();
+    return;
+  }
+  if (modalStack.length > 0) {
+    const id = modalStack.pop();
+    document.getElementById(id).classList.remove('active');
+    if (id === 'confirmModal' && confirmCallback) {
+      confirmCallback(false);
+      confirmCallback = null;
+    }
+    // 모든 모달이 닫히면 메인 화면 스크롤 잠금 해제
+    if (modalStack.length === 0) {
+      document.body.style.overflow = '';
+    }
+  }
+});
+
+function openModal(id) {
+  modalStack.push(id);
+  history.pushState({ modal: id, depth: modalStack.length }, '');
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  // 모달 내부의 스크롤 영역을 항상 최상단으로 초기화
+  el.querySelectorAll('.sheet-body, .view-body').forEach(s => { s.scrollTop = 0; });
+  // 첫 모달이 열릴 때 메인 화면 스크롤 잠금
+  if (modalStack.length === 1) {
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeModal(id) {
+  // Use history.back() so popstate handles the DOM close
+  if (modalStack.includes(id)) {
+    history.back();
+  } else {
+    document.getElementById(id).classList.remove('active');
+  }
+}
+
+function loadRecipes() {
+  try {
+    const raw = localStorage.getItem('recipes_v1');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch { return []; }
+}
+function saveToStorage() {
+  localStorage.setItem('recipes_v1', JSON.stringify(recipes));
+}
+function newId() { return Date.now() + Math.random().toString(36).slice(2); }
+
+// ══════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════════
+function exportData() {
+  const data = { __signature__: FILE_SIGNATURE, recipes };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `recipes_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.__signature__ !== FILE_SIGNATURE) {
+        showAlert('형식 오류', '이 파일은 이 앱에서 내보낸 레시피 파일이 아닙니다.\n올바른 파일을 선택해주세요.');
+        return;
+      }
+      recipes = data.recipes || [];
+      saveToStorage();
+      renderList();
+      showAlert('가져오기 완료', `${recipes.length}개의 레시피를 불러왔습니다.`, 'success');
+    } catch {
+      showAlert('형식 오류', '파일을 읽을 수 없어요. 손상된 파일이거나 형식이 맞지 않아요.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ══════════════════════════════════════════════
+//  RENDER LIST
+// ══════════════════════════════════════════════
+function renderList() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let list = [...recipes];
+  if (q) list = list.filter(r => r.title.toLowerCase().includes(q));
+
+  // Sort: starred items by stars desc + title asc; unstarred by title asc; starred above unstarred
+  list.sort((a, b) => {
+    const sa = a.stars || 0, sb = b.stars || 0;
+    if (sa !== sb) return sb - sa;
+    return (a.title || '').localeCompare(b.title || '', 'ko');
+  });
+
+  const container = document.getElementById('recipeList');
+  container.innerHTML = '';
+  document.getElementById('emptyState').style.display = list.length === 0 ? 'block' : 'none';
+
+  list.forEach((recipe) => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    card.dataset.id = recipe.id;
+
+    const starsHtml = Array.from({length:5}, (_,i) =>
+      `<span class="star${i < (recipe.stars||0) ? ' filled' : ''}">★</span>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="card-header" onclick="openView('${recipe.id}')">
+        <div class="card-title-area">
+          <div class="card-title">${escHtml(recipe.title || '제목 없음')}</div>
+          <div class="card-stars">${starsHtml}</div>
+        </div>
+        <div class="card-actions">
+          <button class="card-btn" title="편집" onclick="event.stopPropagation(); openEdit('${recipe.id}')">✏️</button>
+          <button class="card-btn delete" title="삭제" onclick="event.stopPropagation(); deleteRecipe('${recipe.id}')">🗑️</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  EDIT MODAL
+// ══════════════════════════════════════════════
+let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title}]
+let editStars = 0;
+
+// ── 포인터 기반 드래그 정렬 (터치 + 마우스 통합) ──
+const _drag = { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, oy: 0, cb: null, cntRect: null };
+
+function _dragStart(e) {
+  if (_drag.on) return;                           // 이미 드래그 중이면 무시
+  const cfg = e.currentTarget._sortCfg;
+  if (!cfg) return;
+  const handle = e.target.closest(cfg.handleSel);
+  if (!handle) return;
+  const item = handle.closest(cfg.itemSel);
+  if (!item || !e.currentTarget.contains(item)) return;
+
+  e.preventDefault();
+  e.stopPropagation();                            // 부모 컨테이너로 버블링 차단
+
+  const rect  = item.getBoundingClientRect();
+  const cRect = e.currentTarget.getBoundingClientRect();
+
+  _drag.on      = true;
+  _drag.el      = item;
+  _drag.cnt     = e.currentTarget;
+  _drag.sel     = cfg.itemSel;
+  _drag.from    = [...e.currentTarget.querySelectorAll(cfg.itemSel)].indexOf(item);
+  _drag.oy      = e.clientY - rect.top;
+  _drag.cb      = cfg.onReorder;
+  _drag.cntRect = cRect;                          // 컨테이너 경계 저장
+
+  const g = item.cloneNode(true);
+  g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;`
+    + `opacity:.88;pointer-events:none;z-index:9999;`
+    + `box-shadow:0 10px 32px rgba(20,50,80,.28);border-radius:10px;transform:scale(1.03);margin:0;`;
+  document.body.appendChild(g);
+  _drag.ghost = g;
+  item.style.opacity = '.25';
+}
+
+document.addEventListener('pointermove', e => {
+  if (!_drag.on) return;
+  e.preventDefault();
+
+  // ghost를 컨테이너 세로 범위 내로 클램프
+  const rawTop  = e.clientY - _drag.oy;
+  const minTop  = _drag.cntRect.top;
+  const maxTop  = _drag.cntRect.bottom - _drag.ghost.offsetHeight;
+  _drag.ghost.style.top = Math.max(minTop, Math.min(maxTop, rawTop)) + 'px';
+
+  _drag.ghost.style.visibility = 'hidden';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  _drag.ghost.style.visibility = '';
+
+  const target = under?.closest(_drag.sel);
+  // 반드시 같은 컨테이너 내부의 아이템이어야만 이동
+  if (target && target !== _drag.el && _drag.cnt.contains(target)) {
+    const items = [..._drag.cnt.querySelectorAll(_drag.sel)];
+    const ci = items.indexOf(_drag.el), ti = items.indexOf(target);
+    if (ci !== ti) ci < ti ? target.after(_drag.el) : target.before(_drag.el);
+  }
+}, { passive: false });
+
+function _dragEnd() {
+  if (!_drag.on) return;
+  _drag.ghost?.remove();
+  _drag.el.style.opacity = '';
+  const items  = [..._drag.cnt.querySelectorAll(_drag.sel)];
+  const toIdx  = items.indexOf(_drag.el);
+  // toIdx가 유효하고 위치가 실제로 바뀐 경우에만 콜백
+  if (toIdx >= 0 && toIdx !== _drag.from) {
+    _drag.cb(_drag.from, toIdx);
+  }
+  Object.assign(_drag, { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, cb: null, cntRect: null });
+}
+document.addEventListener('pointerup', _dragEnd);
+document.addEventListener('pointercancel', _dragEnd);
+
+function setupSortable(container, itemSel, handleSel, onReorder) {
+  if (container._sortListener) container.removeEventListener('pointerdown', container._sortListener);
+  container._sortCfg = { itemSel, handleSel, onReorder };
+  container._sortListener = _dragStart;
+  container.addEventListener('pointerdown', _dragStart, { passive: false });
+}
+
+function openEdit(id) {
+  editingId = id;
+  if (id) {
+    const r = recipes.find(x => x.id === id);
+    document.getElementById('editModalTitle').textContent = '레시피 수정';
+    editStars = r.stars || 0;
+    editSections = JSON.parse(JSON.stringify(r.sections || []));
+    renderEditBody(r.title || '');
+  } else {
+    document.getElementById('editModalTitle').textContent = '새 레시피';
+    editStars = 0;
+    editSections = [];
+    renderEditBody('');
+  }
+  openModal('editModal');
+  // 새 레시피(+버튼)일 때 레시피 이름 칸에 포커스
+  if (!id) {
+    const t = document.getElementById('editTitle');
+    if (t) t.focus();
+  }
+}
+
+function closeEdit() {
+  closeModal('editModal');
+}
+
+function renderEditBody(titleVal) {
+  const body = document.getElementById('editBody');
+  body.innerHTML = '';
+
+  // Title
+  const titleGroup = makeEl('div', 'form-group');
+  titleGroup.innerHTML = `<label class="form-label">레시피 이름</label>
+    <input class="form-input" id="editTitle" type="text" placeholder="예: 된장찌개" value="${escHtml(titleVal)}">`;
+  body.appendChild(titleGroup);
+
+  // Stars
+  const starGroup = makeEl('div', 'form-group');
+  starGroup.innerHTML = `<label class="form-label">별점</label>
+    <div class="star-rating-edit" id="editStars">
+      ${Array.from({length:5},(_,i)=>`<span class="star-edit${i<editStars?' filled':''}" data-v="${i+1}">★</span>`).join('')}
+    </div>`;
+  body.appendChild(starGroup);
+  body.querySelector('#editStars').querySelectorAll('.star-edit').forEach(s => {
+    s.addEventListener('click', () => {
+      const v = parseInt(s.dataset.v);
+      editStars = (editStars === v) ? 0 : v;
+      body.querySelector('#editStars').querySelectorAll('.star-edit').forEach((x,i) => {
+        x.classList.toggle('filled', i < editStars);
+      });
+    });
+  });
+
+  // Sections
+  const sectionsContainer = makeEl('div', '');
+  sectionsContainer.id = 'sectionsContainer';
+  body.appendChild(sectionsContainer);
+  renderSections();
+
+  // Add section buttons
+  const addRow = makeEl('div', 'add-section-row');
+  addRow.innerHTML = `
+    <button class="btn-add-section" onclick="addSection('sauce')">🧂 양념장 추가</button>
+    <button class="btn-add-section" onclick="addSection('memo')">📝 메모 추가</button>
+  `;
+  body.appendChild(addRow);
+}
+
+function renderSections() {
+  const container = document.getElementById('sectionsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  editSections.forEach((sec, sIdx) => {
+    const block = makeEl('div', 'section-block');
+    block.dataset.secId = sec.id;
+    block.dataset.secIdx = sIdx;
+
+    const icon = sec.type === 'sauce' ? '🧂' : '📝';
+    const defaultTitle = sec.type === 'sauce' ? `양념장 ${sIdx+1}` : `메모 ${sIdx+1}`;
+    const displayTitle = sec.title || defaultTitle;
+
+    block.innerHTML = `
+      <div class="section-block-header">
+        <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
+        <div class="section-block-header-inner">
+          <span style="font-size:1rem">${icon}</span>
+          <input class="section-title-input" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;cursor:default;pointer-events:none;user-select:none;text-overflow:ellipsis;" readonly value="${escHtml(displayTitle)}" tabindex="-1">
+          <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+        </div>
+      </div>
+      <div class="section-block-body" id="secBody-${sec.id}"></div>
+    `;
+
+    container.appendChild(block);
+    renderSectionBody(sec, sIdx);
+  });
+
+  // 포인터 기반 드래그 정렬 등록
+  setupSortable(container, '.section-block', '.section-drag-handle', (from, to) => {
+    const [moved] = editSections.splice(from, 1);
+    editSections.splice(to, 0, moved);
+    renderSections();
+  });
+}
+
+function renderSectionBody(sec, sIdx) {
+  const body = document.getElementById('secBody-' + sec.id);
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (sec.type === 'sauce') {
+    // Rows
+    sec.rows = sec.rows || [];
+    sec.rows.forEach((row, rIdx) => {
+      const rowEl = makeSauceRow(sec, sIdx, row, rIdx);
+      body.appendChild(rowEl);
+    });
+    const addRowBtn = makeEl('button', 'btn-add-row');
+    addRowBtn.textContent = '+ 재료 추가';
+    addRowBtn.onclick = () => {
+      sec.rows.push({ id: newId(), name: '', amount: '', unit: '큰술' });
+      renderSectionBody(sec, sIdx);
+    };
+    body.appendChild(addRowBtn);
+
+    // 포인터 기반 드래그 정렬 등록
+    setupSortable(body, '.sauce-row', '.sauce-drag', (from, to) => {
+      const rows = editSections[sIdx].rows;
+      const [moved] = rows.splice(from, 1);
+      rows.splice(to, 0, moved);
+      renderSectionBody(editSections[sIdx], sIdx);
+    });
+
+  } else {
+    // Memo
+    const ta = makeEl('textarea', 'memo-textarea');
+    ta.value = sec.content || '';
+    ta.placeholder = '예: 1. 재료를 준비합니다';
+    // fastmemo 자동 넘버링 이식 (renumberAll이 content 동기화보다 먼저 실행되도록 먼저 등록)
+    attachAutoNumbering(ta);
+    // 커서 위치가 보이도록 스크롤만 처리
+    ta.addEventListener('input', () => {
+      sec.content = ta.value;
+      requestAnimationFrame(() => { scrollToCursor(ta); });
+    });
+
+    body.appendChild(ta);
+  }
+}
+
+function makeSauceRow(sec, sIdx, row, rIdx) {
+  const rowEl = makeEl('div', 'sauce-row');
+  rowEl.dataset.rIdx = rIdx;
+
+  const SAUCE_QUICKPICK = ['간장','고추장','고춧가루','굴소스','된장','들기름','마늘','맛소금','새우젓','설탕','식용유','식초','액젓','올리고당','참기름','청양고추','치즈','캐첩','통깨','페레론치노','후추'];
+  const quickpickOptionsHtml = SAUCE_QUICKPICK.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+
+  rowEl.innerHTML = `
+    <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
+    <div class="sauce-name-wrap">
+      <div class="sauce-quickpick-wrap">
+        <select class="sauce-quickpick">
+          <option value="" selected>빠른 선택</option>
+          ${quickpickOptionsHtml}
+        </select>
+      </div>
+      <input class="sauce-name" type="text" placeholder="직접 입력" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
+    </div>
+    <input class="sauce-amount" type="number" min="0" step="0.1" placeholder="0" value="${escHtml(String(row.amount||''))}" oninput="editSections[${sIdx}].rows[${rIdx}].amount=this.value">
+    <div class="sauce-unit-wrap">
+      <select class="sauce-unit" onchange="editSections[${sIdx}].rows[${rIdx}].unit=this.value">
+        <option${row.unit==='큰술'?' selected':''}>큰술</option>
+        <option${row.unit==='작은술'?' selected':''}>작은술</option>
+        <option${row.unit==='꼬집'?' selected':''}>꼬집</option>
+        <option${row.unit==='ml'?' selected':''}>ml</option>
+        <option${row.unit==='g'?' selected':''}>g</option>
+        <option${row.unit==='개'?' selected':''}>개</option>
+        <option${row.unit==='컵'?' selected':''}>컵</option>
+      </select>
+    </div>
+    <button class="sauce-del" onclick="removeSauceRow(${sIdx},${rIdx})" title="삭제">✕</button>
+  `;
+
+  // 드랍다운은 "빠른 선택 도구"일 뿐 — 값을 고르면 기존 sauce-name input에 주입 후
+  // 기존 oninput 핸들러를 그대로 발동시킴. input은 항상 열려있어 직접 수정도 자유로움.
+  const nameInput = rowEl.querySelector('.sauce-name');
+  const quickpick = rowEl.querySelector('.sauce-quickpick');
+  quickpick.addEventListener('change', () => {
+    if (!quickpick.value) return;
+    nameInput.value = quickpick.value;
+    nameInput.dispatchEvent(new Event('input'));
+    nameInput.focus();
+    quickpick.value = ''; // 드랍다운 자체는 상태를 갖지 않음 — 다시 "빠른 선택"으로 리셋
+  });
+
+  return rowEl;
+}
+
+function removeSauceRow(sIdx, rIdx) {
+  editSections[sIdx].rows.splice(rIdx, 1);
+  renderSectionBody(editSections[sIdx], sIdx);
+}
+
+function removeSection(sIdx) {
+  editSections.splice(sIdx, 1);
+  renderSections();
+}
+
+function addSection(type) {
+  editSections.push({
+    id: newId(),
+    type,
+    title: '',
+    rows: type === 'sauce' ? [{ id: newId(), name: '', amount: '', unit: '큰술' }] : undefined,
+    content: type === 'memo' ? '' : undefined,
+  });
+  renderSections();
+  // Scroll to bottom
+  setTimeout(() => {
+    const body = document.getElementById('editBody');
+    body.scrollTop = body.scrollHeight;
+  }, 50);
+}
+
+// ── SCROLL TO CURSOR ──
+// textarea 내에서 커서가 있는 줄이 보이도록 스크롤 조정
+// 커서가 마지막 줄에 있을 때만 맨 아래로 내리고, 아닐 때는 커서 줄을 중앙에 위치
+function scrollToCursor(ta) {
+  const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+  const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 0;
+
+  // 커서 앞의 텍스트로 현재 줄 번호 계산
+  const textBeforeCursor = ta.value.substring(0, ta.selectionStart);
+  const currentLine = textBeforeCursor.split('\n').length - 1; // 0-based
+  const totalLines = ta.value.split('\n').length;
+
+  const cursorTop = paddingTop + currentLine * lineHeight;
+  const cursorBottom = cursorTop + lineHeight;
+  const visibleTop = ta.scrollTop;
+  const visibleBottom = ta.scrollTop + ta.clientHeight;
+
+  if (cursorBottom > visibleBottom) {
+    // 커서가 아래로 벗어날 때: 커서 줄이 보이도록 아래로 스크롤 (여유 한 줄 추가)
+    ta.scrollTop = cursorBottom - ta.clientHeight + lineHeight * 2;
+  } else if (cursorTop < visibleTop) {
+    // 커서가 위로 벗어날 때: 커서 줄이 보이도록 위로 스크롤
+    ta.scrollTop = cursorTop - paddingTop;
+  }
+  // 커서가 이미 보이는 범위 안에 있으면 스크롤 변경 없음
+}
+
+// ── MEMO AUTO-NUMBERING ──
+// fastmemo 원본 로직 그대로 이식. 메모 textarea가 여러 개 생성될 수 있으므로
+// 함수 스코프(클로저)로 감싸 textarea마다 mode를 독립적으로 관리한다.
+function attachAutoNumbering(ta) {
+  let mode = null; // null | 'bullet' | 'number'
+
+  // ZWS: Android IME가 번호 prefix 숫자를 조합 버퍼로 잡는 것을 방지
+  const ZWS = '\u200b';
+
+  // 커서가 있는 줄이 화면에 보이도록 textarea 스크롤을 맞춘다.
+  function scrollCursorIntoView(ta) {
+    // lineHeight 기반으로 커서 y 추정 후 scrollTop 보정
+    const style = window.getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const pos = ta.selectionStart;
+    const textBefore = ta.value.substring(0, pos);
+    const linesBefore = textBefore.split('\n').length;
+    const cursorY = paddingTop + (linesBefore - 1) * lineHeight;
+    const visibleBottom = ta.scrollTop + ta.clientHeight;
+    if (cursorY + lineHeight > visibleBottom) {
+      ta.scrollTop = cursorY + lineHeight - ta.clientHeight + lineHeight;
+    } else if (cursorY < ta.scrollTop) {
+      ta.scrollTop = cursorY - paddingTop;
+    }
+  }
+
+  function handleSpace(preventFn) {
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    const numMatch = curLine.match(/^(\d+)\.$/);
+    if (numMatch && mode !== 'number') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ZWS + ta.value.substring(start);
+      const newCursor = lineStart + numMatch[1].length + 2 + 1;
+      ta.selectionStart = ta.selectionEnd = newCursor;
+      mode = 'number';
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    if (curLine === '*' && mode !== 'bullet') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + '• ' + ta.value.substring(start);
+      ta.selectionStart = ta.selectionEnd = lineStart + 2;
+      mode = 'bullet';
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    return false;
+  }
+
+  function handleEnter(preventFn, isShift) {
+    if (!mode) return false;
+    // Shift+Enter → 번호 없이 일반 줄바꿈
+    if (isShift) {
+      preventFn();
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(ta.selectionEnd);
+      ta.value = before + '\n' + after;
+      ta.selectionStart = ta.selectionEnd = start + 1;
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    preventFn();
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const after = ta.value.substring(ta.selectionEnd);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    if (mode === 'bullet') {
+      if (curLine === '• ') {
+        ta.value = before.slice(0, -2) + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = start - 2 + 1;
+        mode = null;
+        return true;
+      }
+      const insert = '\n• ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+
+    } else if (mode === 'number') {
+      const match = curLine.match(/^(\d+)\.\s/);
+      // 빈 번호 줄에서 엔터 → 모드 해제 (ZWS 포함 실제 길이로 제거)
+      if (match && curLine.replace(/\u200b/g, '') === match[0]) {
+        const trim = before.slice(0, -curLine.length);
+        ta.value = trim + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = trim.length + 1;
+        mode = null;
+        return true;
+      }
+      const nextNum = match ? parseInt(match[1]) + 1 : 1;
+      const insert = '\n' + nextNum + '. ' + ZWS;
+      // 커서 뒤 번호 줄 재정렬
+      const afterLines = after.split('\n');
+      let renumFrom = nextNum + 1;
+      let inSameBlock = true; // 같은 그룹 내에서만 재번호
+      const renumberedAfter = afterLines.map((line, idx) => {
+        if (idx === 0) return line;
+        const cleanLine = line.replace(/\u200b/g, '');
+        const lm = cleanLine.match(/^(\d+)(\.\s)/);
+        if (lm && inSameBlock) {
+          return renumFrom++ + lm[2] + line.slice(lm[0].length);
+        }
+        // 번호 줄이 아닌 줄(빈 줄, 일반 텍스트)을 만나면 그룹 끊김 → 이후는 건드리지 않음
+        if (!lm) inSameBlock = false;
+        return line;
+      }).join('\n');
+      ta.value = before + insert + renumberedAfter;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+    }
+    scrollCursorIntoView(ta);
+    return true;
+  }
+
+  function renumberAll() {
+    const pos = ta.selectionStart;
+    const lines = ta.value.split('\n');
+    let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
+    const result = lines.map(line => {
+      const cleanLine = line.replace(/\u200b/g, '');
+      const m = cleanLine.match(/^(\d+)(\.\s)([\s\S]*)$/);
+      if (m) {
+        if (!inBlock) {
+          inBlock = true;
+          blockStart = parseInt(m[1], 10);
+          blockOffset = 0;
+        }
+        const expected = blockStart + blockOffset++;
+        const oldPrefix = m[1] + m[2];
+        const newPrefix = expected + m[2];
+        if (oldPrefix === newPrefix) return line;
+        const newLine = newPrefix + line.slice(oldPrefix.length);
+        changed = true;
+        return newLine;
+      } else {
+        inBlock = false;
+        return line;
+      }
+    });
+    if (!changed) return;
+    const oldLines = lines, newLines = result;
+    let oldOffset = 0, newOffset = 0;
+    for (let i = 0; i < oldLines.length; i++) {
+      const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
+      const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
+      if (pos <= oldEnd) {
+        const posInLine = pos - oldOffset;
+        const om = oldLines[i].match(/^(\d+\.\s)/);
+        const nm = newLines[i].match(/^(\d+\.\s)/);
+        const diff = nm && om ? nm[1].length - om[1].length : 0;
+        const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
+        ta.value = newLines.join('\n');
+        ta.selectionStart = ta.selectionEnd = newPos;
+        return;
+      }
+      oldOffset = oldEnd;
+      newOffset = newEnd;
+    }
+    ta.value = newLines.join('\n');
+    ta.selectionStart = ta.selectionEnd = pos;
+  }
+
+  // PC: keydown
+  ta.addEventListener('keydown', function(e) {
+    let handled = false;
+    if (e.key === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    } else if (e.key === 'Enter') {
+      handled = handleEnter(() => e.preventDefault(), e.shiftKey);
+    }
+    if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+  });
+
+  // 모바일: beforeinput
+  ta.addEventListener('beforeinput', function(e) {
+    let handled = false;
+    if (e.inputType === 'insertText' && e.data === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    } else if (e.inputType === 'insertLineBreak' ||
+               (e.inputType === 'insertText' && e.data === '\n')) {
+      handled = handleEnter(() => e.preventDefault(), false);
+    }
+    if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+  });
+
+  // input: 삭제 후 재번호 + 모드 리셋
+  ta.addEventListener('input', function(e) {
+    if (ta.value === '') { mode = null; return; }
+    if (mode === 'number' && !e.isComposing) renumberAll();
+    scrollCursorIntoView(ta);
+  });
+}
+
+// ── SAVE ──
+// 저장 직전, 입력 안 된 빈 항목을 걸러내는 헬퍼
+function cleanSections(sections) {
+  const cleaned = [];
+  (sections || []).forEach(sec => {
+    if (sec.type === 'sauce') {
+      // 이름이 비어 있는(공백뿐인) 재료 줄은 제거
+      const rows = (sec.rows || []).filter(r => (r.name || '').trim() !== '' && String(r.amount ?? '').trim() !== '');
+      // 유효한 재료가 하나라도 있을 때만 박스 유지
+      if (rows.length > 0) cleaned.push({ ...sec, rows });
+    } else {
+      // 메모: 내용이 비어 있으면 박스 제거
+      if ((sec.content || '').trim() !== '') cleaned.push({ ...sec });
+    }
+  });
+  return cleaned;
+}
+
+function saveRecipe() {
+  const title = document.getElementById('editTitle').value.trim();
+  if (!title) {
+    document.getElementById('editTitle').focus();
+    document.getElementById('editTitle').style.borderColor = var_css('--danger');
+    setTimeout(() => document.getElementById('editTitle').style.borderColor = '', 1500);
+    return;
+  }
+
+  // 입력되지 않은 항목 정리:
+  //  - 양념장: 이름이 비어 있는 재료 줄은 버리고, 남은 재료가 0개면 박스째 버림
+  //  - 메모: 내용이 비어 있으면 박스째 버림
+  const sections = cleanSections(editSections);
+
+  // 유효한 내용이 하나도 없으면(빈 양념장/메모만 있으면) 저장 막기 — 제목 빈칸과 동일하게 빨간 깜빡임
+  if (sections.length === 0) {
+    const btns = document.querySelectorAll('#editBody .btn-add-section');
+    btns.forEach(b => b.style.borderColor = var_css('--danger'));
+    setTimeout(() => btns.forEach(b => b.style.borderColor = ''), 1500);
+    return;
+  }
+
+  if (editingId) {
+    const idx = recipes.findIndex(r => r.id === editingId);
+    if (idx !== -1) {
+      recipes[idx] = { ...recipes[idx], title, stars: editStars, sections };
+    }
+  } else {
+    recipes.push({ id: newId(), title, stars: editStars, sections });
+  }
+  saveToStorage();
+  closeEdit();
+  renderList();
+}
+
+function var_css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// ══════════════════════════════════════════════
+//  VIEW MODAL
+// ══════════════════════════════════════════════
+function openView(id) {
+  const r = recipes.find(x => x.id === id);
+  if (!r) return;
+
+  const header = document.getElementById('viewHeader');
+  const body = document.getElementById('viewBody');
+  const starsHtml = Array.from({length:5}, (_,i) =>
+    `<span class="view-star${i < (r.stars||0) ? ' filled' : ''}">★</span>`
+  ).join('');
+
+  let sectionsHtml = '';
+  (r.sections || []).forEach((sec, i) => {
+    const defaultTitle = sec.type === 'sauce' ? `양념장 ${i+1}` : `메모 ${i+1}`;
+    const title = sec.title || defaultTitle;
+    if (sec.type === 'sauce') {
+      const rows = (sec.rows || []).filter(row => row.name);
+      if (rows.length === 0) return;
+      const rowsHtml = rows.map(row =>
+        `<tr><td>${escHtml(row.name)}</td><td>${row.amount ? escHtml(String(row.amount)) + ' ' + escHtml(row.unit) : '-'}</td></tr>`
+      ).join('');
+      sectionsHtml += `<div class="view-section">
+        <div class="view-section-title">🧂 ${escHtml(title)}</div>
+        <table class="view-sauce-table">${rowsHtml}</table>
+      </div>`;
+    } else {
+      const content = (sec.content || '').trim();
+      if (!content) return;
+      const memoHtml = content.split('\n').map(line => {
+        const m = line.match(/^(\d+\.\s)([\s\S]*)$/);
+        if (m) {
+          return `<div class="view-memo-line"><span class="view-memo-num">${escHtml(m[1])}</span><span class="view-memo-text">${escHtml(m[2])}</span></div>`;
+        }
+        return `<div class="view-memo-plain">${escHtml(line) || '&nbsp;'}</div>`;
+      }).join('');
+      sectionsHtml += `<div class="view-section">
+        <div class="view-section-title">📝 ${escHtml(title)}</div>
+        <div class="view-memo">${memoHtml}</div>
+      </div>`;
+    }
+  });
+
+  header.innerHTML = `
+    <div class="view-title">${escHtml(r.title)}</div>
+    <div class="view-stars">${starsHtml}</div>
+  `;
+  body.innerHTML = sectionsHtml || '<p style="color:var(--text-muted);font-size:0.88rem">내용이 없어요.</p>';
+
+  openModal('viewModal');
+}
+function closeView() {
+  closeModal('viewModal');
+}
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function deleteRecipe(id) {
+  const r = recipes.find(x => x.id === id);
+  document.getElementById('confirmTitle').textContent = '레시피 삭제';
+  document.getElementById('confirmMsg').textContent = `"${r ? r.title : ''}" 레시피를 삭제할까요?\n삭제 후 복구할 수 없어요.`;
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      recipes = recipes.filter(x => x.id !== id);
+      saveToStorage();
+      renderList();
+    }
+  };
+}
+function closeConfirm(yes) {
+  if (yes && confirmCallback) {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    cb(true);
+  } else {
+    confirmCallback = null;
+  }
+  closeModal('confirmModal');
+}
+
+// ══════════════════════════════════════════════
+//  ALERT
+// ══════════════════════════════════════════════
+function showAlert(title, msg, type) {
+  document.getElementById('alertTitle').textContent = title;
+  document.getElementById('alertMsg').textContent = msg;
+  const isSuccess = type === 'success';
+  document.getElementById('alertTitle').style.color = isSuccess ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('alertIcon').textContent = isSuccess ? '✅' : '⚠️';
+  openModal('alertModal');
+}
+function closeAlert() {
+  closeModal('alertModal');
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function makeEl(tag, cls) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  return el;
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Close modals on overlay click
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+document.getElementById('viewModal').addEventListener('click', function(e) {
+  if (e.target === this) closeView();
+});
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+  if (e.target === this) closeConfirm(false);
+});
+document.getElementById('alertModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAlert();
+});
+
+// ── INIT ──
+renderList();
+</script>
+</body>
+</html>

@@ -1179,26 +1179,33 @@ async function importCSV(file) {
   const rows = parseCSV(text);
   if (!rows.length) { toast('임포트할 항목이 없습니다'); return; }
 
-  // 스마트 머지: name+url+email+username 조합으로 키 생성
+  // 미러링: CSV 파일 내용에 100% 맞춤
+  // 키: name+url+email+username 조합
   function makeKey(r) { return [r.name,r.url,r.email,r.username].map(s=>(s||'').toLowerCase()).join('|'); }
 
   const existingMap = new Map(S.items.map(i=>[makeKey(i),i]));
-  let added=0, updated=0, skipped=0;
+  const incomingKeys = new Set(rows.map(makeKey));
+  let added=0, updated=0, skipped=0, removed=0;
+
+  // 기존 항목 중 CSV에 없는 것 → 삭제
+  S.items = S.items.filter(i => {
+    if (incomingKeys.has(makeKey(i))) return true;
+    removed++; return false;
+  });
+
+  // 재구성된 existingMap
+  const newExistingMap = new Map(S.items.map(i=>[makeKey(i),i]));
 
   for (const row of rows) {
     const key = makeKey(row);
-    const existing = existingMap.get(key);
+    const existing = newExistingMap.get(key);
     if (!existing) {
-      // 새 항목
       S.items.push({ id:crypto.randomUUID(), ...row });
-      existingMap.set(key, row);
       added++;
     } else {
-      // 기존 항목과 비교
       const mNew = row.modifyTime || 0;
       const mOld = existing.modifyTime || 0;
-      if (mNew > mOld) {
-        // 더 최신이면 업데이트
+      if (mNew > mOld || row.password !== existing.password) {
         const idx = S.items.findIndex(i=>i.id===existing.id);
         if (idx!==-1) S.items[idx] = { id:existing.id, ...row };
         updated++;
@@ -1214,7 +1221,8 @@ async function importCSV(file) {
   if (S.activeVault!=='__all__' && !getVaults().includes(S.activeVault)) S.activeVault='__all__';
   applyFilter();
   renderTabs();
-  toast(`가져오기 완료: 신규 ${added}개, 업데이트 ${updated}개, 변동없음 ${skipped}개`);
+  const parts = [`신규 ${added}개`, `업데이트 ${updated}개`, `삭제 ${removed}개`, `유지 ${skipped}개`];
+  toast(`가져오기 완료: ${parts.join(', ')}`);
 }
 
 /* ── EXPORT ── */

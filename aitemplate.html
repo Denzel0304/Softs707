@@ -4,27 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 템플릿</title>
-  <link rel="stylesheet" href="style.css" />
   <style>
-    /* ── 기본 레이아웃 ── */
-    body {
-      background: var(--bg);
-      padding: 20px;
-      max-width: 1000px;
-      margin: 0 auto;
+    /* ─────────────────────────────────────────
+       퀀트 투자 분석기 - 공통 스타일 (인라인 통합)
+       옅은 주황색 테마
+    ───────────────────────────────────────── */
+    :root {
+      --bg:           #FFF5EC;
+      --bg-card:      #FFFAF5;
+      --accent:       #E8722A;
+      --accent-light: #F5A05A;
+      --accent-soft:  #FDE8D4;
+      --text:         #2C1A0E;
+      --text-sub:     #7A5C44;
+      --text-muted:   #B08A6E;
+      --border:       #F0D5BC;
+      --success:      #2D9E6B;
+      --danger:       #D94F3A;
+      --shadow:       rgba(200, 120, 60, 0.12);
+      --radius:       10px;
+      --radius-lg:    16px;
     }
 
-    /* ── 모바일 ── */
-    @media (max-width: 640px) {
-      body { padding: 12px 10px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
     }
+
+    /* ── 공통 버튼 ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 22px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.18s; font-family: inherit;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #D05E18; transform: translateY(-1px); box-shadow: 0 4px 12px var(--shadow); }
+    .btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--accent-soft); color: var(--accent); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-secondary:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-danger { background: var(--danger); color: #fff; padding: 6px 14px; font-size: 13px; }
+
+    /* ── 공통 입력 ── */
+    .form-control {
+      padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px;
+      background: #fff; color: var(--text); font-size: 14px;
+      font-family: inherit; transition: border-color 0.18s; outline: none; width: 100%;
+    }
+    .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,114,42,.12); }
+
+    /* ── 페이지 레이아웃 ── */
+    body { padding: 20px; max-width: 1000px; margin: 0 auto; }
+
+    @media (max-width: 640px) { body { padding: 12px 10px; } }
 
     .page-title {
       font-size: 18px; font-weight: 800; color: var(--accent);
       margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
     }
 
-    /* ── 상단 도구 막대 ── */
+    /* ── 도구 막대 ── */
     .tool-bar {
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
       margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border);
@@ -32,14 +78,9 @@
     .tool-bar .spacer { flex: 1 1 auto; }
     .btn-sm { padding: 7px 15px; font-size: 13px; white-space: nowrap; }
 
-    /* 모바일: 도구 막대 2줄 배치 */
     @media (max-width: 640px) {
       .tool-bar { gap: 6px; }
       .tool-bar .spacer { flex-basis: 100%; height: 0; }
-      .tool-bar-row2 {
-        display: flex; gap: 6px; flex-wrap: wrap; width: 100%;
-        margin-top: 4px;
-      }
       .btn-sm { padding: 8px 12px; font-size: 12px; }
     }
 
@@ -49,7 +90,6 @@
       border-radius: 20px; padding: 3px 12px; white-space: nowrap;
     }
 
-    /* 전체 선택 체크박스 */
     .check-all {
       display: inline-flex; align-items: center; gap: 7px;
       font-size: 13px; font-weight: 700; color: var(--text-sub);
@@ -67,10 +107,7 @@
     .tpl-card.dragging { opacity: .45; }
     .tpl-card.drop-target { border-top: 3px solid var(--accent); }
 
-    /* 모바일: 카드 패딩 축소 */
-    @media (max-width: 640px) {
-      .tpl-card { padding: 11px 12px; }
-    }
+    @media (max-width: 640px) { .tpl-card { padding: 11px 12px; } }
 
     .tpl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .tpl-check { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; flex: 0 0 auto; }
@@ -81,10 +118,7 @@
     }
     .tpl-handle:active { cursor: grabbing; }
 
-    /* 모바일: 드래그 핸들 숨김 (터치 드래그 미지원) */
-    @media (max-width: 640px) {
-      .tpl-handle { display: none; }
-    }
+    @media (max-width: 640px) { .tpl-handle { display: none; } }
 
     .tpl-title {
       font-size: 14.5px; font-weight: 800; color: var(--text);
@@ -95,7 +129,6 @@
     .tpl-actions { display: flex; gap: 5px; flex: 0 0 auto; flex-wrap: wrap; }
     .tpl-actions .btn { padding: 5px 10px; font-size: 12px; }
 
-    /* 모바일: 버튼 영역 전체 너비 */
     @media (max-width: 640px) {
       .tpl-head { flex-wrap: wrap; }
       .tpl-title { flex-basis: calc(100% - 80px); }
@@ -135,7 +168,7 @@
 
     /* ── 모달 ── */
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(44, 26, 14, 0.45);
+      display: none; position: fixed; inset: 0; background: rgba(44,26,14,.45);
       z-index: 1000; align-items: center; justify-content: center; padding: 20px;
     }
     .modal-overlay.open { display: flex; }
@@ -145,16 +178,11 @@
       max-height: 88vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,.24);
     }
 
-    /* 모바일: 모달 하단 시트 스타일 */
     @media (max-width: 640px) {
-      .modal-overlay {
-        align-items: flex-end;
-        padding: 0;
-      }
+      .modal-overlay { align-items: flex-end; padding: 0; }
       .modal-box {
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        max-height: 92vh;
-        padding: 20px 16px;
+        max-height: 92vh; padding: 20px 16px;
       }
     }
 
@@ -163,17 +191,13 @@
       margin-bottom: 16px;
     }
     .modal-title { font-size: 16px; font-weight: 800; color: var(--accent); }
-    .modal-close {
-      font-size: 22px; color: var(--text-muted); cursor: pointer; line-height: 1;
-      padding: 4px 8px; /* 모바일 터치 영역 확보 */
-    }
+    .modal-close { font-size: 22px; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 4px 8px; }
     .modal-body-text { font-size: 13.5px; line-height: 1.7; color: var(--text); margin-bottom: 18px; }
     .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
 
-    /* 모바일: 모달 푸터 버튼 전체 너비 */
     @media (max-width: 640px) {
       .modal-foot { flex-direction: column-reverse; }
-      .modal-foot .btn { width: 100%; padding: 13px; font-size: 14px; text-align: center; }
+      .modal-foot .btn { width: 100%; padding: 13px; font-size: 14px; text-align: center; justify-content: center; }
     }
 
     .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
@@ -181,20 +205,16 @@
       font-size: 12px; font-weight: 800; color: var(--text-sub);
       text-transform: uppercase; letter-spacing: .5px;
     }
-    textarea.form-control {
-      min-height: 220px; resize: vertical; line-height: 1.7;
-      font-family: inherit; font-size: 13.5px;
-    }
+    textarea.form-control { min-height: 220px; resize: vertical; line-height: 1.7; font-family: inherit; font-size: 13.5px; }
 
-    /* 모바일: textarea 높이 조정 */
     @media (max-width: 640px) {
-      textarea.form-control { min-height: 160px; font-size: 16px; /* iOS 줌 방지 */ }
-      input.form-control { font-size: 16px; /* iOS 줌 방지 */ }
+      textarea.form-control { min-height: 160px; font-size: 16px; }
+      input.form-control { font-size: 16px; }
     }
 
     .field-hint { font-size: 11.5px; color: var(--text-muted); }
 
-    /* ── 알림 ── */
+    /* ── 토스트 알림 ── */
     .mini-toast {
       position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(14px);
       background: var(--text); color: #fff; padding: 11px 22px; border-radius: 24px;
@@ -203,12 +223,8 @@
     }
     .mini-toast.on { opacity: .95; transform: translateX(-50%) translateY(0); }
 
-    /* 모바일: 토스트 위치 올림 (하단 시트 위) */
-    @media (max-width: 640px) {
-      .mini-toast { bottom: 80px; }
-    }
+    @media (max-width: 640px) { .mini-toast { bottom: 80px; } }
 
-    /* ── 가져오기 숨김 input ── */
     #import-file { display: none; }
   </style>
 </head>
@@ -301,22 +317,20 @@
     </div>
   </div>
 
+  <div class="mini-toast" id="mini-toast"></div>
+
   <script>
     const STORAGE_KEY = "ai_templates_v1";
 
-    // items 항목: { id, title, body }
-    let items    = [];
-    let selected = new Set();   // 선택된 id
-    let openIds  = new Set();   // 본문을 펼쳐둔 id
-    let editId   = null;        // null 이면 새로 만들기
-    let delId    = null;
-    let importPending = null;   // 가져오기 대기 중 데이터
+    let items        = [];
+    let selected     = new Set();
+    let openIds      = new Set();
+    let editId       = null;
+    let delId        = null;
+    let importPending = null;
 
     // ═══════════════════════════════════════════
     //  히스토리 스택 관리
-    //  - 모달이 열릴 때 pushState 한 번만
-    //  - 모달이 닫힐 때 replaceState (스택 누적 방지)
-    //  - 앱 메인에서 뒤로가기 → 스택 없으므로 바로 이탈
     // ═══════════════════════════════════════════
     const MODAL_IDS = ['edit', 'del', 'import'];
 
@@ -326,61 +340,52 @@
       ) || null;
     }
 
-    function pushModalHistory(modalId) {
-      // 이미 모달 상태가 스택에 있으면 중복 push 안 함
-      if (history.state && history.state.modal) return;
-      history.pushState({ modal: modalId }, '');
-    }
-
     function openModal(modalId) {
       document.getElementById(`${modalId}-modal`).classList.add('open');
-      pushModalHistory(modalId);
+      // 이미 모달 state가 쌓여 있으면 중복 push 안 함
+      if (!(history.state && history.state.modal)) {
+        history.pushState({ modal: modalId }, '');
+      }
     }
 
     function closeModal(modalId, fromPopstate) {
       const el = document.getElementById(`${modalId}-modal`);
       if (!el.classList.contains('open')) return;
       el.classList.remove('open');
-
-      // closeModal이 popstate에 의해 호출된 게 아닌 경우
-      // (사용자가 × 버튼을 누른 경우) 히스토리를 한 칸 뒤로 가서 정리
+      // × 버튼 등으로 직접 닫은 경우 → history 한 칸 뒤로 정리
       if (!fromPopstate && history.state && history.state.modal) {
         history.back();
       }
-
-      if (modalId === 'edit') editId = null;
-      if (modalId === 'del')  delId  = null;
+      if (modalId === 'edit')   editId        = null;
+      if (modalId === 'del')    delId         = null;
       if (modalId === 'import') importPending = null;
     }
 
-    function closeAllModals(fromPopstate) {
-      MODAL_IDS.forEach(id => {
-        const el = document.getElementById(`${id}-modal`);
-        if (el.classList.contains('open')) {
-          el.classList.remove('open');
-        }
-      });
-      editId = null;
-      delId  = null;
-      importPending = null;
-    }
-
-    // 뒤로가기 이벤트 핸들러
-    window.addEventListener('popstate', e => {
-      const openModal = getOpenModal();
-      if (openModal) {
-        // 모달이 열려있으면 닫기만 (fromPopstate=true → history.back() 재호출 안 함)
-        closeModal(openModal, true);
-      }
-      // 모달이 없으면 자연스럽게 이탈 (history stack이 비었으므로)
+    // 뒤로가기 → 열린 모달 닫기 / 없으면 자연 이탈
+    window.addEventListener('popstate', () => {
+      const open = getOpenModal();
+      if (open) closeModal(open, true);
     });
 
-    // 페이지 진입 시 초기 상태 확정 (replaceState로 base state 설정)
-    // modal 없는 상태를 base로 → 뒤로가기 1번이면 바로 이탈
+    // 진입 시 base state 확정 (모달 없음) → 뒤로가기 1번이면 바로 이탈
     history.replaceState({ modal: null }, '');
 
+    // 오버레이 배경 클릭으로 닫기
+    MODAL_IDS.forEach(id => {
+      document.getElementById(`${id}-modal`).addEventListener('click', function(e) {
+        if (e.target === this) closeModal(id);
+      });
+    });
+
+    // ESC 닫기
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const open = getOpenModal();
+      if (open) closeModal(open);
+    });
+
     // ═══════════════════════════════════════════
-    //  저장 / 불러오기 (localStorage)
+    //  localStorage 저장 / 불러오기
     // ═══════════════════════════════════════════
     function loadItems() {
       try {
@@ -389,9 +394,7 @@
           const parsed = JSON.parse(raw);
           items = (Array.isArray(parsed) ? parsed : []).map(normalize);
         }
-      } catch {
-        items = [];
-      }
+      } catch { items = []; }
       render();
     }
 
@@ -409,7 +412,7 @@
       return {
         id:    String(x && x.id ? x.id : newId()),
         title: String((x && x.title) || "제목 없음"),
-        body:  String((x && x.body) || "")
+        body:  String((x && x.body)  || "")
       };
     }
 
@@ -421,17 +424,12 @@
     //  내보내기 / 가져오기
     // ═══════════════════════════════════════════
     function exportData() {
-      if (!items.length) {
-        miniToast("내보낼 템플릿이 없습니다.");
-        return;
-      }
-      const json = JSON.stringify(items, null, 2);
-      const blob = new Blob([json], { type: "application/json" });
+      if (!items.length) { miniToast("내보낼 템플릿이 없습니다."); return; }
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
-      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       a.href     = url;
-      a.download = `ai_templates_${date}.json`;
+      a.download = `ai_templates_${new Date().toISOString().slice(0,10).replace(/-/g,"")}.json`;
       a.click();
       URL.revokeObjectURL(url);
       miniToast(`${items.length}개 템플릿을 내보냈습니다.`);
@@ -440,21 +438,18 @@
     function importData(e) {
       const file = e.target.files[0];
       if (!file) return;
-      e.target.value = ""; // 같은 파일 재선택 허용
-
+      e.target.value = "";
       const reader = new FileReader();
       reader.onload = ev => {
         try {
           const parsed = JSON.parse(ev.target.result);
-          if (!Array.isArray(parsed)) throw new Error("형식 오류");
+          if (!Array.isArray(parsed)) throw new Error();
           importPending = parsed.map(normalize);
           document.getElementById("import-text").innerHTML =
-            `<b>${file.name}</b>에서 <b>${importPending.length}개</b> 템플릿을 가져옵니다.<br>
+            `<b>${esc(file.name)}</b>에서 <b>${importPending.length}개</b> 템플릿을 가져옵니다.<br>
              기존 템플릿은 <b>유지되고</b>, 같은 ID가 없는 항목만 추가됩니다.`;
           openModal('import');
-        } catch {
-          miniToast("올바른 JSON 파일이 아닙니다.");
-        }
+        } catch { miniToast("올바른 JSON 파일이 아닙니다."); }
       };
       reader.readAsText(file);
     }
@@ -462,11 +457,11 @@
     function confirmImport() {
       if (!importPending) return;
       const existingIds = new Set(items.map(x => x.id));
-      const newItems = importPending.filter(x => !existingIds.has(x.id));
-      items = [...items, ...newItems];
+      const added = importPending.filter(x => !existingIds.has(x.id));
+      items = [...items, ...added];
       closeModal('import');
       render();
-      if (saveItems()) miniToast(`${newItems.length}개 템플릿을 추가했습니다.`);
+      if (saveItems()) miniToast(`${added.length}개 템플릿을 추가했습니다.`);
     }
 
     // ═══════════════════════════════════════════
@@ -474,12 +469,11 @@
     // ═══════════════════════════════════════════
     function esc(s) {
       return String(s).replace(/[&<>"']/g, c =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
     }
 
     function render() {
       const el = document.getElementById("list");
-
       if (!items.length) {
         el.innerHTML =
           `<div class="empty-state"><div class="icon">🧾</div>
@@ -487,7 +481,6 @@
         updateSelInfo();
         return;
       }
-
       el.innerHTML = items.map((t, i) => {
         const on      = selected.has(t.id);
         const opened  = openIds.has(t.id);
@@ -495,32 +488,31 @@
         const clipped = !opened && (t.body.length > 180 || lines > 4);
         return `
           <div class="tpl-card ${on ? "checked" : ""}" data-id="${t.id}" data-idx="${i}"
-               ondragover="onDragOver(event, ${i})" ondrop="onDrop(event, ${i})"
+               ondragover="onDragOver(event,${i})" ondrop="onDrop(event,${i})"
                ondragleave="onDragLeave(event)">
             <div class="tpl-head">
               <span class="tpl-handle" draggable="true"
-                    ondragstart="onDragStart(event, ${i})" ondragend="onDragEnd(event)"
+                    ondragstart="onDragStart(event,${i})" ondragend="onDragEnd()"
                     title="끌어서 순서 변경">⋮⋮</span>
               <input type="checkbox" class="tpl-check" ${on ? "checked" : ""}
-                     onchange="toggleOne('${t.id}', this.checked)" />
+                     onchange="toggleOne('${t.id}',this.checked)" />
               <span class="tpl-title" onclick="toggleOpen('${t.id}')">${esc(t.title)}</span>
               <span class="tpl-len">${t.body.length.toLocaleString("ko-KR")}자</span>
               <div class="tpl-actions">
-                <button class="btn btn-secondary" onclick="move(${i}, -1)" title="위로"
-                        ${i === 0 ? "disabled" : ""}>▲</button>
-                <button class="btn btn-secondary" onclick="move(${i}, 1)" title="아래로"
-                        ${i === items.length - 1 ? "disabled" : ""}>▼</button>
-                <button class="btn btn-secondary" onclick="copyOne('${t.id}')" title="이 템플릿만 복사">📋</button>
+                <button class="btn btn-secondary" onclick="move(${i},-1)" title="위로"
+                        ${i===0?"disabled":""}>▲</button>
+                <button class="btn btn-secondary" onclick="move(${i},1)" title="아래로"
+                        ${i===items.length-1?"disabled":""}>▼</button>
+                <button class="btn btn-secondary" onclick="copyOne('${t.id}')" title="복사">📋</button>
                 <button class="btn btn-secondary" onclick="openEditorModal('${t.id}')" title="수정">✏️</button>
-                <button class="btn btn-danger" onclick="requestDelete('${t.id}')" title="삭제">🗑️</button>
+                <button class="btn btn-danger"    onclick="requestDelete('${t.id}')" title="삭제">🗑️</button>
               </div>
             </div>
-            <div class="tpl-body ${opened ? "open" : ""} ${clipped ? "clipped" : ""}"
-                 onclick="toggleOpen('${t.id}')">${esc(t.body) || '<i>(내용 없음)</i>'}</div>
-            ${clipped ? `<span class="tpl-more" onclick="toggleOpen('${t.id}')">▾ 전체 보기</span>` : ""}
+            <div class="tpl-body ${opened?"open":""} ${clipped?"clipped":""}"
+                 onclick="toggleOpen('${t.id}')">${esc(t.body)||'<i>(내용 없음)</i>'}</div>
+            ${clipped?`<span class="tpl-more" onclick="toggleOpen('${t.id}')">▾ 전체 보기</span>`:""}
           </div>`;
       }).join("");
-
       updateSelInfo();
     }
 
@@ -535,61 +527,34 @@
     // ═══════════════════════════════════════════
     //  선택
     // ═══════════════════════════════════════════
-    function toggleOne(id, on) {
-      if (on) selected.add(id); else selected.delete(id);
-      render();
-    }
-    function toggleAll(on) {
-      selected = on ? new Set(items.map(t => t.id)) : new Set();
-      render();
-    }
-    function clearSelection() {
-      selected = new Set();
-      render();
-    }
-    function toggleOpen(id) {
-      if (openIds.has(id)) openIds.delete(id); else openIds.add(id);
-      render();
-    }
+    function toggleOne(id, on) { if (on) selected.add(id); else selected.delete(id); render(); }
+    function toggleAll(on)     { selected = on ? new Set(items.map(t=>t.id)) : new Set(); render(); }
+    function clearSelection()  { selected = new Set(); render(); }
+    function toggleOpen(id)    { if (openIds.has(id)) openIds.delete(id); else openIds.add(id); render(); }
 
     // ═══════════════════════════════════════════
     //  복사
     // ═══════════════════════════════════════════
     function block(t, no) {
-      const head = (no ? `## ${no}. ` : "## ") + (t.title || "제목 없음");
-      return head + "\n\n" + t.body;
+      return ((no ? `## ${no}. ` : "## ") + (t.title || "제목 없음")) + "\n\n" + t.body;
     }
-
     function copyOne(id) {
       const t = items.find(x => x.id === id);
-      if (!t) return;
-      copyText(block(t), `'${t.title}' 을(를) 복사했습니다.`);
+      if (t) copyText(block(t), `'${t.title}' 을(를) 복사했습니다.`);
     }
-
     function copySelected() {
       const picked = items.filter(t => selected.has(t.id));
-      if (!picked.length) {
-        miniToast("복사할 템플릿을 먼저 선택해주세요.");
-        return;
-      }
-      if (picked.length === 1) {
-        copyText(block(picked[0]), `'${picked[0].title}' 을(를) 복사했습니다.`);
-        return;
-      }
-      const text = picked.map((t, i) => block(t, i + 1)).join("\n\n---\n\n");
-      copyText(text, `${picked.length}개를 제목과 함께 순서대로 복사했습니다.`);
+      if (!picked.length) { miniToast("복사할 템플릿을 먼저 선택해주세요."); return; }
+      if (picked.length === 1) { copyText(block(picked[0]), `'${picked[0].title}' 을(를) 복사했습니다.`); return; }
+      copyText(picked.map((t,i)=>block(t,i+1)).join("\n\n---\n\n"),
+               `${picked.length}개를 제목과 함께 순서대로 복사했습니다.`);
     }
-
     async function copyText(text, okMsg) {
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
+      try { await navigator.clipboard.writeText(text); }
+      catch {
         const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
+        ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta); ta.select();
         try { document.execCommand("copy"); } catch {}
         document.body.removeChild(ta);
       }
@@ -597,59 +562,45 @@
     }
 
     // ═══════════════════════════════════════════
-    //  순서 편집
+    //  순서 편집 (▲▼ + 드래그)
     // ═══════════════════════════════════════════
     function move(i, dir) {
       const j = i + dir;
       if (j < 0 || j >= items.length) return;
       [items[i], items[j]] = [items[j], items[i]];
-      render();
-      saveItems();
+      render(); saveItems();
     }
 
     let dragFrom = null;
-
     function onDragStart(e, i) {
-      dragFrom = i;
-      e.dataTransfer.effectAllowed = "move";
+      dragFrom = i; e.dataTransfer.effectAllowed = "move";
       try { e.dataTransfer.setData("text/plain", String(i)); } catch {}
-      const card = e.target.closest(".tpl-card");
-      if (card) card.classList.add("dragging");
+      e.target.closest(".tpl-card")?.classList.add("dragging");
     }
     function onDragEnd() {
       dragFrom = null;
-      document.querySelectorAll(".tpl-card")
-        .forEach(c => c.classList.remove("dragging", "drop-target"));
+      document.querySelectorAll(".tpl-card").forEach(c => c.classList.remove("dragging","drop-target"));
     }
     function onDragOver(e, i) {
       if (dragFrom === null || dragFrom === i) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      const card = e.currentTarget;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
       document.querySelectorAll(".tpl-card").forEach(c => c.classList.remove("drop-target"));
-      card.classList.add("drop-target");
+      e.currentTarget.classList.add("drop-target");
     }
-    function onDragLeave(e) {
-      e.currentTarget.classList.remove("drop-target");
-    }
+    function onDragLeave(e) { e.currentTarget.classList.remove("drop-target"); }
     function onDrop(e, i) {
       e.preventDefault();
-      const from = dragFrom;
-      onDragEnd();
+      const from = dragFrom; onDragEnd();
       if (from === null || from === i) return;
       const [moved] = items.splice(from, 1);
       items.splice(i, 0, moved);
-      render();
-      saveItems();
+      render(); saveItems();
     }
 
     // ═══════════════════════════════════════════
     //  추가 / 수정
     // ═══════════════════════════════════════════
-    function openEditor(id) {
-      openEditorModal(id);
-    }
-
+    function openEditor(id) { openEditorModal(id); }
     function openEditorModal(id) {
       editId = id || null;
       const t = id ? items.find(x => x.id === id) : null;
@@ -659,20 +610,16 @@
       openModal('edit');
       setTimeout(() => document.getElementById("in-title").focus(), 60);
     }
-
     function saveEditor() {
       const title = document.getElementById("in-title").value.trim();
       const body  = document.getElementById("in-body").value;
-
       if (!body.trim()) { miniToast("내용을 입력해주세요."); return; }
-
       if (editId) {
         const t = items.find(x => x.id === editId);
         if (t) { t.title = title || "제목 없음"; t.body = body; }
       } else {
         items.push({ id: newId(), title: title || "제목 없음", body });
       }
-
       closeModal('edit');
       render();
       if (saveItems()) miniToast("저장했습니다.");
@@ -689,48 +636,26 @@
         `<b>${esc(t.title)}</b> 을(를) 삭제할까요?<br>삭제 후에는 되돌릴 수 없습니다.`;
       openModal('del');
     }
-
     function confirmDelete() {
       if (!delId) return;
       items = items.filter(x => x.id !== delId);
-      selected.delete(delId);
-      openIds.delete(delId);
+      selected.delete(delId); openIds.delete(delId);
       closeModal('del');
       render();
       if (saveItems()) miniToast("삭제했습니다.");
     }
 
     // ═══════════════════════════════════════════
-    //  알림
+    //  토스트 알림
     // ═══════════════════════════════════════════
     let _toastTimer = null;
     function miniToast(msg) {
-      let el = document.getElementById("mini-toast");
-      if (!el) {
-        el = document.createElement("div");
-        el.id = "mini-toast";
-        el.className = "mini-toast";
-        document.body.appendChild(el);
-      }
+      const el = document.getElementById("mini-toast");
       el.textContent = msg;
       el.classList.add("on");
       clearTimeout(_toastTimer);
       _toastTimer = setTimeout(() => el.classList.remove("on"), 2000);
     }
-
-    // ESC 로 모달 닫기
-    document.addEventListener("keydown", e => {
-      if (e.key !== "Escape") return;
-      const open = getOpenModal();
-      if (open) closeModal(open);
-    });
-
-    // 오버레이 클릭으로 닫기
-    MODAL_IDS.forEach(id => {
-      document.getElementById(`${id}-modal`).addEventListener('click', function(e) {
-        if (e.target === this) closeModal(id);
-      });
-    });
 
     // 초기 로드
     loadItems();

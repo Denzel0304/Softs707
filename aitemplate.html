@@ -72,16 +72,18 @@
 
     /* ── 도구 막대 ── */
     .tool-bar {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      display: flex; flex-direction: column; gap: 10px;
       margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border);
     }
-    .tool-bar .spacer { flex: 1 1 auto; }
+    .tool-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .tool-row-top { gap: 14px; }
+    .tool-row-btns { gap: 8px; }
     .btn-sm { padding: 7px 15px; font-size: 13px; white-space: nowrap; }
 
     @media (max-width: 640px) {
-      .tool-bar { gap: 6px; }
-      .tool-bar .spacer { flex-basis: 100%; height: 0; }
-      .btn-sm { padding: 8px 12px; font-size: 12px; }
+      .tool-row-top { gap: 10px; }
+      .tool-row-btns { gap: 6px; flex-wrap: nowrap; }
+      .btn-sm { padding: 7px 10px; font-size: 11.5px; white-space: nowrap; }
     }
 
     .sel-info {
@@ -234,18 +236,23 @@
 
   <!-- ── 도구 막대 ── -->
   <div class="tool-bar">
-    <button class="btn btn-primary btn-sm" onclick="openEditor(null)">＋ 새 템플릿</button>
-    <label class="check-all">
-      <input type="checkbox" id="check-all" onchange="toggleAll(this.checked)" />
-      전체 선택
-    </label>
-    <span class="sel-info" id="sel-info">0개 선택</span>
-    <span class="spacer"></span>
-    <button class="btn btn-secondary btn-sm" onclick="clearSelection()">선택 해제</button>
-    <button class="btn btn-primary btn-sm" onclick="copySelected()">📋 선택 복사</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportData()">⬆️ 내보내기</button>
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">⬇️ 가져오기</button>
-    <input type="file" id="import-file" accept=".json" onchange="importData(event)" />
+    <!-- 1행: 새 템플릿 · 전체선택 · 0개선택 -->
+    <div class="tool-row tool-row-top">
+      <button class="btn btn-primary btn-sm" onclick="openEditor(null)">＋ 새 템플릿</button>
+      <label class="check-all">
+        <input type="checkbox" id="check-all" onchange="toggleAll(this.checked)" />
+        전체 선택
+      </label>
+      <span class="sel-info" id="sel-info">0개 선택</span>
+    </div>
+    <!-- 2행: 액션 버튼들 -->
+    <div class="tool-row tool-row-btns">
+      <button class="btn btn-secondary btn-sm" onclick="clearSelection()">선택 해제</button>
+      <button class="btn btn-primary btn-sm" onclick="copySelected()">📋 선택 복사</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportData()">⬆️ 내보내기</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">⬇️ 가져오기</button>
+      <input type="file" id="import-file" accept=".json" onchange="importData(event)" />
+    </div>
   </div>
 
   <div id="list"></div>

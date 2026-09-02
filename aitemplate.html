@@ -243,8 +243,8 @@
     <span class="spacer"></span>
     <button class="btn btn-secondary btn-sm" onclick="clearSelection()">선택 해제</button>
     <button class="btn btn-primary btn-sm" onclick="copySelected()">📋 선택 복사</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportData()">⬇️ 내보내기</button>
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">⬆️ 가져오기</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportData()">⬆️ 내보내기</button>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">⬇️ 가져오기</button>
     <input type="file" id="import-file" accept=".json" onchange="importData(event)" />
   </div>
 
@@ -254,7 +254,7 @@
     <b>사용법</b><br>
     · 카드의 <b>제목이나 본문을 누르면</b> 전체 내용이 펼쳐집니다.<br>
     · <b>⋮⋮ 손잡이를 끌어</b> 순서를 바꾸거나, <b>▲ ▼</b> 버튼으로 한 칸씩 옮길 수 있습니다.<br>
-    · 복사할 때는 <b>제목과 내용이 한 세트로</b> 붙습니다 (제목은 <code>## 제목</code> 형태).<br>
+    · 복사할 때는 <b>제목과 내용이 한 세트로</b> 붙습니다 (제목은 <code>제목 : 제목명</code> 형태).<br>
     · 여러 개를 체크하면 <b>화면에 보이는 순서대로</b> 번호를 붙여 이어 붙이고,
     템플릿 사이에는 구분선(<code>---</code>)을 넣습니다.<br>
     · 내용은 <b>브라우저 로컬 스토리지</b>에 저장되므로 브라우저를 닫아도 남아 있습니다.<br>
@@ -272,7 +272,7 @@
         <label>제목</label>
         <input type="text" class="form-control" id="in-title"
                placeholder="예) 매수 검토 요청 · 포트폴리오 점검 · 종목 분석 지시문" maxlength="80" />
-        <span class="field-hint">복사할 때 내용 위에 <b>## 제목</b> 형태로 함께 붙습니다.</span>
+        <span class="field-hint">복사할 때 내용 위에 <b>제목 : 제목명</b> 형태로 함께 붙습니다.</span>
       </div>
       <div class="field">
         <label>내용</label>
@@ -536,7 +536,8 @@
     //  복사
     // ═══════════════════════════════════════════
     function block(t, no) {
-      return ((no ? `## ${no}. ` : "## ") + (t.title || "제목 없음")) + "\n\n" + t.body;
+      const prefix = no ? `${no}. ` : "";
+      return `${prefix}제목 : ${t.title || "제목 없음"}\n\n${t.body}`;
     }
     function copyOne(id) {
       const t = items.find(x => x.id === id);

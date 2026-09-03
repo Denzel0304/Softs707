@@ -96,14 +96,13 @@
     font-size: 13px; font-weight: 800; padding: 4px 14px;
     border-radius: 20px; font-family: 'Nunito', sans-serif;
   }
-  .today-subtitle { font-size: 13px; color: var(--gray-400); }
+
 
   .exercise-card {
     background: var(--white); border-radius: var(--radius);
     box-shadow: var(--shadow-card); margin-bottom: 14px;
     overflow: hidden; transition: all .3s;
   }
-  .exercise-card.completed { opacity: .45; }
   .exercise-card-header {
     display: flex; align-items: center; padding: 16px 16px;
     gap: 12px;
@@ -117,37 +116,12 @@
   .ex-name { font-weight: 700; font-size: 15px; color: var(--gray-800); }
   .ex-meta { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
 
-  .done-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    border: 2px solid var(--gray-200); background: var(--white);
-    cursor: pointer; font-size: 18px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .2s; flex-shrink: 0; margin-left: auto;
-  }
-  .done-btn:hover { border-color: var(--pink-btn); background: var(--pink-light); }
-  .done-btn.done { border-color: var(--pink-btn); background: var(--pink-btn); color: white; }
-  .done-btn:active { transform: scale(.88); }
-
   .empty-state {
     text-align: center; padding: 60px 20px;
     color: var(--gray-400);
   }
   .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; line-height: 1.6; }
-
-  .progress-bar-wrap {
-    background: var(--gray-200); border-radius: 20px; height: 8px;
-    margin-bottom: 20px; overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%; border-radius: 20px;
-    background: linear-gradient(90deg, var(--pink), var(--pink-dark));
-    transition: width .5s cubic-bezier(.34,1.56,.64,1);
-  }
-  .progress-text {
-    font-size: 12px; color: var(--gray-400); margin-bottom: 6px;
-    font-weight: 700; font-family: 'Nunito', sans-serif;
-  }
 
   .section-title {
     font-size: 14px; font-weight: 800; color: var(--gray-800);
@@ -359,8 +333,6 @@
   .bottom-nav-btn.active .bnav-icon { transform: scale(1.15); }
 
   * { -webkit-tap-highlight-color: transparent; }
-  .done-btn:active { transform: scale(.88); }
-  .complete-all-btn:active { transform: scale(.98) !important; }
 
   /* ── 드래그 핸들 ── */
   .drag-handle {
@@ -394,6 +366,20 @@
     transition: opacity .2s;
   }
   .cancel-edit-btn:hover { opacity: .8; }
+
+  /* ── 요일 선택 버튼 (폼 내) ── */
+  .day-picker {
+    display: flex; gap: 5px; margin-top: 4px;
+  }
+  .day-pick-btn {
+    flex: 1; height: 36px; border-radius: 20px;
+    border: 1.5px solid var(--gray-200); background: var(--white);
+    font-size: 13px; font-weight: 700; color: var(--gray-400);
+    cursor: pointer; transition: all .15s; padding: 0;
+  }
+  .day-pick-btn.selected {
+    border-color: var(--pink-btn); background: var(--pink-btn); color: white;
+  }
 
   /* ── 설정 아이템 수정 버튼 ── */
   .ex-edit-btn {
@@ -541,11 +527,6 @@
         <div class="today-date-label" id="todayDateLabel"></div>
         <div class="today-day-badge" id="todayDayBadge">토요일</div>
       </div>
-      <div class="today-subtitle" id="todaySubtitle">0 / 0 완료</div>
-    </div>
-    <div class="progress-text" id="progressText">0%</div>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="progressBar" style="width:0%"></div>
     </div>
     <div id="todayExerciseList"></div>
   </div>
@@ -628,6 +609,18 @@
           </select>
         </div>
       </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <div class="form-label">요일 선택</div>
+        <div class="day-picker" id="fDayPicker">
+          <button type="button" class="day-pick-btn" data-day="mon">월</button>
+          <button type="button" class="day-pick-btn" data-day="tue">화</button>
+          <button type="button" class="day-pick-btn" data-day="wed">수</button>
+          <button type="button" class="day-pick-btn" data-day="thu">목</button>
+          <button type="button" class="day-pick-btn" data-day="fri">금</button>
+          <button type="button" class="day-pick-btn" data-day="sat">토</button>
+          <button type="button" class="day-pick-btn" data-day="sun">일</button>
+        </div>
+      </div>
       <button class="add-btn" id="addBtn" onclick="addExercise()">추가하기</button>
       <button class="cancel-edit-btn" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">취소</button>
     </div>
@@ -676,9 +669,8 @@
 </nav>
 
 <script>
-const LS_SCHEDULE   = 'workout_schedule';
-const LS_INBODY     = 'workout_inbody';
-const LS_TODAY_DONE = 'workout_today_done';
+const LS_SCHEDULE = 'workout_schedule';
+const LS_INBODY   = 'workout_inbody';
 
 function loadSchedule() {
   try { const raw = localStorage.getItem(LS_SCHEDULE); if (raw) return JSON.parse(raw); } catch {}
@@ -690,20 +682,6 @@ function loadInbodyLS() {
   return [];
 }
 function saveInbodyLS(arr) { localStorage.setItem(LS_INBODY, JSON.stringify(arr)); }
-function loadTodayDone() {
-  try {
-    const raw = localStorage.getItem(LS_TODAY_DONE);
-    if (!raw) return {};
-    const obj = JSON.parse(raw);
-    if (obj.date !== todayStr()) { localStorage.removeItem(LS_TODAY_DONE); return {}; }
-    return obj.done || {};
-  } catch { return {}; }
-}
-function saveTodayDone() {
-  const done = {};
-  todayExercises.forEach(ex => { done[ex.id] = ex.done; });
-  localStorage.setItem(LS_TODAY_DONE, JSON.stringify({ date: todayStr(), done }));
-}
 
 const DAYS      = ['일','월','화','수','목','금','토'];
 const DAYS_FULL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
@@ -732,6 +710,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadInbodyData();
   renderInbodyList();
   renderInbodyChart();
+  // 요일 피커 토글 이벤트
+  document.querySelectorAll('#fDayPicker .day-pick-btn').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('selected'));
+  });
+  // 초기 요일 선택: 현재 탭 요일
+  const initDayBtn = document.querySelector(`#fDayPicker .day-pick-btn[data-day="${activeSettingDay}"]`);
+  if (initDayBtn) initDayBtn.classList.add('selected');
 });
 
 let midnightTimer = null;
@@ -746,50 +731,27 @@ function buildTodayList() {
   const dow = DAYS_EN[todayDow()];
   const schedule = loadSchedule();
   const exercises = schedule[dow] || [];
-  const savedDone = loadTodayDone();
-  todayExercises = exercises.map((ex, ei) => { const id = `ex_${ei}`; return { ...ex, id, done: savedDone[id] === true }; });
+  todayExercises = exercises.map(ex => ({ ...ex }));
   renderTodayList();
 }
 
 function renderTodayList() {
   const container = document.getElementById('todayExerciseList');
   if (todayExercises.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="emoji">🏋️</div><p>오늘(${DAYS_FULL[todayDow()]})에 설정된<br>운동이 없어요.<br><br>설정 탭에서 추가해보세요!</p></div>`;
-    updateProgress(); return;
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🏋️</div><p>오늘(${DAYS_FULL[todayDow()]})에 설정된<br>운동이 없어요.<br><br>등록 탭에서 추가해보세요!</p></div>`;
+    return;
   }
-  container.innerHTML = todayExercises.map((ex, ei) => `
-    <div class="exercise-card ${ex.done ? 'completed' : ''}" id="exCard_${ei}">
+  container.innerHTML = todayExercises.map(ex => `
+    <div class="exercise-card">
       <div class="exercise-card-header">
         <div class="ex-icon">${ex.emoji || '💪'}</div>
         <div style="flex:1">
           <div class="ex-name">${ex.name}</div>
           <div class="ex-meta">${ex.sets}세트 · ${ex.defaultWeight}${ex.defaultUnit}</div>
         </div>
-        <button class="done-btn ${ex.done ? 'done' : ''}" onclick="toggleExDone(${ei})">${ex.done ? '✓' : '○'}</button>
       </div>
     </div>
   `).join('');
-  updateProgress();
-}
-
-function toggleExDone(ei) {
-  todayExercises[ei].done = !todayExercises[ei].done;
-  const card = document.getElementById(`exCard_${ei}`);
-  const btn  = card.querySelector('.done-btn');
-  const isDone = todayExercises[ei].done;
-  card.classList.toggle('completed', isDone);
-  btn.textContent = isDone ? '✓' : '○';
-  btn.classList.toggle('done', isDone);
-  updateProgress(); saveTodayDone();
-}
-
-function updateProgress() {
-  const total = todayExercises.length;
-  const done  = todayExercises.filter(ex => ex.done).length;
-  const pct   = total ? Math.round(done / total * 100) : 0;
-  document.getElementById('progressBar').style.width  = pct + '%';
-  document.getElementById('progressText').textContent = `${pct}% (${done}/${total})`;
-  document.getElementById('todaySubtitle').textContent = `${done} / ${total} 완료`;
 }
 
 function loadInbodyData() {
@@ -953,7 +915,13 @@ function buildSettingDayTabs() {
 function selectSettingDay(day, el) {
   activeSettingDay = day;
   document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active'); cancelEdit(); renderSettingList();
+  el.classList.add('active');
+  cancelEdit();
+  // 폼 요일 피커: 새 탭 요일 선택으로 동기화
+  document.querySelectorAll('#fDayPicker .day-pick-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.day === day);
+  });
+  renderSettingList();
 }
 
 function renderSettingList() {
@@ -968,6 +936,11 @@ function renderSettingList() {
 }
 
 let editingIdx = -1;
+let editingDay = null; // 수정 모드에서 원래 요일
+
+function getSelectedDays() {
+  return Array.from(document.querySelectorAll('#fDayPicker .day-pick-btn.selected')).map(b => b.dataset.day);
+}
 
 function addExercise() {
   const nameEl = document.getElementById('fName'); const setsEl = document.getElementById('fSets'); const weightEl = document.getElementById('fWeight');
@@ -977,22 +950,40 @@ function addExercise() {
   if (!name) { nameEl.classList.add('error'); errors.push('운동 이름'); }
   if (!sets || sets < 1) { setsEl.classList.add('error'); errors.push('세트 수'); }
   if (isNaN(weight)) { weightEl.classList.add('error'); errors.push('기본 중량'); }
+  const selectedDays = getSelectedDays();
+  if (selectedDays.length === 0) { showToast('❗ 요일을 하나 이상 선택하세요'); return; }
   if (errors.length > 0) { showToast(`❗ ${errors.join(', ')}을(를) 입력하세요`); return; }
   const emoji = '💪'; const unit = document.getElementById('fUnit').value;
   const schedule = loadSchedule();
-  if (!schedule[activeSettingDay]) schedule[activeSettingDay] = [];
-  if (editingIdx >= 0) {
-    schedule[activeSettingDay][editingIdx] = { name, emoji, sets, defaultWeight: weight, defaultUnit: unit };
-    saveScheduleLS(schedule); cancelEdit(); showToast(`✅ ${name} 수정됨`);
+
+  if (editingIdx >= 0 && editingDay) {
+    // 수정: 기존 요일에서 제거 후 선택된 요일(들)에 추가
+    const exObj = { name, emoji, sets, defaultWeight: weight, defaultUnit: unit };
+    if (!schedule[editingDay]) schedule[editingDay] = [];
+    schedule[editingDay].splice(editingIdx, 1);
+    selectedDays.forEach(day => {
+      if (!schedule[day]) schedule[day] = [];
+      schedule[day].push(exObj);
+    });
+    saveScheduleLS(schedule);
+    cancelEdit();
+    showToast(`✅ ${name} 수정됨`);
   } else {
-    schedule[activeSettingDay].push({ name, emoji, sets, defaultWeight: weight, defaultUnit: unit });
+    // 신규 추가: 선택된 모든 요일에 추가
+    selectedDays.forEach(day => {
+      if (!schedule[day]) schedule[day] = [];
+      schedule[day].push({ name, emoji, sets, defaultWeight: weight, defaultUnit: unit });
+    });
     saveScheduleLS(schedule);
     ['fName','fSets','fWeight'].forEach(id => document.getElementById(id).value = '');
     [nameEl, setsEl, weightEl].forEach(el => el.classList.remove('error'));
-    showToast(`✅ ${name} 추가됨`);
+    document.querySelectorAll('#fDayPicker .day-pick-btn').forEach(b => b.classList.remove('selected'));
+    // 추가 후 현재 탭 요일은 다시 선택 상태로
+    document.querySelector(`#fDayPicker .day-pick-btn[data-day="${activeSettingDay}"]`)?.classList.add('selected');
+    showToast(`✅ ${name} 추가됨 (${selectedDays.length}개 요일)`);
   }
   renderSettingList();
-  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
+  if (selectedDays.includes(DAYS_EN[todayDow()]) || (editingDay && editingDay === DAYS_EN[todayDow()])) buildTodayList();
 }
 
 function startEditExercise(idx) {
@@ -1000,8 +991,13 @@ function startEditExercise(idx) {
   const ex = (schedule[activeSettingDay] || [])[idx];
   if (!ex) return;
   editingIdx = idx;
+  editingDay = activeSettingDay;
   document.getElementById('fName').value = ex.name; document.getElementById('fSets').value = ex.sets;
   document.getElementById('fWeight').value = ex.defaultWeight; document.getElementById('fUnit').value = ex.defaultUnit || 'kg';
+  // 요일 버튼: 현재 요일만 선택된 상태로
+  document.querySelectorAll('#fDayPicker .day-pick-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.day === activeSettingDay);
+  });
   document.getElementById('formTitle').textContent = '✏️ 운동 수정';
   document.getElementById('addBtn').textContent = '수정 저장';
   document.getElementById('addBtn').classList.add('edit-mode');
@@ -1012,7 +1008,12 @@ function startEditExercise(idx) {
 
 function cancelEdit() {
   editingIdx = -1;
+  editingDay = null;
   ['fName','fSets','fWeight'].forEach(id => document.getElementById(id).value = '');
+  // 요일 버튼: 현재 탭 요일만 선택 상태로 복원
+  document.querySelectorAll('#fDayPicker .day-pick-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.day === activeSettingDay);
+  });
   document.getElementById('formTitle').textContent = '➕ 운동 추가';
   document.getElementById('addBtn').textContent = '추가하기';
   document.getElementById('addBtn').classList.remove('edit-mode');

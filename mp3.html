@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #222640;
+    --border: rgba(255,255,255,0.07);
+    --accent: #4a9eff;
+    --accent-dim: rgba(74,158,255,0.15);
+    --text: #e8eaf0;
+    --text-sub: #7a8099;
+    --text-muted: #4a4f6a;
+    --radius: 10px;
+    --player-h: 88px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    overflow: hidden;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: grid;
+    grid-template-rows: 1fr var(--player-h);
+    grid-template-columns: 280px 1fr;
+    height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    grid-row: 1 / 2;
+    grid-column: 1 / 2;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 20px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .sidebar-header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-sub);
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+  }
+  .btn-icon:hover { background: var(--surface2); color: var(--text); }
+  .btn-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .add-bar {
+    padding: 10px 12px;
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .add-btn {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-sub);
+    font-size: 12px;
+    padding: 7px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .add-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(74,158,255,0.3); }
+  .add-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* hidden file inputs */
+  #fileInput, #folderInput { display: none; }
+
+  /* Drop zone overlay */
+  .drop-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(74,158,255,0.1);
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    pointer-events: none;
+  }
+  .drop-overlay.active { display: flex; }
+
+  /* Playlist */
+  .playlist-wrap {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface2) transparent;
+  }
+  .playlist-wrap::-webkit-scrollbar { width: 4px; }
+  .playlist-wrap::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+  .playlist-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  .playlist-empty svg { width: 36px; height: 36px; stroke: var(--text-muted); fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
+
+  .track-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    position: relative;
+  }
+  .track-item:hover { background: var(--surface); }
+  .track-item.active { background: var(--accent-dim); }
+  .track-item.active .track-name { color: var(--accent); }
+
+  .track-num {
+    width: 22px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .track-item.active .track-num { display: none; }
+  .track-play-icon {
+    display: none;
+    width: 22px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  }
+  .track-item.active .track-play-icon { display: flex; }
+
+  .track-info { flex: 1; min-width: 0; }
+  .track-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .track-duration {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-top: 1px;
+  }
+
+  .track-remove {
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.15s, color 0.15s;
+  }
+  .track-remove svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .track-item:hover .track-remove { opacity: 1; }
+  .track-remove:hover { color: #ff6b6b; }
+
+  /* ── Main area ── */
+  .main {
+    grid-row: 1 / 2;
+    grid-column: 2 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 28px;
+  }
+
+  .now-playing-art {
+    width: 180px;
+    height: 180px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .now-playing-art svg { width: 52px; height: 52px; stroke: var(--text-muted); fill: none; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+  .art-spin {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: conic-gradient(from 0deg, var(--surface2), var(--surface), var(--surface2));
+    animation: spin 8s linear infinite;
+    display: none;
+  }
+  .art-spin.playing { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .art-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .art-center .dot {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .art-center .dot svg { width: 20px; height: 20px; }
+
+  .now-info { text-align: center; max-width: 400px; }
+  .now-title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+  }
+  .now-idle { color: var(--text-muted); font-size: 15px; }
+
+  /* Waveform-style visualizer bars */
+  .visualizer {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 28px;
+    margin-top: 4px;
+  }
+  .vis-bar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    opacity: 0.5;
+    animation: none;
+    height: 4px;
+    transition: height 0.1s;
+  }
+  .visualizer.playing .vis-bar { animation: bounce var(--d, 0.8s) ease-in-out infinite alternate; }
+  @keyframes bounce { from { height: 4px; } to { height: var(--h, 20px); } }
+
+  /* ── Bottom Player Bar ── */
+  .player-bar {
+    grid-row: 2 / 3;
+    grid-column: 1 / 3;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 24px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Progress */
+  .progress-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .ctrl-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-sub);
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .ctrl-btn:hover { color: var(--text); }
+  .ctrl-btn.active { color: var(--accent); }
+  .ctrl-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .play-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: transform 0.1s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .play-btn:hover { transform: scale(1.06); background: #62aaff; }
+  .play-btn:active { transform: scale(0.97); }
+  .play-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Seek bar */
+  .seek-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .time-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .time-label.end { text-align: right; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    flex: 1;
+    height: 16px;
+    margin: 0;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface2);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: -4.5px;
+    transition: transform 0.1s;
+  }
+  input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.3); }
+  input[type=range]::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface2);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+  }
+
+  /* Right controls */
+  .right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .speed-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-sub);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .speed-btn:hover { background: var(--accent-dim); color: var(--accent); }
+  .speed-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+  .volume-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .volume-wrap input[type=range] { width: 72px; }
+
+  /* Scrolling title animation */
+  @keyframes marquee {
+    0%, 15% { transform: translateX(0); }
+    85%, 100% { transform: translateX(var(--scroll-x, -100px)); }
+  }
+  .marquee-wrap {
+    overflow: hidden;
+    max-width: 400px;
+  }
+  .marquee-inner {
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .marquee-inner.scrolling {
+    animation: marquee 6s linear infinite;
+  }
+
+  /* Playlist count badge */
+  .count-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+
+  /* Keyboard hint */
+  .kb-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 2px;
+  }
+  kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<div class="drop-overlay" id="dropOverlay">파일을 여기에 놓으세요</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>재생목록 <span class="count-badge" id="countBadge">0</span></h1>
+      <div style="display:flex;gap:4px;">
+        <button class="btn-icon" id="btnClearAll" title="전체 삭제">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+        <button class="btn-icon" id="btnShuffle2" title="셔플">
+          <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="add-bar">
+      <button class="add-btn" id="btnAddFiles">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        파일 추가
+      </button>
+      <button class="add-btn" id="btnAddFolder">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        폴더 추가
+      </button>
+    </div>
+    <div class="playlist-wrap" id="playlistWrap">
+      <div class="playlist-empty" id="emptyState">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <div>파일이나 폴더를<br>여기에 끌어다 놓거나<br>위 버튼으로 추가하세요</div>
+        <div class="kb-hint">또는 <kbd>Space</kbd> 재생 · <kbd>←</kbd> <kbd>→</kbd> 이전/다음</div>
+      </div>
+      <div id="playlist"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="now-playing-art" id="artWrap">
+      <div class="art-spin" id="artSpin"></div>
+      <div class="art-center">
+        <div class="dot">
+          <svg viewBox="0 0 24 24" id="artIcon"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="now-info">
+      <div class="marquee-wrap">
+        <div class="marquee-inner" id="nowTitle">
+          <span class="now-idle" id="nowTitleText">곡을 선택하세요</span>
+        </div>
+      </div>
+      <div class="visualizer" id="visualizer">
+        <!-- bars inserted by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Player bar -->
+  <div class="player-bar">
+    <!-- Controls left -->
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <button class="ctrl-btn" id="btnRepeat" title="반복">
+        <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </button>
+    </div>
+
+    <!-- Prev -->
+    <button class="ctrl-btn" id="btnPrev" title="이전">
+      <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+    </button>
+
+    <!-- Play/Pause -->
+    <button class="play-btn" id="btnPlay" title="재생/일시정지">
+      <svg viewBox="0 0 24 24" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
+
+    <!-- Next -->
+    <button class="ctrl-btn" id="btnNext" title="다음">
+      <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+    </button>
+
+    <button class="ctrl-btn" id="btnShuffle" title="셔플">
+      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+    </button>
+
+    <!-- Seek -->
+    <div class="progress-section">
+      <div class="seek-row">
+        <span class="time-label" id="timeElapsed">0:00</span>
+        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
+        <span class="time-label end" id="timeTotal">0:00</span>
+      </div>
+    </div>
+
+    <!-- Right controls -->
+    <div class="right-controls">
+      <button class="speed-btn" id="btnSpeed" title="배속">1×</button>
+      <div class="volume-wrap">
+        <button class="btn-icon" id="btnMute" title="음소거">
+          <svg viewBox="0 0 24 24" id="volIcon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        </button>
+        <input type="range" id="volBar" min="0" max="1" step="0.01" value="1">
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".mp3,.wav,.ogg,.flac,.m4a,.aac,.opus" multiple>
+<input type="file" id="folderInput" accept=".mp3,.wav,.ogg,.flac,.m4a,.aac,.opus" multiple webkitdirectory>
+
+<audio id="audio"></audio>
+
+<script>
+const audio = document.getElementById('audio');
+const playlist = [];
+let currentIndex = -1;
+let shuffle = false;
+let repeatMode = 0; // 0=off, 1=all, 2=one
+let shuffledOrder = [];
+const speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+let speedIdx = 2;
+let savedVol = 1;
+
+// DOM
+const playlistEl = document.getElementById('playlist');
+const emptyState = document.getElementById('emptyState');
+const countBadge = document.getElementById('countBadge');
+const nowTitleText = document.getElementById('nowTitleText');
+const nowTitleInner = document.getElementById('nowTitle');
+const seekBar = document.getElementById('seekBar');
+const volBar = document.getElementById('volBar');
+const timeElapsed = document.getElementById('timeElapsed');
+const timeTotal = document.getElementById('timeTotal');
+const btnPlay = document.getElementById('btnPlay');
+const playIcon = document.getElementById('playIcon');
+const btnShuffle = document.getElementById('btnShuffle');
+const btnShuffle2 = document.getElementById('btnShuffle2');
+const btnRepeat = document.getElementById('btnRepeat');
+const btnSpeed = document.getElementById('btnSpeed');
+const btnMute = document.getElementById('btnMute');
+const volIcon = document.getElementById('volIcon');
+const artSpin = document.getElementById('artSpin');
+const visualizer = document.getElementById('visualizer');
+
+// Build visualizer bars
+(function(){
+  const heights = [8,14,20,16,10,18,24,12,20,14,8,16,22,10,18];
+  const delays =  [0,.1,.2,.05,.15,.3,.08,.22,.04,.17,.28,.06,.13,.25,.09];
+  heights.forEach((h, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'vis-bar';
+    bar.style.setProperty('--h', h + 'px');
+    bar.style.setProperty('--d', (0.5 + delays[i] * 2) + 's');
+    bar.style.animationDelay = delays[i] + 's';
+    visualizer.appendChild(bar);
+  });
+})();
+
+function fmt(sec) {
+  if (!isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function getDisplayName(name) {
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function buildShuffleOrder() {
+  shuffledOrder = [...Array(playlist.length).keys()];
+  for (let i = shuffledOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
+  }
+}
+
+function renderPlaylist() {
+  playlistEl.innerHTML = '';
+  emptyState.style.display = playlist.length ? 'none' : 'flex';
+  countBadge.textContent = playlist.length;
+  playlist.forEach((track, i) => {
+    const item = document.createElement('div');
+    item.className = 'track-item' + (i === currentIndex ? ' active' : '');
+    item.dataset.index = i;
+
+    const numEl = document.createElement('div');
+    numEl.className = 'track-num';
+    numEl.textContent = i + 1;
+
+    const playIc = document.createElement('div');
+    playIc.className = 'track-play-icon';
+    playIc.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+    playIc.style.color = 'var(--accent)';
+
+    const info = document.createElement('div');
+    info.className = 'track-info';
+
+    const nm = document.createElement('div');
+    nm.className = 'track-name';
+    nm.textContent = getDisplayName(track.name);
+
+    const dur = document.createElement('div');
+    dur.className = 'track-duration';
+    dur.id = 'dur-' + i;
+    dur.textContent = track.duration ? fmt(track.duration) : '—';
+
+    info.appendChild(nm);
+    info.appendChild(dur);
+
+    const rm = document.createElement('button');
+    rm.className = 'track-remove';
+    rm.title = '삭제';
+    rm.innerHTML = `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    rm.addEventListener('click', e => {
+      e.stopPropagation();
+      removeTrack(i);
+    });
+
+    item.appendChild(numEl);
+    item.appendChild(playIc);
+    item.appendChild(info);
+    item.appendChild(rm);
+    item.addEventListener('click', () => playTrack(i));
+    playlistEl.appendChild(item);
+  });
+  savePlaylist();
+}
+
+function addFiles(files) {
+  const mp3Types = /\.(mp3|wav|ogg|flac|m4a|aac|opus)$/i;
+  const arr = Array.from(files).filter(f => mp3Types.test(f.name));
+  if (!arr.length) return;
+  arr.forEach(file => {
+    // avoid duplicates by name+size
+    if (playlist.some(t => t.name === file.name && t.size === file.size)) return;
+    const entry = { name: file.name, size: file.size, file, duration: null, url: null };
+    playlist.push(entry);
+    // preload duration
+    const tmp = new Audio();
+    tmp.src = URL.createObjectURL(file);
+    tmp.addEventListener('loadedmetadata', () => {
+      entry.duration = tmp.duration;
+      const dur = document.getElementById('dur-' + (playlist.indexOf(entry)));
+      if (dur) dur.textContent = fmt(tmp.duration);
+      URL.revokeObjectURL(tmp.src);
+    });
+  });
+  buildShuffleOrder();
+  renderPlaylist();
+  if (currentIndex === -1 && playlist.length > 0) {
+    // auto select first but don't autoplay
+    highlightCurrent();
+  }
+}
+
+function removeTrack(i) {
+  if (playlist[i].url) URL.revokeObjectURL(playlist[i].url);
+  playlist.splice(i, 1);
+  if (currentIndex === i) {
+    audio.pause();
+    currentIndex = -1;
+    setPlayState(false);
+    nowTitleText.textContent = '곡을 선택하세요';
+    nowTitleText.className = 'now-idle';
+    nowTitleInner.classList.remove('scrolling');
+    artSpin.classList.remove('playing');
+    visualizer.classList.remove('playing');
+    timeElapsed.textContent = '0:00';
+    timeTotal.textContent = '0:00';
+    seekBar.value = 0;
+  } else if (currentIndex > i) {
+    currentIndex--;
+  }
+  buildShuffleOrder();
+  renderPlaylist();
+}
+
+function playTrack(i) {
+  if (i < 0 || i >= playlist.length) return;
+  currentIndex = i;
+  const track = playlist[i];
+  if (!track.url) {
+    track.url = URL.createObjectURL(track.file);
+  }
+  audio.src = track.url;
+  audio.playbackRate = speeds[speedIdx];
+  audio.play();
+  nowTitleText.textContent = getDisplayName(track.name);
+  nowTitleText.className = '';
+  // check if scrolling needed
+  nowTitleInner.classList.remove('scrolling');
+  requestAnimationFrame(() => {
+    const wrap = nowTitleInner.parentElement;
+    if (nowTitleInner.scrollWidth > wrap.offsetWidth + 4) {
+      const diff = nowTitleInner.scrollWidth - wrap.offsetWidth;
+      nowTitleInner.style.setProperty('--scroll-x', '-' + diff + 'px');
+      nowTitleInner.classList.add('scrolling');
+    }
+  });
+  renderPlaylist();
+}
+
+function highlightCurrent() {
+  document.querySelectorAll('.track-item').forEach((el, i) => {
+    el.classList.toggle('active', i === currentIndex);
+  });
+}
+
+function setPlayState(playing) {
+  if (playing) {
+    playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+    artSpin.classList.add('playing');
+    visualizer.classList.add('playing');
+  } else {
+    playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+    artSpin.classList.remove('playing');
+    visualizer.classList.remove('playing');
+  }
+}
+
+function getNextIndex() {
+  if (playlist.length === 0) return -1;
+  if (shuffle) {
+    const pos = shuffledOrder.indexOf(currentIndex);
+    const next = (pos + 1) % shuffledOrder.length;
+    return shuffledOrder[next];
+  }
+  return (currentIndex + 1) % playlist.length;
+}
+
+function getPrevIndex() {
+  if (playlist.length === 0) return -1;
+  if (shuffle) {
+    const pos = shuffledOrder.indexOf(currentIndex);
+    const prev = (pos - 1 + shuffledOrder.length) % shuffledOrder.length;
+    return shuffledOrder[prev];
+  }
+  return (currentIndex - 1 + playlist.length) % playlist.length;
+}
+
+// Audio events
+audio.addEventListener('play', () => setPlayState(true));
+audio.addEventListener('pause', () => setPlayState(false));
+
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  seekBar.value = pct;
+  timeElapsed.textContent = fmt(audio.currentTime);
+  timeTotal.textContent = fmt(audio.duration);
+});
+
+audio.addEventListener('ended', () => {
+  if (repeatMode === 2) {
+    audio.currentTime = 0;
+    audio.play();
+  } else if (repeatMode === 1 || currentIndex < playlist.length - 1 || shuffle) {
+    playTrack(getNextIndex());
+  } else {
+    setPlayState(false);
+    audio.currentTime = 0;
+    seekBar.value = 0;
+    timeElapsed.textContent = '0:00';
+  }
+});
+
+// Controls
+btnPlay.addEventListener('click', () => {
+  if (!audio.src && playlist.length > 0) playTrack(0);
+  else if (audio.paused) audio.play();
+  else audio.pause();
+});
+
+btnPrev.addEventListener('click', () => {
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+  if (playlist.length) playTrack(getPrevIndex());
+});
+
+btnNext.addEventListener('click', () => {
+  if (playlist.length) playTrack(getNextIndex());
+});
+
+function toggleShuffle() {
+  shuffle = !shuffle;
+  btnShuffle.classList.toggle('active', shuffle);
+  btnShuffle2.classList.toggle('active', shuffle);
+  if (shuffle) buildShuffleOrder();
+}
+btnShuffle.addEventListener('click', toggleShuffle);
+btnShuffle2.addEventListener('click', toggleShuffle);
+
+btnRepeat.addEventListener('click', () => {
+  repeatMode = (repeatMode + 1) % 3;
+  btnRepeat.classList.toggle('active', repeatMode > 0);
+  const labels = ['반복 끔', '전체 반복', '한 곡 반복'];
+  btnRepeat.title = labels[repeatMode];
+  if (repeatMode === 2) {
+    btnRepeat.querySelector('svg').innerHTML = `<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><line x1="12" y1="8" x2="12" y2="16"/>`;
+  } else {
+    btnRepeat.querySelector('svg').innerHTML = `<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>`;
+  }
+});
+
+btnSpeed.addEventListener('click', () => {
+  speedIdx = (speedIdx + 1) % speeds.length;
+  const s = speeds[speedIdx];
+  audio.playbackRate = s;
+  btnSpeed.textContent = s === 1 ? '1×' : s + '×';
+  btnSpeed.classList.toggle('active', s !== 1);
+});
+
+seekBar.addEventListener('input', () => {
+  if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
+});
+
+volBar.addEventListener('input', () => {
+  audio.volume = volBar.value;
+  savedVol = volBar.value;
+  updateVolIcon();
+});
+
+btnMute.addEventListener('click', () => {
+  if (audio.volume > 0) {
+    savedVol = audio.volume;
+    audio.volume = 0;
+    volBar.value = 0;
+  } else {
+    audio.volume = savedVol || 1;
+    volBar.value = audio.volume;
+  }
+  updateVolIcon();
+});
+
+function updateVolIcon() {
+  const v = audio.volume;
+  if (v === 0) {
+    volIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`;
+  } else if (v < 0.5) {
+    volIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`;
+  } else {
+    volIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>`;
+  }
+}
+
+// File inputs
+document.getElementById('btnAddFiles').addEventListener('click', () => fileInput.click());
+document.getElementById('btnAddFolder').addEventListener('click', () => folderInput.click());
+document.getElementById('fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+document.getElementById('folderInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+
+// Clear all
+document.getElementById('btnClearAll').addEventListener('click', () => {
+  if (!playlist.length) return;
+  if (!confirm('재생목록을 전부 지울까요?')) return;
+  audio.pause();
+  audio.src = '';
+  playlist.forEach(t => { if (t.url) URL.revokeObjectURL(t.url); });
+  playlist.length = 0;
+  currentIndex = -1;
+  nowTitleText.textContent = '곡을 선택하세요';
+  nowTitleText.className = 'now-idle';
+  nowTitleInner.classList.remove('scrolling');
+  artSpin.classList.remove('playing');
+  visualizer.classList.remove('playing');
+  setPlayState(false);
+  seekBar.value = 0;
+  timeElapsed.textContent = '0:00';
+  timeTotal.textContent = '0:00';
+  renderPlaylist();
+  localStorage.removeItem('mp3player_playlist');
+});
+
+// Drag & Drop
+const dropOverlay = document.getElementById('dropOverlay');
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+  e.preventDefault();
+  dragCounter++;
+  dropOverlay.classList.add('active');
+});
+document.addEventListener('dragleave', () => {
+  dragCounter--;
+  if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('active');
+  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT') return;
+  switch(e.code) {
+    case 'Space':
+      e.preventDefault();
+      if (!audio.src && playlist.length > 0) playTrack(0);
+      else if (audio.paused) audio.play();
+      else audio.pause();
+      break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      if (e.shiftKey) { if (playlist.length) playTrack(getPrevIndex()); }
+      else audio.currentTime = Math.max(0, audio.currentTime - 5);
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      if (e.shiftKey) { if (playlist.length) playTrack(getNextIndex()); }
+      else audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5);
+      break;
+    case 'KeyM':
+      btnMute.click();
+      break;
+  }
+});
+
+// localStorage persistence (track names only, not blobs)
+function savePlaylist() {
+  try {
+    const data = playlist.map(t => ({ name: t.name, size: t.size, duration: t.duration }));
+    localStorage.setItem('mp3player_playlist', JSON.stringify(data));
+    localStorage.setItem('mp3player_index', currentIndex);
+  } catch(e) {}
+}
+
+// Init
+renderPlaylist();
+</script>
+</body>
+</html>

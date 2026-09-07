@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Player</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,6 +29,7 @@
     color: var(--text);
     font-family: 'Inter', -apple-system, sans-serif;
     font-size: 14px;
+    overflow: hidden;
   }
 
   /* ── PC Wrapper ── */
@@ -41,7 +42,6 @@
     box-shadow: 0 0 40px rgba(33,150,243,0.12);
   }
 
-  /* ── Layout ── */
   .app {
     display: grid;
     grid-template-rows: 1fr var(--player-h);
@@ -66,7 +66,6 @@
     background: var(--surface);
   }
 
-  /* Tab nav */
   .tab-nav {
     display: flex;
     border-bottom: 1px solid var(--border);
@@ -85,10 +84,7 @@
     transition: color 0.15s, background 0.15s;
     position: relative;
   }
-  .tab-btn.active {
-    color: var(--accent);
-    background: var(--surface);
-  }
+  .tab-btn.active { color: var(--accent); background: var(--surface); }
   .tab-btn.active::after {
     content: '';
     position: absolute;
@@ -98,11 +94,9 @@
     border-radius: 2px 2px 0 0;
   }
 
-  /* Tab panels */
   .tab-panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
   .tab-panel.active { display: flex; }
 
-  /* Panel header */
   .panel-header {
     padding: 10px 12px 8px;
     display: flex;
@@ -136,7 +130,6 @@
   .btn-icon:hover { background: var(--accent-dim); color: var(--accent); }
   .btn-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* Add bar */
   .add-bar {
     padding: 8px 10px;
     display: flex;
@@ -164,7 +157,6 @@
 
   #fileInput, #folderInput { display: none; }
 
-  /* Drop overlay */
   .drop-overlay {
     display: none;
     position: fixed;
@@ -172,7 +164,7 @@
     background: rgba(33,150,243,0.1);
     border: 2px dashed var(--accent);
     border-radius: 12px;
-    z-index: 200;
+    z-index: 50;
     align-items: center;
     justify-content: center;
     font-size: 18px;
@@ -182,7 +174,6 @@
   }
   .drop-overlay.active { display: flex; }
 
-  /* Track list */
   .track-list {
     flex: 1;
     overflow-y: auto;
@@ -207,7 +198,6 @@
   }
   .list-empty svg { width: 36px; height: 36px; stroke: var(--text-muted); fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
 
-  /* Track item */
   .track-item {
     display: flex;
     align-items: center;
@@ -295,44 +285,8 @@
   .track-act-btn.remove:hover { color: #f44336; background: rgba(244,67,54,0.1); }
   .track-act-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
-  /* Playlist name input */
-  .pl-name-bar {
-    display: flex;
-    gap: 6px;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .pl-name-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 12px;
-    padding: 5px 9px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .pl-name-input:focus { border-color: var(--accent); }
-  .pl-name-input::placeholder { color: var(--text-muted); }
-
-  .pl-save-btn {
-    background: var(--accent);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-    white-space: nowrap;
-  }
-  .pl-save-btn:hover { background: var(--accent-light); }
-
-  /* Playlist selector */
-  .pl-select-wrap {
+  /* Playlist top bar */
+  .pl-top-bar {
     display: flex;
     gap: 6px;
     padding: 8px 10px;
@@ -362,10 +316,47 @@
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s;
+    flex-shrink: 0;
   }
   .pl-new-btn:hover { background: var(--accent); color: #fff; }
 
-  /* Count badge */
+  /* Playlist add-tracks bar */
+  .pl-add-bar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    align-items: center;
+    background: rgba(33,150,243,0.05);
+  }
+  .pl-add-select {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    padding: 5px 9px;
+    outline: none;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .pl-add-track-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .pl-add-track-btn:hover { background: var(--accent-light); }
+
   .count-badge {
     font-size: 11px;
     color: var(--text-muted);
@@ -404,202 +395,105 @@
   }
   .now-playing-art svg { width: 44px; height: 44px; stroke: var(--text-muted); fill: none; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
   .art-spin {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
+    position: absolute; inset: 0; border-radius: 50%;
     background: conic-gradient(from 0deg, #bbdefb, #e3f2fd, #90caf9, #bbdefb);
-    animation: spin 8s linear infinite;
-    display: none;
+    animation: spin 8s linear infinite; display: none;
   }
   .art-spin.playing { display: block; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .art-center {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center; z-index: 1;
   }
   .art-center .dot {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--surface);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--surface); display: flex;
+    align-items: center; justify-content: center;
     box-shadow: 0 2px 8px rgba(33,150,243,0.15);
   }
   .art-center .dot svg { width: 20px; height: 20px; }
 
   .now-info { text-align: center; max-width: 320px; width: 100%; }
-  .now-title {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .now-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
   .now-idle { color: var(--text-muted); font-size: 14px; font-weight: 400; }
 
-  /* Visualizer */
   .visualizer {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 24px;
-    margin-top: 6px;
-    justify-content: center;
+    display: flex; align-items: flex-end; gap: 3px;
+    height: 24px; margin-top: 6px; justify-content: center;
   }
   .vis-bar {
-    width: 3px;
-    background: var(--accent-light);
-    border-radius: 2px;
-    opacity: 0.6;
-    animation: none;
-    height: 4px;
-    transition: height 0.1s;
+    width: 3px; background: var(--accent-light); border-radius: 2px;
+    opacity: 0.6; animation: none; height: 4px; transition: height 0.1s;
   }
   .visualizer.playing .vis-bar { animation: bounce var(--d, 0.8s) ease-in-out infinite alternate; }
   @keyframes bounce { from { height: 4px; } to { height: var(--h, 20px); } }
 
-  /* ── Bottom Player Bar ── */
+  .source-indicator {
+    font-size: 11px; color: var(--accent);
+    background: var(--accent-dim); padding: 3px 10px;
+    border-radius: 10px; text-align: center;
+  }
+
+  /* ── Player Bar ── */
   .player-bar {
-    grid-row: 2 / 3;
-    grid-column: 1 / 3;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 0 20px;
-    background: var(--surface);
+    grid-row: 2 / 3; grid-column: 1 / 3;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; background: var(--surface);
     border-top: 1px solid var(--border);
     box-shadow: 0 -2px 12px rgba(33,150,243,0.08);
   }
 
-  .progress-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    justify-content: center;
-  }
-
-  .ctrl-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-sub);
-    padding: 6px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s, background 0.15s;
-  }
-  .ctrl-btn:hover { color: var(--accent); background: var(--accent-dim); }
-  .ctrl-btn.active { color: var(--accent); }
-  .ctrl-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
-  .play-btn {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    transition: transform 0.1s, background 0.15s;
-    flex-shrink: 0;
-    box-shadow: 0 4px 16px rgba(33,150,243,0.35);
-  }
-  .play-btn:hover { transform: scale(1.07); background: var(--accent-light); }
-  .play-btn:active { transform: scale(0.95); }
-  .play-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; }
-
-  /* Seek bar */
-  .seek-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .time-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-    width: 34px;
-    flex-shrink: 0;
-  }
+  .progress-section { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .seek-row { display: flex; align-items: center; gap: 8px; }
+  .time-label { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; width: 34px; flex-shrink: 0; }
   .time-label.end { text-align: right; }
 
   input[type=range] {
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    cursor: pointer;
-    flex: 1;
-    height: 16px;
-    margin: 0;
+    -webkit-appearance: none; appearance: none;
+    background: transparent; cursor: pointer; flex: 1; height: 16px; margin: 0;
   }
-  input[type=range]::-webkit-slider-runnable-track {
-    height: 3px;
-    border-radius: 2px;
-    background: var(--surface2);
-  }
+  input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: var(--surface2); }
   input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
-    background: var(--accent);
-    margin-top: -5px;
-    transition: transform 0.1s;
+    -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--accent); margin-top: -5px; transition: transform 0.1s;
     box-shadow: 0 1px 4px rgba(33,150,243,0.4);
   }
   input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.3); }
   input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--surface2); }
   input[type=range]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); border: none; }
 
-  .right-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+  .ctrl-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-sub);
+    padding: 6px; border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; transition: color 0.15s, background 0.15s;
   }
+  .ctrl-btn:hover { color: var(--accent); background: var(--accent-dim); }
+  .ctrl-btn.active { color: var(--accent); }
+  .ctrl-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .play-btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--accent); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; transition: transform 0.1s, background 0.15s;
+    flex-shrink: 0; box-shadow: 0 4px 16px rgba(33,150,243,0.35);
+  }
+  .play-btn:hover { transform: scale(1.07); background: var(--accent-light); }
+  .play-btn:active { transform: scale(0.95); }
+  .play-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; }
+
+  .right-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .speed-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-sub);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-sub); font-size: 11px; font-weight: 700;
+    padding: 4px 8px; cursor: pointer; transition: background 0.15s, color 0.15s;
     font-variant-numeric: tabular-nums;
   }
   .speed-btn:hover { background: var(--accent-dim); color: var(--accent); }
   .speed-btn.active { background: var(--accent-dim); color: var(--accent); }
-
-  .volume-wrap {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
+  .volume-wrap { display: flex; align-items: center; gap: 5px; }
   .volume-wrap input[type=range] { width: 66px; }
 
-  /* Scrolling title */
   @keyframes marquee {
     0%, 15% { transform: translateX(0); }
     85%, 100% { transform: translateX(var(--scroll-x, -100px)); }
@@ -608,177 +502,119 @@
   .marquee-inner { display: inline-block; white-space: nowrap; }
   .marquee-inner.scrolling { animation: marquee 6s linear infinite; }
 
-  /* Keyboard hint */
-  .kb-hint {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-align: center;
-    margin-top: 4px;
-  }
-  kbd {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 1px 5px;
-    font-size: 10px;
-    font-family: inherit;
-    color: var(--text-sub);
-  }
+  .kb-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 4px; }
+  kbd { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-family: inherit; color: var(--text-sub); }
 
   /* ═══════════════════════════
-     MOBILE STYLES
+     MODAL
   ═══════════════════════════ */
-  @media (max-width: 640px) {
-    html, body { overflow: hidden; height: 100%; }
-
-    .app-wrapper { margin: 0; max-width: 100%; height: 100dvh; display: flex; flex-direction: column; }
-
-    .app {
-      margin: 0;
-      border-radius: 0;
-      border: none;
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      grid-template-rows: unset;
-      grid-template-columns: unset;
-    }
-
-    /* Main: 상단 고정 영역 */
-    .main {
-      grid-row: unset;
-      grid-column: unset;
-      flex-shrink: 0;
-      padding: 16px 16px 10px;
-      gap: 8px;
-      background: linear-gradient(160deg, #e8f4fd 0%, #d0eaf9 100%);
-    }
-
-    .now-playing-art { width: 100px; height: 100px; }
-    .art-center .dot { width: 38px; height: 38px; }
-    .now-title { font-size: 14px; }
-    .visualizer { height: 18px; margin-top: 2px; }
-
-    /* Sidebar: 중간 flex 영역 */
-    .sidebar {
-      grid-row: unset;
-      grid-column: unset;
-      flex: 1;
-      min-height: 0;
-      border-right: none;
-      border-top: 1px solid var(--border);
-    }
-
-    /* Player bar: 하단 고정, PC 버튼 숨기고 모바일 row만 */
-    .player-bar {
-      grid-row: unset;
-      grid-column: unset;
-      flex-shrink: 0;
-      flex-direction: column;
-      gap: 6px;
-      padding: 8px 16px 12px;
-      height: auto;
-    }
-
-    /* PC 전용 버튼들 모두 숨김 */
-    #btnRepeat, #btnShuffle, #btnPrev, #btnPlay, #btnNext,
-    .right-controls, .volume-wrap { display: none; }
-
-    /* 시크바는 full width */
-    .progress-section { width: 100%; }
-
-    /* 모바일 컨트롤 row */
-    .mobile-ctrl-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      width: 100%;
-    }
-
-    .mobile-ctrl-row .play-btn { width: 48px; height: 48px; }
-
-    /* Drag handle & track */
-    .drag-handle { padding: 4px 5px; }
-    .track-item { padding: 10px 10px; }
-    .track-actions { opacity: 1; }
-    .source-indicator { margin: 2px 10px; }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(26,58,92,0.35);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.18s;
   }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
 
-  /* Playlist mode indicator */
-  .mode-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 600;
-    background: var(--accent-dim);
-    color: var(--accent);
-    white-space: nowrap;
+  .modal {
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(33,150,243,0.2);
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    overflow: hidden;
+    transform: translateY(12px);
+    transition: transform 0.18s;
   }
+  .modal-backdrop.open .modal { transform: translateY(0); }
 
-  /* Add to playlist dialog */
-  .pl-add-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    cursor: pointer;
+  .modal-header {
+    padding: 16px 20px 12px;
     border-bottom: 1px solid var(--border);
-    transition: background 0.1s;
-    font-size: 13px;
-    color: var(--text-sub);
+    display: flex; align-items: center; justify-content: space-between;
   }
-  .pl-add-item:hover { background: var(--accent-dim); color: var(--accent); }
-  .pl-add-item svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .modal-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); padding: 4px; border-radius: 6px;
+    display: flex; align-items: center; transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-close svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .modal-body { padding: 16px 20px; }
+  .modal-label { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; display: block; }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    padding: 9px 12px; outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+
+  .modal-footer {
+    padding: 12px 20px 16px;
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .modal-btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer; border: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .modal-btn.cancel {
+    background: var(--surface2); color: var(--text-sub);
+  }
+  .modal-btn.cancel:hover { background: var(--border); color: var(--text); }
+  .modal-btn.confirm {
+    background: var(--accent); color: #fff;
+  }
+  .modal-btn.confirm:hover { background: var(--accent-light); }
+  .modal-btn.danger { background: rgba(244,67,54,0.1); color: #f44336; }
+  .modal-btn.danger:hover { background: #f44336; color: #fff; }
+
+  /* Confirm modal message */
+  .modal-msg { font-size: 14px; color: var(--text-sub); line-height: 1.6; }
 
   /* Context menu */
   .ctx-menu {
-    position: fixed;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    position: fixed; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
     box-shadow: 0 8px 24px rgba(33,150,243,0.15);
-    z-index: 300;
-    min-width: 160px;
-    overflow: hidden;
-    display: none;
+    z-index: 300; min-width: 160px; overflow: hidden; display: none;
   }
   .ctx-menu.open { display: block; }
   .ctx-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 14px;
-    font-size: 13px;
-    color: var(--text-sub);
-    cursor: pointer;
-    transition: background 0.1s, color 0.1s;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px; font-size: 13px; color: var(--text-sub);
+    cursor: pointer; transition: background 0.1s, color 0.1s;
   }
   .ctx-item:hover { background: var(--accent-dim); color: var(--accent); }
-  .ctx-item.danger:hover { background: rgba(244,67,54,0.1); color: #f44336; }
   .ctx-item svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-
-  /* Mobile controls: rearranged */
-  @media (min-width: 641px) {
-    .mobile-ctrl-row { display: none; }
-  }
-
-  .source-indicator {
-    font-size: 10px;
-    color: var(--text-muted);
-    background: var(--surface2);
-    padding: 2px 7px;
-    border-radius: 8px;
-    text-align: center;
-    margin: 4px 10px;
-  }
+  .ctx-label { padding: 7px 14px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
 
 <div class="drop-overlay" id="dropOverlay">🎵 파일을 여기에 놓으세요</div>
 <div class="ctx-menu" id="ctxMenu"></div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">제목</span>
+      <button class="modal-close" id="modalClose">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
 
 <div class="app-wrapper">
 <div class="app">
@@ -792,9 +628,7 @@
     <!-- Queue Panel -->
     <div class="tab-panel active" id="panelQueue">
       <div class="panel-header">
-        <span class="panel-title">
-          현재 목록 <span class="count-badge" id="queueBadge">0</span>
-        </span>
+        <span class="panel-title">현재 목록 <span class="count-badge" id="queueBadge">0</span></span>
         <div style="display:flex;gap:3px;">
           <button class="btn-icon" id="btnShuffle2" title="셔플">
             <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
@@ -826,23 +660,36 @@
 
     <!-- Playlist Panel -->
     <div class="tab-panel" id="panelPlaylist">
-      <div class="pl-select-wrap">
+      <!-- Playlist selector -->
+      <div class="pl-top-bar">
         <select class="pl-select" id="plSelect" onchange="loadPlaylist()">
           <option value="">— 플레이리스트 선택 —</option>
         </select>
         <button class="pl-new-btn" onclick="newPlaylist()">+ 새로 만들기</button>
       </div>
+      <!-- Playlist header (shown when a playlist is selected) -->
       <div class="panel-header" id="plHeader" style="display:none;">
         <span class="panel-title" id="plTitle">플레이리스트</span>
         <div style="display:flex;gap:3px;">
-          <button class="btn-icon" onclick="playPlaylistNow()" title="지금 재생">
+          <button class="btn-icon" title="재생" onclick="playPlaylistNow()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
-          <button class="btn-icon" onclick="deleteCurrentPlaylist()" title="삭제">
+          <button class="btn-icon" title="이름 수정" onclick="renamePlaylist()">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon" title="삭제" onclick="deleteCurrentPlaylist()">
             <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
         </div>
       </div>
+      <!-- Add track to playlist bar -->
+      <div class="pl-add-bar" id="plAddBar" style="display:none;">
+        <select class="pl-add-select" id="plAddSelect">
+          <option value="">재생목록에서 곡 선택...</option>
+        </select>
+        <button class="pl-add-track-btn" onclick="addSelectedTrackToPlaylist()">+ 추가</button>
+      </div>
+      <!-- Playlist track list -->
       <div class="track-list" id="plList">
         <div class="list-empty" id="plEmpty">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
@@ -859,11 +706,10 @@
       <div class="art-spin" id="artSpin"></div>
       <div class="art-center">
         <div class="dot">
-          <svg viewBox="0 0 24 24" id="artIcon"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         </div>
       </div>
     </div>
-
     <div class="now-info">
       <div class="marquee-wrap">
         <div class="marquee-inner" id="nowTitle">
@@ -872,42 +718,17 @@
       </div>
       <div class="visualizer" id="visualizer"></div>
     </div>
-
-    <!-- Source indicator -->
     <div class="source-indicator" id="sourceIndicator" style="display:none;"></div>
   </main>
 
-  <!-- Player bar (PC) -->
-  <div class="player-bar" id="playerBar">
-    <!-- Repeat (left) -->
+  <!-- Player Bar -->
+  <div class="player-bar">
     <button class="ctrl-btn" id="btnRepeat" title="반복">
       <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
     </button>
     <button class="ctrl-btn" id="btnShuffle" title="셔플">
       <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
     </button>
-
-    <!-- Mobile only row -->
-    <div class="mobile-ctrl-row">
-      <button class="ctrl-btn" id="btnRepeatM">
-        <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-      </button>
-      <button class="ctrl-btn" id="btnShuffleM">
-        <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-      </button>
-      <button class="ctrl-btn" id="btnPrevM">
-        <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
-      </button>
-      <button class="play-btn" id="btnPlayM">
-        <svg viewBox="0 0 24 24" id="playIconM"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </button>
-      <button class="ctrl-btn" id="btnNextM">
-        <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-      </button>
-      <button class="speed-btn" id="btnSpeedM">1×</button>
-    </div>
-
-    <!-- Prev / Play / Next -->
     <button class="ctrl-btn" id="btnPrev" title="이전">
       <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
     </button>
@@ -917,8 +738,6 @@
     <button class="ctrl-btn" id="btnNext" title="다음">
       <svg viewBox="0 0 24 24" style="width:20px;height:20px"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
     </button>
-
-    <!-- Seek -->
     <div class="progress-section">
       <div class="seek-row">
         <span class="time-label" id="timeElapsed">0:00</span>
@@ -926,8 +745,6 @@
         <span class="time-label end" id="timeTotal">0:00</span>
       </div>
     </div>
-
-    <!-- Right controls -->
     <div class="right-controls">
       <button class="speed-btn" id="btnSpeed">1×</button>
       <div class="volume-wrap">
@@ -950,57 +767,131 @@
 // STATE
 // ═══════════════════════════════════════
 const audio = document.getElementById('audio');
-
-// Queue: 오늘 추가한 곡들 (재생목록)
 let queue = [];
 let currentIndex = -1;
-let currentSource = 'queue'; // 'queue' | 'playlist'
+let currentSource = 'queue';
 let activePlaylistId = null;
-
 let shuffle = false;
-let repeatMode = 0; // 0=off 1=all 2=one
+let repeatMode = 0;
 let shuffledOrder = [];
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 let speedIdx = 2;
 let savedVol = 1;
-
-// Playlists: { id, name, tracks: [{name, size}] }
 let playlists = [];
-let currentPlId = null; // currently viewed playlist id
+let currentPlId = null;
 
 // ═══════════════════════════════════════
 // DOM
 // ═══════════════════════════════════════
-const queueItems     = document.getElementById('queueItems');
-const queueEmpty     = document.getElementById('queueEmpty');
-const queueBadge     = document.getElementById('queueBadge');
-const plItems        = document.getElementById('plItems');
-const plEmpty        = document.getElementById('plEmpty');
-const plSelect       = document.getElementById('plSelect');
-const plHeader       = document.getElementById('plHeader');
-const plTitle        = document.getElementById('plTitle');
-const nowTitleText   = document.getElementById('nowTitleText');
-const nowTitleInner  = document.getElementById('nowTitle');
-const seekBar        = document.getElementById('seekBar');
-const volBar         = document.getElementById('volBar');
-const timeElapsed    = document.getElementById('timeElapsed');
-const timeTotal      = document.getElementById('timeTotal');
-const btnPlay        = document.getElementById('btnPlay');
-const btnPlayM       = document.getElementById('btnPlayM');
-const playIcon       = document.getElementById('playIcon');
-const playIconM      = document.getElementById('playIconM');
-const btnShuffle     = document.getElementById('btnShuffle');
-const btnShuffle2    = document.getElementById('btnShuffle2');
-const btnShuffleM    = document.getElementById('btnShuffleM');
-const btnRepeat      = document.getElementById('btnRepeat');
-const btnRepeatM     = document.getElementById('btnRepeatM');
-const btnSpeed       = document.getElementById('btnSpeed');
-const btnSpeedM      = document.getElementById('btnSpeedM');
-const btnMute        = document.getElementById('btnMute');
-const volIcon        = document.getElementById('volIcon');
-const artSpin        = document.getElementById('artSpin');
-const visualizer     = document.getElementById('visualizer');
+const queueItems      = document.getElementById('queueItems');
+const queueEmpty      = document.getElementById('queueEmpty');
+const queueBadge      = document.getElementById('queueBadge');
+const plItems         = document.getElementById('plItems');
+const plEmpty         = document.getElementById('plEmpty');
+const plSelect        = document.getElementById('plSelect');
+const plHeader        = document.getElementById('plHeader');
+const plTitle         = document.getElementById('plTitle');
+const plAddBar        = document.getElementById('plAddBar');
+const plAddSelect     = document.getElementById('plAddSelect');
+const nowTitleText    = document.getElementById('nowTitleText');
+const nowTitleInner   = document.getElementById('nowTitle');
+const seekBar         = document.getElementById('seekBar');
+const volBar          = document.getElementById('volBar');
+const timeElapsed     = document.getElementById('timeElapsed');
+const timeTotal       = document.getElementById('timeTotal');
+const btnPlay         = document.getElementById('btnPlay');
+const playIcon        = document.getElementById('playIcon');
+const btnShuffle      = document.getElementById('btnShuffle');
+const btnShuffle2     = document.getElementById('btnShuffle2');
+const btnRepeat       = document.getElementById('btnRepeat');
+const btnSpeed        = document.getElementById('btnSpeed');
+const btnMute         = document.getElementById('btnMute');
+const volIcon         = document.getElementById('volIcon');
+const artSpin         = document.getElementById('artSpin');
+const visualizer      = document.getElementById('visualizer');
 const sourceIndicator = document.getElementById('sourceIndicator');
+
+// ═══════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalTitle    = document.getElementById('modalTitle');
+const modalBody     = document.getElementById('modalBody');
+const modalFooter   = document.getElementById('modalFooter');
+let modalCallback   = null;
+
+function openModal({ title, body, buttons }) {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = body;
+  modalFooter.innerHTML = '';
+  buttons.forEach(btn => {
+    const el = document.createElement('button');
+    el.className = 'modal-btn ' + (btn.cls || 'confirm');
+    el.textContent = btn.label;
+    el.addEventListener('click', () => { closeModal(); btn.action && btn.action(); });
+    modalFooter.appendChild(el);
+  });
+  modalBackdrop.classList.add('open');
+  // push history state so back button closes modal
+  history.pushState({ modal: true }, '');
+  // focus first input if any
+  const inp = modalBody.querySelector('input');
+  if (inp) setTimeout(() => inp.focus(), 50);
+}
+
+function closeModal() {
+  modalBackdrop.classList.remove('open');
+  // remove the history state if still on it
+  if (history.state && history.state.modal) history.back();
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+
+// back button closes modal
+window.addEventListener('popstate', e => {
+  if (modalBackdrop.classList.contains('open')) {
+    modalBackdrop.classList.remove('open');
+  }
+});
+
+// Enter key submits
+modalBackdrop.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const confirm = modalFooter.querySelector('.confirm');
+    if (confirm) confirm.click();
+  }
+  if (e.key === 'Escape') closeModal();
+});
+
+// Prompt-style helper
+function showPrompt(title, placeholder, defaultVal, onConfirm) {
+  openModal({
+    title,
+    body: `<label class="modal-label">${placeholder}</label>
+           <input class="modal-input" id="modalInput" type="text" value="${defaultVal || ''}" placeholder="${placeholder}">`,
+    buttons: [
+      { label: '취소', cls: 'cancel' },
+      { label: '확인', cls: 'confirm', action: () => {
+          const val = document.getElementById('modalInput')?.value?.trim();
+          if (val) onConfirm(val);
+        }
+      }
+    ]
+  });
+}
+
+// Confirm-style helper
+function showConfirm(title, msg, onConfirm) {
+  openModal({
+    title,
+    body: `<p class="modal-msg">${msg}</p>`,
+    buttons: [
+      { label: '취소', cls: 'cancel' },
+      { label: '삭제', cls: 'danger', action: onConfirm }
+    ]
+  });
+}
 
 // ═══════════════════════════════════════
 // VISUALIZER
@@ -1023,9 +914,7 @@ const sourceIndicator = document.getElementById('sourceIndicator');
 // ═══════════════════════════════════════
 function fmt(sec) {
   if (!isFinite(sec)) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return m + ':' + String(s).padStart(2, '0');
+  return Math.floor(sec/60) + ':' + String(Math.floor(sec%60)).padStart(2,'0');
 }
 function getDisplayName(name) { return name.replace(/\.[^.]+$/, ''); }
 function uid() { return Math.random().toString(36).slice(2, 9); }
@@ -1041,26 +930,22 @@ function switchTab(tab) {
 }
 
 // ═══════════════════════════════════════
-// SHUFFLE ORDER
+// SHUFFLE
 // ═══════════════════════════════════════
+function activeList() {
+  if (currentSource === 'playlist' && activePlaylistId) {
+    const pl = playlists.find(p => p.id === activePlaylistId);
+    if (pl) return pl.tracks.map(t => queue.find(q => q.name === t.name && q.size === t.size)).filter(Boolean);
+  }
+  return queue;
+}
+
 function buildShuffleOrder() {
-  const len = activeList().length;
-  shuffledOrder = [...Array(len).keys()];
+  shuffledOrder = [...Array(activeList().length).keys()];
   for (let i = shuffledOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
   }
-}
-
-function activeList() {
-  if (currentSource === 'playlist' && activePlaylistId) {
-    const pl = playlists.find(p => p.id === activePlaylistId);
-    // Map playlist tracks to queue entries that match
-    if (pl) {
-      return pl.tracks.map(t => queue.find(q => q.name === t.name && q.size === t.size)).filter(Boolean);
-    }
-  }
-  return queue;
 }
 
 // ═══════════════════════════════════════
@@ -1070,12 +955,10 @@ function renderQueue() {
   queueItems.innerHTML = '';
   queueEmpty.style.display = queue.length ? 'none' : 'flex';
   queueBadge.textContent = queue.length;
-
   queue.forEach((track, i) => {
-    const item = buildTrackItem(track, i, 'queue', i === currentIndex && currentSource === 'queue');
-    queueItems.appendChild(item);
+    queueItems.appendChild(buildTrackItem(track, i, 'queue', i === currentIndex && currentSource === 'queue'));
   });
-
+  updatePlAddSelect();
   savePersist();
 }
 
@@ -1083,7 +966,7 @@ function renderQueue() {
 // RENDER PLAYLIST PANEL
 // ═══════════════════════════════════════
 function renderPlPanel() {
-  // Update select
+  // Rebuild select
   const prevVal = plSelect.value;
   plSelect.innerHTML = '<option value="">— 플레이리스트 선택 —</option>';
   playlists.forEach(pl => {
@@ -1097,30 +980,54 @@ function renderPlPanel() {
   const pl = currentPlId ? playlists.find(p => p.id === currentPlId) : null;
   if (!pl) {
     plHeader.style.display = 'none';
+    plAddBar.style.display = 'none';
     plItems.innerHTML = '';
     plEmpty.style.display = 'flex';
     return;
   }
 
   plHeader.style.display = 'flex';
+  plAddBar.style.display = 'flex';
   plTitle.textContent = pl.name;
   plEmpty.style.display = pl.tracks.length ? 'none' : 'flex';
   plItems.innerHTML = '';
 
   pl.tracks.forEach((track, i) => {
-    // find in queue for file reference
     const qTrack = queue.find(q => q.name === track.name && q.size === track.size);
     const isActive = currentSource === 'playlist' && activePlaylistId === currentPlId &&
                      qTrack && queue.indexOf(qTrack) === currentIndex;
-    const item = buildTrackItem(qTrack || track, i, 'playlist', isActive);
-    plItems.appendChild(item);
+    plItems.appendChild(buildTrackItem(qTrack || track, i, 'playlist', isActive));
   });
 
+  updatePlAddSelect();
   savePersist();
 }
 
+// Populate the "add track" dropdown with queue tracks not already in this playlist
+function updatePlAddSelect() {
+  const pl = currentPlId ? playlists.find(p => p.id === currentPlId) : null;
+  plAddSelect.innerHTML = '<option value="">재생목록에서 곡 선택...</option>';
+  if (!pl) return;
+  queue.forEach((track, i) => {
+    if (!pl.tracks.some(t => t.name === track.name && t.size === track.size)) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = getDisplayName(track.name);
+      plAddSelect.appendChild(opt);
+    }
+  });
+}
+
+function addSelectedTrackToPlaylist() {
+  const idx = parseInt(plAddSelect.value);
+  if (isNaN(idx) || idx < 0) return;
+  const track = queue[idx];
+  if (!track) return;
+  addTrackToPlaylist(currentPlId, track);
+}
+
 // ═══════════════════════════════════════
-// BUILD TRACK ITEM (shared)
+// BUILD TRACK ITEM
 // ═══════════════════════════════════════
 function buildTrackItem(track, i, listType, isActive) {
   const item = document.createElement('div');
@@ -1128,23 +1035,19 @@ function buildTrackItem(track, i, listType, isActive) {
   item.dataset.index = i;
   item.dataset.list = listType;
 
-  // Drag handle
   const handle = document.createElement('div');
   handle.className = 'drag-handle';
   handle.innerHTML = `<svg viewBox="0 0 24 24"><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>`;
   handle.draggable = true;
 
-  // Number
   const numEl = document.createElement('div');
   numEl.className = 'track-num';
   numEl.textContent = i + 1;
 
-  // Play icon
   const playIc = document.createElement('div');
   playIc.className = 'track-play-icon';
   playIc.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
 
-  // Info
   const info = document.createElement('div');
   info.className = 'track-info';
   const nm = document.createElement('div');
@@ -1156,20 +1059,10 @@ function buildTrackItem(track, i, listType, isActive) {
   info.appendChild(nm);
   info.appendChild(dur);
 
-  // Actions
   const actions = document.createElement('div');
   actions.className = 'track-actions';
 
   if (listType === 'queue') {
-    // Add to playlist btn
-    const addBtn = document.createElement('button');
-    addBtn.className = 'track-act-btn';
-    addBtn.title = '플레이리스트에 추가';
-    addBtn.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-    addBtn.addEventListener('click', e => { e.stopPropagation(); showAddToPlaylist(i); });
-    actions.appendChild(addBtn);
-
-    // Remove btn
     const rm = document.createElement('button');
     rm.className = 'track-act-btn remove';
     rm.title = '삭제';
@@ -1177,7 +1070,6 @@ function buildTrackItem(track, i, listType, isActive) {
     rm.addEventListener('click', e => { e.stopPropagation(); removeFromQueue(i); });
     actions.appendChild(rm);
   } else {
-    // Remove from playlist
     const rm = document.createElement('button');
     rm.className = 'track-act-btn remove';
     rm.title = '목록에서 제거';
@@ -1192,35 +1084,28 @@ function buildTrackItem(track, i, listType, isActive) {
   item.appendChild(info);
   item.appendChild(actions);
 
-  // Click to play
   item.addEventListener('click', () => {
     if (listType === 'queue') {
-      currentSource = 'queue';
-      activePlaylistId = null;
-      updateSourceIndicator();
-      playTrack(i);
+      currentSource = 'queue'; activePlaylistId = null;
+      updateSourceIndicator(); playTrack(i);
     } else {
-      // play from playlist
       playFromPlaylist(currentPlId, i);
     }
   });
 
-  // Drag-to-reorder
   setupDrag(handle, item, i, listType);
-
   return item;
 }
 
 // ═══════════════════════════════════════
-// DRAG TO REORDER
+// DRAG REORDER
 // ═══════════════════════════════════════
 let dragSrcIdx = null;
 let dragListType = null;
 
 function setupDrag(handle, item, i, listType) {
   handle.addEventListener('dragstart', e => {
-    dragSrcIdx = i;
-    dragListType = listType;
+    dragSrcIdx = i; dragListType = listType;
     item.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', i);
@@ -1229,40 +1114,29 @@ function setupDrag(handle, item, i, listType) {
     item.classList.remove('dragging');
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
   });
-
   item.addEventListener('dragover', e => {
     if (dragListType !== listType) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
     document.querySelectorAll('.track-item').forEach(el => el.classList.remove('drag-over'));
     item.classList.add('drag-over');
   });
   item.addEventListener('drop', e => {
     e.preventDefault();
-    const targetIdx = i;
-    if (dragSrcIdx === null || dragSrcIdx === targetIdx || dragListType !== listType) return;
-    if (listType === 'queue') {
-      reorderQueue(dragSrcIdx, targetIdx);
-    } else {
-      reorderPlaylist(currentPlId, dragSrcIdx, targetIdx);
-    }
+    if (dragSrcIdx === null || dragSrcIdx === i || dragListType !== listType) return;
+    if (listType === 'queue') reorderQueue(dragSrcIdx, i);
+    else reorderPlaylist(currentPlId, dragSrcIdx, i);
     dragSrcIdx = null;
   });
 }
 
 function reorderQueue(from, to) {
-  const movingCurrent = (currentIndex === from);
+  const moving = currentIndex === from;
   const [item] = queue.splice(from, 1);
   queue.splice(to, 0, item);
-  if (movingCurrent) {
-    currentIndex = to;
-  } else if (currentIndex > from && currentIndex <= to) {
-    currentIndex--;
-  } else if (currentIndex < from && currentIndex >= to) {
-    currentIndex++;
-  }
-  buildShuffleOrder();
-  renderQueue();
+  if (moving) currentIndex = to;
+  else if (currentIndex > from && currentIndex <= to) currentIndex--;
+  else if (currentIndex < from && currentIndex >= to) currentIndex++;
+  buildShuffleOrder(); renderQueue();
 }
 
 function reorderPlaylist(plId, from, to) {
@@ -1278,9 +1152,7 @@ function reorderPlaylist(plId, from, to) {
 // ═══════════════════════════════════════
 function addFiles(files) {
   const mp3Types = /\.(mp3|wav|ogg|flac|m4a|aac|opus)$/i;
-  const arr = Array.from(files).filter(f => mp3Types.test(f.name));
-  if (!arr.length) return;
-  arr.forEach(file => {
+  Array.from(files).filter(f => mp3Types.test(f.name)).forEach(file => {
     if (queue.some(t => t.name === file.name && t.size === file.size)) return;
     const entry = { name: file.name, size: file.size, file, duration: null, url: null };
     queue.push(entry);
@@ -1292,39 +1164,27 @@ function addFiles(files) {
       URL.revokeObjectURL(tmp.src);
     });
   });
-  buildShuffleOrder();
-  renderQueue();
+  buildShuffleOrder(); renderQueue();
   if (currentIndex === -1 && queue.length > 0) highlightCurrent();
 }
 
 function removeFromQueue(i) {
   if (queue[i].url) URL.revokeObjectURL(queue[i].url);
   queue.splice(i, 1);
-  if (currentIndex === i) {
-    audio.pause();
-    currentIndex = -1;
-    setPlayState(false);
-    resetNowPlaying();
-  } else if (currentIndex > i) {
-    currentIndex--;
-  }
-  buildShuffleOrder();
-  renderQueue();
+  if (currentIndex === i) { audio.pause(); currentIndex = -1; setPlayState(false); resetNowPlaying(); }
+  else if (currentIndex > i) currentIndex--;
+  buildShuffleOrder(); renderQueue();
 }
 
 function clearQueue() {
   if (!queue.length) return;
-  if (!confirm('재생목록을 전부 지울까요?')) return;
-  audio.pause();
-  audio.src = '';
-  queue.forEach(t => { if (t.url) URL.revokeObjectURL(t.url); });
-  queue.length = 0;
-  currentIndex = -1;
-  resetNowPlaying();
-  setPlayState(false);
-  seekBar.value = 0;
-  buildShuffleOrder();
-  renderQueue();
+  showConfirm('전체 삭제', '재생목록의 모든 곡을 삭제할까요?', () => {
+    audio.pause(); audio.src = '';
+    queue.forEach(t => { if (t.url) URL.revokeObjectURL(t.url); });
+    queue.length = 0; currentIndex = -1;
+    resetNowPlaying(); setPlayState(false); seekBar.value = 0;
+    buildShuffleOrder(); renderQueue();
+  });
 }
 
 function resetNowPlaying() {
@@ -1342,15 +1202,14 @@ function resetNowPlaying() {
 // PLAYLIST OPERATIONS
 // ═══════════════════════════════════════
 function newPlaylist() {
-  const name = prompt('새 플레이리스트 이름을 입력하세요:');
-  if (!name || !name.trim()) return;
-  const pl = { id: uid(), name: name.trim(), tracks: [] };
-  playlists.push(pl);
-  currentPlId = pl.id;
-  renderPlPanel();
-  plSelect.value = pl.id;
-  plHeader.style.display = 'flex';
-  savePersist();
+  showPrompt('새 플레이리스트', '플레이리스트 이름', '', name => {
+    const pl = { id: uid(), name, tracks: [] };
+    playlists.push(pl);
+    currentPlId = pl.id;
+    renderPlPanel();
+    plSelect.value = pl.id;
+    savePersist();
+  });
 }
 
 function loadPlaylist() {
@@ -1358,81 +1217,32 @@ function loadPlaylist() {
   renderPlPanel();
 }
 
-function deleteCurrentPlaylist() {
-  if (!currentPlId) return;
+function renamePlaylist() {
   const pl = playlists.find(p => p.id === currentPlId);
   if (!pl) return;
-  if (!confirm(`"${pl.name}" 플레이리스트를 삭제할까요?`)) return;
-  playlists = playlists.filter(p => p.id !== currentPlId);
-  if (activePlaylistId === currentPlId) {
-    activePlaylistId = null;
-    currentSource = 'queue';
-    updateSourceIndicator();
-  }
-  currentPlId = null;
-  plSelect.value = '';
-  renderPlPanel();
+  showPrompt('플레이리스트 이름 수정', '새 이름', pl.name, name => {
+    pl.name = name;
+    renderPlPanel();
+    savePersist();
+  });
 }
 
-function showAddToPlaylist(queueIdx) {
-  const track = queue[queueIdx];
-  if (!playlists.length) {
-    const name = prompt('추가할 플레이리스트 이름을 입력하세요 (새로 만들기):');
-    if (!name || !name.trim()) return;
-    const pl = { id: uid(), name: name.trim(), tracks: [] };
-    playlists.push(pl);
-    currentPlId = pl.id;
-    addTrackToPlaylist(pl.id, track);
-    renderPlPanel();
-    return;
-  }
-  // Show context menu
-  const menu = document.getElementById('ctxMenu');
-  menu.innerHTML = '<div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);">플레이리스트에 추가</div>';
-  playlists.forEach(pl => {
-    const item = document.createElement('div');
-    item.className = 'ctx-item';
-    item.innerHTML = `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/></svg> ${pl.name}`;
-    item.addEventListener('click', () => {
-      addTrackToPlaylist(pl.id, track);
-      closeCtx();
-    });
-    menu.appendChild(item);
-  });
-  const newItem = document.createElement('div');
-  newItem.className = 'ctx-item';
-  newItem.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 새 플레이리스트 만들기`;
-  newItem.addEventListener('click', () => {
-    closeCtx();
-    const name = prompt('새 플레이리스트 이름:');
-    if (!name || !name.trim()) return;
-    const pl = { id: uid(), name: name.trim(), tracks: [] };
-    playlists.push(pl);
-    addTrackToPlaylist(pl.id, track);
-    currentPlId = pl.id;
+function deleteCurrentPlaylist() {
+  const pl = playlists.find(p => p.id === currentPlId);
+  if (!pl) return;
+  showConfirm('플레이리스트 삭제', `"${pl.name}"을 삭제할까요?`, () => {
+    playlists = playlists.filter(p => p.id !== currentPlId);
+    if (activePlaylistId === currentPlId) { activePlaylistId = null; currentSource = 'queue'; updateSourceIndicator(); }
+    currentPlId = null;
+    plSelect.value = '';
     renderPlPanel();
   });
-  menu.appendChild(newItem);
-  // Position
-  const btn = queueItems.querySelectorAll('.track-item')[queueIdx]?.querySelector('.track-act-btn');
-  const rect = btn ? btn.getBoundingClientRect() : { bottom: 100, left: 100 };
-  menu.style.top = (rect.bottom + 4) + 'px';
-  menu.style.left = rect.left + 'px';
-  menu.classList.add('open');
 }
-
-function closeCtx() { document.getElementById('ctxMenu').classList.remove('open'); }
-document.addEventListener('click', e => {
-  if (!e.target.closest('#ctxMenu')) closeCtx();
-});
 
 function addTrackToPlaylist(plId, track) {
   const pl = playlists.find(p => p.id === plId);
   if (!pl) return;
-  if (pl.tracks.some(t => t.name === track.name && t.size === track.size)) {
-    alert('이미 플레이리스트에 있는 곡입니다.');
-    return;
-  }
+  if (pl.tracks.some(t => t.name === track.name && t.size === track.size)) return;
   pl.tracks.push({ name: track.name, size: track.size });
   renderPlPanel();
   savePersist();
@@ -1448,9 +1258,6 @@ function removeFromPlaylist(plId, i) {
 function playPlaylistNow() {
   const pl = playlists.find(p => p.id === currentPlId);
   if (!pl || !pl.tracks.length) return;
-  // find first track in queue
-  const first = pl.tracks.find(t => queue.some(q => q.name === t.name && q.size === t.size));
-  if (!first) { alert('재생목록에 곡이 없습니다. 먼저 파일을 추가해주세요.'); return; }
   playFromPlaylist(currentPlId, 0);
 }
 
@@ -1460,12 +1267,12 @@ function playFromPlaylist(plId, plIdx) {
   const trackRef = pl.tracks[plIdx];
   if (!trackRef) return;
   const qIdx = queue.findIndex(q => q.name === trackRef.name && q.size === trackRef.size);
-  if (qIdx === -1) { alert('파일이 재생목록에 없습니다. 파일을 먼저 추가해주세요.'); return; }
-  currentSource = 'playlist';
-  activePlaylistId = plId;
-  updateSourceIndicator();
-  buildShuffleOrder();
-  playTrack(qIdx);
+  if (qIdx === -1) {
+    openModal({ title: '파일 없음', body: '<p class="modal-msg">파일이 재생목록에 없습니다.<br>파일을 먼저 추가해주세요.</p>', buttons: [{ label: '확인', cls: 'confirm' }] });
+    return;
+  }
+  currentSource = 'playlist'; activePlaylistId = plId;
+  updateSourceIndicator(); buildShuffleOrder(); playTrack(qIdx);
 }
 
 // ═══════════════════════════════════════
@@ -1490,55 +1297,42 @@ function playTrack(i) {
       nowTitleInner.classList.add('scrolling');
     }
   });
-  renderQueue();
-  renderPlPanel();
+  renderQueue(); renderPlPanel();
 }
 
 function highlightCurrent() {
-  document.querySelectorAll('.track-item').forEach((el, i) => {
+  document.querySelectorAll('.track-item').forEach(el => {
     el.classList.toggle('active', parseInt(el.dataset.index) === currentIndex && el.dataset.list === currentSource);
   });
 }
 
 function setPlayState(playing) {
-  const pauseHtml = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-  const playHtml = '<polygon points="5 3 19 12 5 21 5 3"/>';
-  if (playing) {
-    playIcon.innerHTML = pauseHtml;
-    playIconM.innerHTML = pauseHtml;
-    artSpin.classList.add('playing');
-    visualizer.classList.add('playing');
-  } else {
-    playIcon.innerHTML = playHtml;
-    playIconM.innerHTML = playHtml;
-    artSpin.classList.remove('playing');
-    visualizer.classList.remove('playing');
-  }
+  const pause = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+  const play  = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  playIcon.innerHTML = playing ? pause : play;
+  artSpin.classList.toggle('playing', playing);
+  visualizer.classList.toggle('playing', playing);
 }
 
 function getNextIndex() {
-  const list = activeList();
-  if (list.length === 0) return -1;
+  if (activeList().length === 0) return -1;
   if (shuffle) {
     const pos = shuffledOrder.indexOf(currentIndex);
     return shuffledOrder[(pos + 1) % shuffledOrder.length];
   }
-  // For playlist, loop within playlist
   if (currentSource === 'playlist' && activePlaylistId) {
     const pl = playlists.find(p => p.id === activePlaylistId);
     if (pl) {
-      const curPlIdx = pl.tracks.findIndex(t => queue[currentIndex] && t.name === queue[currentIndex].name);
-      const nextPlIdx = (curPlIdx + 1) % pl.tracks.length;
-      const nextTrack = pl.tracks[nextPlIdx];
-      return queue.findIndex(q => q.name === nextTrack.name && q.size === nextTrack.size);
+      const cur = pl.tracks.findIndex(t => queue[currentIndex] && t.name === queue[currentIndex].name);
+      const next = pl.tracks[(cur + 1) % pl.tracks.length];
+      return queue.findIndex(q => q.name === next.name && q.size === next.size);
     }
   }
   return (currentIndex + 1) % queue.length;
 }
 
 function getPrevIndex() {
-  const list = activeList();
-  if (list.length === 0) return -1;
+  if (activeList().length === 0) return -1;
   if (shuffle) {
     const pos = shuffledOrder.indexOf(currentIndex);
     return shuffledOrder[(pos - 1 + shuffledOrder.length) % shuffledOrder.length];
@@ -1546,10 +1340,9 @@ function getPrevIndex() {
   if (currentSource === 'playlist' && activePlaylistId) {
     const pl = playlists.find(p => p.id === activePlaylistId);
     if (pl) {
-      const curPlIdx = pl.tracks.findIndex(t => queue[currentIndex] && t.name === queue[currentIndex].name);
-      const prevPlIdx = (curPlIdx - 1 + pl.tracks.length) % pl.tracks.length;
-      const prevTrack = pl.tracks[prevPlIdx];
-      return queue.findIndex(q => q.name === prevTrack.name && q.size === prevTrack.size);
+      const cur = pl.tracks.findIndex(t => queue[currentIndex] && t.name === queue[currentIndex].name);
+      const prev = pl.tracks[(cur - 1 + pl.tracks.length) % pl.tracks.length];
+      return queue.findIndex(q => q.name === prev.name && q.size === prev.size);
     }
   }
   return (currentIndex - 1 + queue.length) % queue.length;
@@ -1558,11 +1351,7 @@ function getPrevIndex() {
 function updateSourceIndicator() {
   if (currentSource === 'playlist' && activePlaylistId) {
     const pl = playlists.find(p => p.id === activePlaylistId);
-    if (pl) {
-      sourceIndicator.textContent = '🎵 플레이리스트: ' + pl.name;
-      sourceIndicator.style.display = 'block';
-      return;
-    }
+    if (pl) { sourceIndicator.textContent = '🎵 플레이리스트: ' + pl.name; sourceIndicator.style.display = 'block'; return; }
   }
   sourceIndicator.style.display = 'none';
 }
@@ -1570,30 +1359,19 @@ function updateSourceIndicator() {
 // ═══════════════════════════════════════
 // AUDIO EVENTS
 // ═══════════════════════════════════════
-audio.addEventListener('play', () => setPlayState(true));
+audio.addEventListener('play',  () => setPlayState(true));
 audio.addEventListener('pause', () => setPlayState(false));
-
 audio.addEventListener('timeupdate', () => {
   if (!audio.duration) return;
   seekBar.value = (audio.currentTime / audio.duration) * 100;
   timeElapsed.textContent = fmt(audio.currentTime);
-  timeTotal.textContent = fmt(audio.duration);
+  timeTotal.textContent   = fmt(audio.duration);
 });
-
 audio.addEventListener('ended', () => {
-  if (repeatMode === 2) {
-    audio.currentTime = 0; audio.play();
-  } else {
-    const next = getNextIndex();
-    if (repeatMode === 1 || next !== currentIndex) {
-      playTrack(next === -1 ? 0 : next);
-    } else {
-      setPlayState(false);
-      audio.currentTime = 0;
-      seekBar.value = 0;
-      timeElapsed.textContent = '0:00';
-    }
-  }
+  if (repeatMode === 2) { audio.currentTime = 0; audio.play(); return; }
+  const next = getNextIndex();
+  if (repeatMode === 1 || next !== currentIndex) playTrack(next === -1 ? 0 : next);
+  else { setPlayState(false); audio.currentTime = 0; seekBar.value = 0; timeElapsed.textContent = '0:00'; }
 });
 
 // ═══════════════════════════════════════
@@ -1604,73 +1382,42 @@ function doPlay() {
   else if (audio.paused) audio.play();
   else audio.pause();
 }
-function doPrev() {
-  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
-  if (queue.length) playTrack(getPrevIndex());
-}
+function doPrev() { if (audio.currentTime > 3) { audio.currentTime = 0; return; } if (queue.length) playTrack(getPrevIndex()); }
 function doNext() { if (queue.length) playTrack(getNextIndex()); }
 
 btnPlay.addEventListener('click', doPlay);
-btnPlayM.addEventListener('click', doPlay);
 document.getElementById('btnPrev').addEventListener('click', doPrev);
-document.getElementById('btnPrevM').addEventListener('click', doPrev);
 document.getElementById('btnNext').addEventListener('click', doNext);
-document.getElementById('btnNextM').addEventListener('click', doNext);
 
 function toggleShuffle() {
   shuffle = !shuffle;
-  [btnShuffle, btnShuffle2, btnShuffleM].forEach(b => b.classList.toggle('active', shuffle));
+  [btnShuffle, btnShuffle2].forEach(b => b.classList.toggle('active', shuffle));
   if (shuffle) buildShuffleOrder();
 }
 btnShuffle.addEventListener('click', toggleShuffle);
 btnShuffle2.addEventListener('click', toggleShuffle);
-btnShuffleM.addEventListener('click', toggleShuffle);
 
-function toggleRepeat() {
+btnRepeat.addEventListener('click', () => {
   repeatMode = (repeatMode + 1) % 3;
-  const active = repeatMode > 0;
-  const oneRepeat = repeatMode === 2;
+  btnRepeat.classList.toggle('active', repeatMode > 0);
   const svg1 = `<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>`;
-  const svg2 = svg1 + `<line x1="12" y1="8" x2="12" y2="16"/>`;
-  [btnRepeat, btnRepeatM].forEach(b => {
-    b.classList.toggle('active', active);
-    b.querySelector('svg').innerHTML = oneRepeat ? svg2 : svg1;
-    b.title = ['반복 끔', '전체 반복', '한 곡 반복'][repeatMode];
-  });
-}
-btnRepeat.addEventListener('click', toggleRepeat);
-btnRepeatM.addEventListener('click', toggleRepeat);
+  btnRepeat.querySelector('svg').innerHTML = repeatMode === 2 ? svg1 + `<line x1="12" y1="8" x2="12" y2="16"/>` : svg1;
+  btnRepeat.title = ['반복 끔','전체 반복','한 곡 반복'][repeatMode];
+});
 
-function toggleSpeed() {
+btnSpeed.addEventListener('click', () => {
   speedIdx = (speedIdx + 1) % speeds.length;
   const s = speeds[speedIdx];
   audio.playbackRate = s;
-  const label = s === 1 ? '1×' : s + '×';
-  btnSpeed.textContent = label;
-  btnSpeedM.textContent = label;
+  btnSpeed.textContent = s === 1 ? '1×' : s + '×';
   btnSpeed.classList.toggle('active', s !== 1);
-  btnSpeedM.classList.toggle('active', s !== 1);
-}
-btnSpeed.addEventListener('click', toggleSpeed);
-btnSpeedM.addEventListener('click', toggleSpeed);
-
-seekBar.addEventListener('input', () => {
-  if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration;
 });
 
-volBar.addEventListener('input', () => {
-  audio.volume = volBar.value;
-  savedVol = volBar.value;
-  updateVolIcon();
-});
-
+seekBar.addEventListener('input', () => { if (audio.duration) audio.currentTime = (seekBar.value / 100) * audio.duration; });
+volBar.addEventListener('input', () => { audio.volume = volBar.value; savedVol = volBar.value; updateVolIcon(); });
 btnMute.addEventListener('click', () => {
-  if (audio.volume > 0) {
-    savedVol = audio.volume;
-    audio.volume = 0; volBar.value = 0;
-  } else {
-    audio.volume = savedVol || 1; volBar.value = audio.volume;
-  }
+  if (audio.volume > 0) { savedVol = audio.volume; audio.volume = 0; volBar.value = 0; }
+  else { audio.volume = savedVol || 1; volBar.value = audio.volume; }
   updateVolIcon();
 });
 
@@ -1682,7 +1429,7 @@ function updateVolIcon() {
 }
 
 // ═══════════════════════════════════════
-// FILE INPUT
+// FILE INPUT & DROP
 // ═══════════════════════════════════════
 document.getElementById('btnAddFiles').addEventListener('click', () => document.getElementById('fileInput').click());
 document.getElementById('btnAddFolder').addEventListener('click', () => document.getElementById('folderInput').click());
@@ -1690,72 +1437,44 @@ document.getElementById('fileInput').addEventListener('change', e => { addFiles(
 document.getElementById('folderInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
 document.getElementById('btnClearAll').addEventListener('click', clearQueue);
 
-// ═══════════════════════════════════════
-// DRAG & DROP (files)
-// ═══════════════════════════════════════
 const dropOverlay = document.getElementById('dropOverlay');
 let dragCounter = 0;
-document.addEventListener('dragenter', e => {
-  if (e.dataTransfer.types.includes('Files')) {
-    e.preventDefault(); dragCounter++; dropOverlay.classList.add('active');
-  }
-});
-document.addEventListener('dragleave', () => {
-  dragCounter--;
-  if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }
-});
+document.addEventListener('dragenter', e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); dragCounter++; dropOverlay.classList.add('active'); } });
+document.addEventListener('dragleave', () => { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); } });
 document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => {
-  e.preventDefault(); dragCounter = 0;
-  dropOverlay.classList.remove('active');
-  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-});
+document.addEventListener('drop', e => { e.preventDefault(); dragCounter = 0; dropOverlay.classList.remove('active'); if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
 
 // ═══════════════════════════════════════
 // KEYBOARD
 // ═══════════════════════════════════════
 document.addEventListener('keydown', e => {
-  if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+  if (['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)) return;
   switch(e.code) {
     case 'Space': e.preventDefault(); doPlay(); break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      if (e.shiftKey) doPrev();
-      else audio.currentTime = Math.max(0, audio.currentTime - 5);
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      if (e.shiftKey) doNext();
-      else audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5);
-      break;
+    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey) doPrev(); else audio.currentTime = Math.max(0, audio.currentTime - 5); break;
+    case 'ArrowRight': e.preventDefault(); if (e.shiftKey) doNext(); else audio.currentTime = Math.min(audio.duration||0, audio.currentTime + 5); break;
     case 'KeyM': btnMute.click(); break;
   }
 });
 
 // ═══════════════════════════════════════
-// PERSIST (metadata only, not blobs)
+// PERSIST
 // ═══════════════════════════════════════
 function savePersist() {
   try {
-    const data = {
+    localStorage.setItem('mp3player_v3', JSON.stringify({
       queue: queue.map(t => ({ name: t.name, size: t.size, duration: t.duration })),
-      playlists,
-      currentIndex,
-      currentSource,
-      activePlaylistId
-    };
-    localStorage.setItem('mp3player_v2', JSON.stringify(data));
+      playlists, currentIndex, currentSource, activePlaylistId
+    }));
   } catch(e) {}
 }
 
 function loadPersist() {
   try {
-    const raw = localStorage.getItem('mp3player_v2');
+    const raw = localStorage.getItem('mp3player_v3');
     if (!raw) return;
     const data = JSON.parse(raw);
     if (data.playlists) playlists = data.playlists;
-    // queue metadata only (no blobs)
-    renderPlPanel();
   } catch(e) {}
 }
 

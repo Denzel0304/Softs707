@@ -629,84 +629,81 @@
      MOBILE STYLES
   ═══════════════════════════ */
   @media (max-width: 640px) {
-    html, body { overflow: hidden; }
+    html, body { overflow: hidden; height: 100%; }
 
-    .app-wrapper { margin: 0; max-width: 100%; height: 100vh; }
+    .app-wrapper { margin: 0; max-width: 100%; height: 100dvh; display: flex; flex-direction: column; }
 
     .app {
       margin: 0;
       border-radius: 0;
       border: none;
-      grid-template-rows: auto 1fr auto;
-      grid-template-columns: 1fr;
-      height: 100vh;
-    }
-
-    /* Mobile: main on top, sidebar below, player at bottom */
-    .main {
-      grid-row: 1 / 2;
-      grid-column: 1 / 2;
-      padding: 20px 16px 12px;
-      gap: 12px;
-      background: linear-gradient(160deg, #e8f4fd 0%, #d0eaf9 100%);
+      flex: 1;
       min-height: 0;
+      display: flex;
+      flex-direction: column;
+      grid-template-rows: unset;
+      grid-template-columns: unset;
     }
 
-    .now-playing-art {
-      width: 120px;
-      height: 120px;
+    /* Main: 상단 고정 영역 */
+    .main {
+      grid-row: unset;
+      grid-column: unset;
+      flex-shrink: 0;
+      padding: 16px 16px 10px;
+      gap: 8px;
+      background: linear-gradient(160deg, #e8f4fd 0%, #d0eaf9 100%);
     }
-    .art-center .dot {
-      width: 44px;
-      height: 44px;
-    }
-    .now-title { font-size: 15px; }
 
+    .now-playing-art { width: 100px; height: 100px; }
+    .art-center .dot { width: 38px; height: 38px; }
+    .now-title { font-size: 14px; }
+    .visualizer { height: 18px; margin-top: 2px; }
+
+    /* Sidebar: 중간 flex 영역 */
     .sidebar {
-      grid-row: 2 / 3;
-      grid-column: 1 / 2;
+      grid-row: unset;
+      grid-column: unset;
+      flex: 1;
+      min-height: 0;
       border-right: none;
       border-top: 1px solid var(--border);
-      min-height: 0;
     }
 
+    /* Player bar: 하단 고정, PC 버튼 숨기고 모바일 row만 */
     .player-bar {
-      grid-row: 3 / 4;
-      grid-column: 1 / 2;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 10px 14px 12px;
+      grid-row: unset;
+      grid-column: unset;
+      flex-shrink: 0;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 16px 12px;
       height: auto;
     }
 
-    /* Mobile: hide volume on small screens */
-    .volume-wrap { display: none; }
+    /* PC 전용 버튼들 모두 숨김 */
+    #btnRepeat, #btnShuffle, #btnPrev, #btnPlay, #btnNext,
+    .right-controls, .volume-wrap { display: none; }
 
-    /* Controls row centered */
-    .player-bar > .ctrl-btn:first-child,
-    .player-bar > .ctrl-btn:last-child {
-      display: none;
-    }
+    /* 시크바는 full width */
+    .progress-section { width: 100%; }
 
+    /* 모바일 컨트롤 row */
     .mobile-ctrl-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       width: 100%;
-      order: -1;
     }
 
-    .progress-section { width: 100%; order: 0; }
+    .mobile-ctrl-row .play-btn { width: 48px; height: 48px; }
 
-    .right-controls { justify-content: center; width: 100%; order: 1; }
-
-    .play-btn { width: 50px; height: 50px; }
-
-    /* Drag handle bigger on mobile */
+    /* Drag handle & track */
     .drag-handle { padding: 4px 5px; }
     .track-item { padding: 10px 10px; }
     .track-actions { opacity: 1; }
+    .source-indicator { margin: 2px 10px; }
   }
 
   /* Playlist mode indicator */

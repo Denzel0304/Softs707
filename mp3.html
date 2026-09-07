@@ -163,6 +163,7 @@ html,body{height:100%;font-family:'Inter',-apple-system,sans-serif;font-size:14p
 .pl-new-btn{background:var(--accent-dim);border:1px solid rgba(33,150,243,.3);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;}
 .pl-new-btn:hover{background:var(--accent);color:#fff;}
 .count-badge{font-size:11px;color:var(--text-muted);background:var(--surface2);padding:2px 7px;border-radius:10px;font-weight:600;}
+#plDetail{flex-direction:column;flex:1;min-height:0;overflow:hidden;}
 
 /* Main */
 .main{grid-row:1/2;grid-column:2/3;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px;background:linear-gradient(160deg,#f0f8ff 0%,#e1f0fb 100%);}
@@ -325,7 +326,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
         </select>
         <button class="pl-new-btn" onclick="newPlaylist()">+ 새로 만들기</button>
       </div>
-      <div id="plDetail" style="display:none;flex-direction:column;flex:1;min-height:0;">
+      <div id="plDetail" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
         <div class="panel-header">
           <span class="panel-title" id="plTitle"></span>
           <div style="display:flex;gap:3px">
@@ -527,7 +528,12 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 // ═══════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════
-function switchTab(tab){ ['queue','playlist'].forEach(t=>{ document.getElementById('tab'+t[0].toUpperCase()+t.slice(1)).classList.toggle('active',t===tab); document.getElementById('panel'+t[0].toUpperCase()+t.slice(1)).classList.toggle('active',t===tab); }); }
+function switchTab(tab){
+  document.getElementById('tabQueue').classList.toggle('active', tab==='queue');
+  document.getElementById('tabPl').classList.toggle('active', tab==='playlist');
+  document.getElementById('panelQueue').classList.toggle('active', tab==='queue');
+  document.getElementById('panelPlaylist').classList.toggle('active', tab==='playlist');
+}
 
 // ═══════════════════════════════════════
 // ACTIVE LIST
@@ -549,9 +555,9 @@ function renderQueue(){ queueItems.innerHTML=''; queueEmpty.style.display=queue.
 // RENDER PLAYLIST
 // ═══════════════════════════════════════
 function renderPlPanel(){
-  const prev=plSelect.value; plSelect.innerHTML='<option value="">— 플레이리스트 선택 —</option>';
+  plSelect.innerHTML='<option value="">— 플레이리스트 선택 —</option>';
   playlists.forEach(pl=>{ const o=document.createElement('option'); o.value=pl.id; o.textContent=pl.name+' ('+pl.tracks.length+'곡)'; plSelect.appendChild(o); });
-  if(prev) plSelect.value=prev;
+  if(currentPlId) plSelect.value=currentPlId;
   const pl=currentPlId?playlists.find(p=>p.id===currentPlId):null;
   if(!pl){ plDetail.style.display='none'; plNoSel.style.display='flex'; return; }
   plDetail.style.display='flex'; plNoSel.style.display='none';

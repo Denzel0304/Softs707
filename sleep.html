@@ -1180,9 +1180,9 @@ function renderHome(){
   const label=isYesterday?'어젯밤 수면':'최근 수면 · '+formatDateFull(done.date);
 
   const GOAL_MIN = 480; // 8시간
-  const fillPct = totalMin !== null ? Math.min(totalMin / GOAL_MIN * 100, 100) : 0;
-  const isOver  = totalMin !== null && totalMin > GOAL_MIN;
-  const displayPct = totalMin !== null ? Math.round(totalMin / GOAL_MIN * 100) : 0;
+  const fillPct = pureMin !== null ? Math.min(pureMin / GOAL_MIN * 100, 100) : 0;
+  const isOver  = pureMin !== null && pureMin > GOAL_MIN;
+  const displayPct = pureMin !== null ? Math.round(pureMin / GOAL_MIN * 100) : 0;
   const overflowClass = isOver ? ' overflow' : '';
 
   todayCard.innerHTML=`

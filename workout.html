@@ -211,6 +211,33 @@
     flex-shrink: 0; transition: all .2s;
   }
   .inbody-del-btn:hover { background: var(--pink-light); color: var(--pink-dark); }
+  .inbody-edit-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: none; background: var(--sky); color: #5b9bd5;
+    cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .2s;
+  }
+  .inbody-edit-btn:hover { background: #d0e8f7; }
+
+  /* 인바디 수정 모드 폼 */
+  .inbody-input-card.edit-mode { border: 2px solid var(--pink-btn); }
+  .inbody-input-card.edit-mode .section-title { color: var(--pink-dark); }
+  .inbody-save-btn.edit-mode {
+    background: #5b9bd5;
+    box-shadow: 0 4px 16px rgba(91,155,213,.4);
+  }
+  .inbody-cancel-edit-btn {
+    width: 100%; height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--gray-100); color: var(--gray-600);
+    font-size: 14px; font-weight: 800;
+    border: none; cursor: pointer; margin-top: 6px;
+    font-family: 'Nunito', sans-serif;
+    transition: opacity .2s;
+    display: none;
+  }
+  .inbody-cancel-edit-btn:hover { opacity: .8; }
 
   .day-tabs {
     display: flex; gap: 5px; margin-bottom: 16px;
@@ -553,8 +580,8 @@
       <div id="inbodyList"></div>
     </div>
 
-    <div class="inbody-input-card">
-      <div class="section-title">📋 인바디 입력</div>
+    <div class="inbody-input-card" id="inbodyInputCard">
+      <div class="section-title" id="inbodyFormTitle">📋 인바디 입력</div>
       <div class="inbody-form-row">
         <div class="inbody-field">
           <div class="inbody-label">날짜</div>
@@ -575,7 +602,8 @@
           <input class="inbody-input" type="number" id="ibFat" placeholder="0.0" step="0.1" inputmode="decimal" />
         </div>
       </div>
-      <button class="inbody-save-btn" onclick="saveInbody()">저장하기</button>
+      <button class="inbody-save-btn" id="inbodySaveBtn" onclick="saveInbody()">저장하기</button>
+      <button class="inbody-cancel-edit-btn" id="inbodyCancelEditBtn" onclick="cancelInbodyEdit()">취소</button>
     </div>
 
   </div>
@@ -693,10 +721,11 @@ function todayStr() {
 }
 function todayDow() { return new Date().getDay(); }
 
-let todayExercises   = [];
-let activeSettingDay = DAYS_EN[todayDow()];
-let inbodyRecords    = [];
-let graphOpen        = true;
+let todayExercises    = [];
+let activeSettingDay  = DAYS_EN[todayDow()];
+let inbodyRecords     = [];
+let graphOpen         = true;
+let editingInbodyDate = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const now = new Date();
@@ -766,23 +795,31 @@ function saveInbody() {
   const weight = parseFloat(document.getElementById('ibWeight').value);
   const muscle = parseFloat(document.getElementById('ibMuscle').value);
   const fat    = parseFloat(document.getElementById('ibFat').value);
-  if (!date)       { showToast('날짜를 입력하세요');   return; }
-  if (isNaN(weight)) { showToast('체중을 입력하세요');   return; }
-  if (isNaN(muscle)) { showToast('골격근을 입력하세요'); return; }
+  if (!date)         { showToast('날짜를 입력하세요');    return; }
+  if (isNaN(weight)) { showToast('체중을 입력하세요');    return; }
+  if (isNaN(muscle)) { showToast('골격근을 입력하세요');  return; }
   if (isNaN(fat))    { showToast('체지방량을 입력하세요'); return; }
+
   let arr = loadInbodyLS();
-  arr = arr.filter(r => r.date !== date);
+  const isEditing = editingInbodyDate !== null;
+
+  if (isEditing) {
+    // 수정: 기존 날짜 레코드 제거 후 새 날짜로 추가 (날짜 변경 허용)
+    arr = arr.filter(r => r.date !== editingInbodyDate && r.date !== date);
+  } else {
+    // 신규: 같은 날짜 덮어쓰기
+    arr = arr.filter(r => r.date !== date);
+  }
+
   arr.push({ date, weight, muscle, fat, savedAt: new Date().toISOString() });
   arr.sort((a, b) => b.date.localeCompare(a.date));
   if (arr.length > 12) arr = arr.slice(0, 12);
   saveInbodyLS(arr); inbodyRecords = arr;
-  document.getElementById('ibWeight').value = '';
-  document.getElementById('ibMuscle').value = '';
-  document.getElementById('ibFat').value    = '';
-  document.getElementById('ibDate').value   = todayStr();
+
+  cancelInbodyEdit(); // 폼 초기화 (신규 등록 시에도 날짜만 오늘로 리셋)
   renderInbodyList();
   if (graphOpen) renderInbodyChart();
-  showToast('✅ 인바디 기록 저장!');
+  showToast(isEditing ? '✅ 인바디 기록 수정됨!' : '✅ 인바디 기록 저장!');
 }
 
 function deleteInbody(idx) {
@@ -793,6 +830,36 @@ function deleteInbody(idx) {
   saveInbodyLS(arr); loadInbodyData(); renderInbodyList();
   if (graphOpen) renderInbodyChart();
   showToast('삭제됨');
+}
+
+/* ── 인바디 수정 ── */
+function startEditInbody(idx) {
+  const rec = inbodyRecords[idx];
+  if (!rec) return;
+  editingInbodyDate = rec.date;
+  document.getElementById('ibDate').value   = rec.date;
+  document.getElementById('ibWeight').value = rec.weight != null ? rec.weight : '';
+  document.getElementById('ibMuscle').value = rec.muscle != null ? rec.muscle : '';
+  document.getElementById('ibFat').value    = rec.fat    != null ? rec.fat    : '';
+  document.getElementById('inbodyFormTitle').textContent   = '✏️ 인바디 수정';
+  document.getElementById('inbodySaveBtn').textContent     = '수정 저장';
+  document.getElementById('inbodySaveBtn').classList.add('edit-mode');
+  document.getElementById('inbodyCancelEditBtn').style.display = 'block';
+  document.getElementById('inbodyInputCard').classList.add('edit-mode');
+  document.getElementById('inbodyInputCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelInbodyEdit() {
+  editingInbodyDate = null;
+  document.getElementById('ibDate').value   = todayStr();
+  document.getElementById('ibWeight').value = '';
+  document.getElementById('ibMuscle').value = '';
+  document.getElementById('ibFat').value    = '';
+  document.getElementById('inbodyFormTitle').textContent   = '📋 인바디 입력';
+  document.getElementById('inbodySaveBtn').textContent     = '저장하기';
+  document.getElementById('inbodySaveBtn').classList.remove('edit-mode');
+  document.getElementById('inbodyCancelEditBtn').style.display = 'none';
+  document.getElementById('inbodyInputCard').classList.remove('edit-mode');
 }
 
 function renderInbodyList() {
@@ -811,7 +878,8 @@ function renderInbodyList() {
         <div class="inbody-val-group"><div class="inbody-val-label">체지방</div><div class="inbody-val-num" style="color:#f0a030">${rec.fat != null ? rec.fat + 'kg' : '-'}</div></div>
         <div class="inbody-val-group"><div class="inbody-val-label">체지방률</div><div class="inbody-val-num" style="color:#f0a030">${(rec.fat != null && rec.weight) ? (rec.fat / rec.weight * 100).toFixed(1) + '%' : '-'}</div></div>
       </div>
-      <button class="inbody-del-btn" onclick="showDeleteInbodyModal(${idx})">✕</button>
+      <button class="inbody-edit-btn" onclick="startEditInbody(${idx})" title="수정">✏️</button>
+      <button class="inbody-del-btn" onclick="showDeleteInbodyModal(${idx})" title="삭제">✕</button>
     </div>`;
   }).join('');
 }

@@ -1120,17 +1120,35 @@ function saveEditRecord(){
 // ════════════════════════════════════════════
 //  FAB 업데이트 (draft 유무에 따라 아이콘 변경)
 // ════════════════════════════════════════════
+const FAB_SUN_SVG=`<svg width="32" height="32" viewBox="0 0 24 24" style="filter:drop-shadow(0 0 6px rgba(255,217,125,.7))">
+  <defs>
+    <radialGradient id="sunGrad" cx="35%" cy="35%">
+      <stop offset="0%" stop-color="#fff8dc"/>
+      <stop offset="60%" stop-color="#ffd97d"/>
+      <stop offset="100%" stop-color="#e6b84a"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#ffd97d" stroke-width="2" stroke-linecap="round">
+    <line x1="12" y1="1" x2="12" y2="3.3"/>
+    <line x1="12" y1="20.7" x2="12" y2="23"/>
+    <line x1="1" y1="12" x2="3.3" y2="12"/>
+    <line x1="20.7" y1="12" x2="23" y2="12"/>
+    <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
+    <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
+    <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
+    <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
+  </g>
+  <circle cx="12" cy="12" r="5.5" fill="url(#sunGrad)"/>
+</svg>`;
 function updateFAB(){
   const fab=document.getElementById('fab');
   const draft=getDraftRecord();
   if(draft){
-    fab.textContent='☀️';
+    fab.innerHTML=FAB_SUN_SVG;
     fab.title='아침 기록 완성하기';
-    fab.style.background='linear-gradient(135deg, #d4a017, #ffd97d)';
   } else {
     fab.textContent='🌙';
     fab.title='취침 기록하기';
-    fab.style.background='linear-gradient(135deg, var(--aurora-purple), var(--sleep-blue))';
   }
 }
 

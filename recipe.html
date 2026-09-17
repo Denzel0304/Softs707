@@ -1388,31 +1388,39 @@ function addSection(type) {
   }, 50);
 }
 
-// ── SCROLL TO CURSOR ──
-// textarea 내에서 커서가 있는 줄이 보이도록 스크롤 조정
-// 커서가 마지막 줄에 있을 때만 맨 아래로 내리고, 아닐 때는 커서 줄을 중앙에 위치
-function scrollToCursor(ta) {
-  const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
-  const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 0;
+// ── CARET PIXEL 위치 측정 ──
+// textarea와 동일한 스타일의 숨은 mirror div에 커서 앞 텍스트를 그대로 넣어
+// 실제 줄바꿈(word-wrap)까지 반영한 caret의 정확한 pixel top/height를 구한다.
+// (\n 개수 × lineHeight 방식은 긴 줄이 자동으로 다음 줄로 넘어갈 때 틀어짐)
+const _caretMirror = document.createElement('div');
+_caretMirror.style.position = 'absolute';
+_caretMirror.style.visibility = 'hidden';
+_caretMirror.style.top = '0';
+_caretMirror.style.left = '-9999px';
+_caretMirror.style.overflow = 'hidden';
+document.body.appendChild(_caretMirror);
 
-  // 커서 앞의 텍스트로 현재 줄 번호 계산
-  const textBeforeCursor = ta.value.substring(0, ta.selectionStart);
-  const currentLine = textBeforeCursor.split('\n').length - 1; // 0-based
-  const totalLines = ta.value.split('\n').length;
+const _MIRROR_PROPS = [
+  'boxSizing', 'width', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+  'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing',
+  'wordSpacing', 'tabSize'
+];
 
-  const cursorTop = paddingTop + currentLine * lineHeight;
-  const cursorBottom = cursorTop + lineHeight;
-  const visibleTop = ta.scrollTop;
-  const visibleBottom = ta.scrollTop + ta.clientHeight;
+function getCaretPixelY(ta) {
+  const style = window.getComputedStyle(ta);
+  _MIRROR_PROPS.forEach(p => { _caretMirror.style[p] = style[p]; });
+  _caretMirror.style.whiteSpace = 'pre-wrap';
+  _caretMirror.style.wordWrap = 'break-word';
+  _caretMirror.style.height = 'auto';
 
-  if (cursorBottom > visibleBottom) {
-    // 커서가 아래로 벗어날 때: 커서 줄이 보이도록 아래로 스크롤 (여유 한 줄 추가)
-    ta.scrollTop = cursorBottom - ta.clientHeight + lineHeight * 2;
-  } else if (cursorTop < visibleTop) {
-    // 커서가 위로 벗어날 때: 커서 줄이 보이도록 위로 스크롤
-    ta.scrollTop = cursorTop - paddingTop;
-  }
-  // 커서가 이미 보이는 범위 안에 있으면 스크롤 변경 없음
+  const pos = ta.selectionStart;
+  _caretMirror.textContent = ta.value.substring(0, pos);
+  const span = document.createElement('span');
+  span.textContent = ta.value.substring(pos) || '.';
+  _caretMirror.appendChild(span);
+
+  return { top: span.offsetTop, height: span.offsetHeight || parseFloat(style.lineHeight) || 20 };
 }
 
 // ── MEMO AUTO-NUMBERING ──
@@ -1425,15 +1433,10 @@ function attachAutoNumbering(ta) {
   const ZWS = '\u200b';
 
   // 커서가 있는 줄이 화면에 보이도록 textarea 스크롤을 맞춘다.
+  // (mirror div로 측정한 실제 pixel 위치 사용 — word-wrap 되는 줄도 정확)
   function scrollCursorIntoView(ta) {
-    // lineHeight 기반으로 커서 y 추정 후 scrollTop 보정
-    const style = window.getComputedStyle(ta);
-    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
-    const paddingTop = parseFloat(style.paddingTop) || 0;
-    const pos = ta.selectionStart;
-    const textBefore = ta.value.substring(0, pos);
-    const linesBefore = textBefore.split('\n').length;
-    const cursorY = paddingTop + (linesBefore - 1) * lineHeight;
+    const { top: cursorY, height: lineHeight } = getCaretPixelY(ta);
+    const paddingTop = parseFloat(window.getComputedStyle(ta).paddingTop) || 0;
     const visibleBottom = ta.scrollTop + ta.clientHeight;
     if (cursorY + lineHeight > visibleBottom) {
       ta.scrollTop = cursorY + lineHeight - ta.clientHeight + lineHeight;
@@ -1561,7 +1564,7 @@ function attachAutoNumbering(ta) {
         return line;
       }
     });
-    if (!changed) return;
+    if (!changed) return false;
     const oldLines = lines, newLines = result;
     let oldOffset = 0, newOffset = 0;
     for (let i = 0; i < oldLines.length; i++) {
@@ -1575,13 +1578,14 @@ function attachAutoNumbering(ta) {
         const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
         ta.value = newLines.join('\n');
         ta.selectionStart = ta.selectionEnd = newPos;
-        return;
+        return true;
       }
       oldOffset = oldEnd;
       newOffset = newEnd;
     }
     ta.value = newLines.join('\n');
     ta.selectionStart = ta.selectionEnd = pos;
+    return true;
   }
 
   // PC: keydown
@@ -1610,8 +1614,12 @@ function attachAutoNumbering(ta) {
   // input: 삭제 후 재번호 + 모드 리셋
   ta.addEventListener('input', function(e) {
     if (ta.value === '') { mode = null; return; }
-    if (mode === 'number' && !e.isComposing) renumberAll();
-    scrollCursorIntoView(ta);
+    // renumberAll이 ta.value를 다시 써서 스크롤 위치가 흐트러졌을 때만 보정.
+    // 일반 타이핑(값이 그대로인 경우)은 브라우저 자체 스크롤(줄바꿈 반영)을 그대로 둔다.
+    if (mode === 'number' && !e.isComposing) {
+      const rewritten = renumberAll();
+      if (rewritten) scrollCursorIntoView(ta);
+    }
   });
 }
 

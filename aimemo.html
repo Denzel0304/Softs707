@@ -2263,6 +2263,21 @@ function addHospital() {
   openAddHospital();
 }
 
+/* ── 병원 모달 스크롤을 항상 최상단으로 (자유메모/상담기록과 동일) ── */
+function resetHospitalModalScroll() {
+  const reset = () => {
+    const body = document.querySelector('#modal-edit-hospital .modal-body');
+    const c = document.getElementById('eh-content');
+    const r = document.getElementById('eh-rx');
+    if (c) c.scrollTop = 0;
+    if (r) r.scrollTop = 0;
+    if (body) body.scrollTop = 0;
+  };
+  reset();
+  // iOS Safari 등에서 첫 프레임에 무시되는 경우 보정
+  requestAnimationFrame(reset);
+}
+
 /* ── 추가 모달 열기 ── */
 function openAddHospital() {
   editingHospitalId = null;  // null이면 추가 모드
@@ -2273,6 +2288,7 @@ function openAddHospital() {
   document.getElementById('eh-content').value = '';
   document.getElementById('eh-rx').value      = '';
   HS.open('modal-edit-hospital');
+  resetHospitalModalScroll();
   setTimeout(() => { const el = document.getElementById('eh-disease'); if (el) el.focus(); }, 50);
 }
 
@@ -2322,6 +2338,8 @@ function openEditHospital(id) {
   HS.open('modal-edit-hospital');
   // 포커스는 아무데도 두지 않음 (요구사항)
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  // 모달은 항상 최상위(스크롤 0)에서 열리도록 — 직전 스크롤 위치 영향 제거
+  resetHospitalModalScroll();
 }
 
 function saveEditHospital() {

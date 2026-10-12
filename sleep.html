@@ -332,6 +332,16 @@
     display: none;
   }
   .date-hint.visible { display: block; }
+  .quick-date-row { display: flex; gap: 8px; margin: 0 0 10px 90px; }
+  .quick-date-btn {
+    flex: 1; padding: 6px 0; font-size: 12px; font-family: inherit;
+    background: rgba(255,255,255,.06); color: var(--text-secondary);
+    border: 1px solid rgba(167,139,250,.2); border-radius: 8px; cursor: pointer;
+  }
+  .quick-date-btn.active {
+    background: rgba(167,139,250,.22); color: var(--text-primary);
+    border-color: var(--aurora-purple);
+  }
 
   .interruption-block {
     background: rgba(255,107,138,.06); border: 1px solid rgba(255,107,138,.15);
@@ -603,8 +613,17 @@
     <div class="modal-section">
       <div class="modal-section-title">잠든 시간</div>
       <div class="form-row">
+        <label class="form-label">취침 날짜</label>
+        <input type="date" id="night-sleep-date" oninput="updateNightDateHint()">
+      </div>
+      <div class="quick-date-row">
+        <button type="button" class="quick-date-btn" id="qd-yesterday" onclick="setNightDate(-1)">어제</button>
+        <button type="button" class="quick-date-btn" id="qd-today" onclick="setNightDate(0)">오늘</button>
+        <button type="button" class="quick-date-btn" id="qd-tomorrow" onclick="setNightDate(1)">내일</button>
+      </div>
+      <div class="form-row">
         <label class="form-label">취침 시간</label>
-        <input type="time" id="night-sleep-time" value="23:50" oninput="updateNightDateHint()">
+        <input type="time" id="night-sleep-time" value="23:50">
       </div>
       <div class="date-hint" id="night-date-hint"></div>
     </div>
@@ -819,17 +838,6 @@ function fmtDate(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// 취침 시간 → 수면 날짜 결정
-// 00:00~05:59 이면 "전날" 날짜, 그 외엔 "오늘" 날짜
-function sleepDateFromTime(timeStr){
-  if(!timeStr) return todayStr();
-  const h = parseInt(timeStr.split(':')[0]);
-  if(h >= 0 && h < 6){
-    return yesterdayStr(); // 새벽 → 전날이 수면 날짜
-  }
-  return todayStr();
-}
-
 function parseTime(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
 
 function calcSleepMinutes(sleepTime, wakeTime){
@@ -947,6 +955,7 @@ function openNightModal(){
   }
   // draft 없으면 취침 기록
   document.getElementById('night-sleep-time').value='23:50';
+  document.getElementById('night-sleep-date').value=todayStr();
   updateNightDateHint();
   openModal('modal-night');
 }
@@ -954,24 +963,30 @@ function openNightModal(){
 // ════════════════════════════════════════════
 //  밤 취침 기록
 // ════════════════════════════════════════════
+function setNightDate(offset){
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  document.getElementById('night-sleep-date').value=fmtDate(d);
+  updateNightDateHint();
+}
+
 function updateNightDateHint(){
-  const time=document.getElementById('night-sleep-time').value;
+  const date=document.getElementById('night-sleep-date').value;
   const hint=document.getElementById('night-date-hint');
-  if(!time){ hint.classList.remove('visible'); return; }
-  const h=parseInt(time.split(':')[0]);
-  if(h>=0&&h<6){
-    hint.textContent=`🌙 새벽 시간이라 수면 날짜는 어제(${yesterdayStr()})로 저장돼요`;
-    hint.classList.add('visible');
-  } else {
-    hint.textContent=`📅 수면 날짜: 오늘(${todayStr()})`;
-    hint.classList.add('visible');
-  }
+  // 빠른 선택 버튼 강조
+  [[-1,'qd-yesterday'],[0,'qd-today'],[1,'qd-tomorrow']].forEach(([off,id])=>{
+    const d=new Date(); d.setDate(d.getDate()+off);
+    document.getElementById(id).classList.toggle('active', date===fmtDate(d));
+  });
+  if(!date){ hint.classList.remove('visible'); return; }
+  hint.textContent=`📅 ${formatDateFull(date)} 취침으로 저장돼요`;
+  hint.classList.add('visible');
 }
 
 function saveNightRecord(){
   const sleepTime=document.getElementById('night-sleep-time').value;
+  const date=document.getElementById('night-sleep-date').value;
+  if(!date){ showToast('취침 날짜를 선택해주세요'); return; }
   if(!sleepTime){ showToast('취침 시간을 입력해주세요'); return; }
-  const date=sleepDateFromTime(sleepTime);
   const existing=getRecord(date);
   if(existing&&existing.status==='done'){
     showToast('해당 날짜에 이미 완성된 기록이 있어요'); return;

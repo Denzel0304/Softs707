@@ -623,7 +623,7 @@
       </div>
       <div class="form-row">
         <label class="form-label">취침 시간</label>
-        <input type="time" id="night-sleep-time" value="23:50">
+        <input type="time" id="night-sleep-time">
       </div>
     </div>
     <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);line-height:1.7">
@@ -657,7 +657,7 @@
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;" id="morning-sleep-info"></div>
         <div class="form-row">
           <label class="form-label">일어난 시간</label>
-          <input type="time" id="morning-wake-time" value="07:45">
+          <input type="time" id="morning-wake-time">
         </div>
       </div>
       <button class="btn-primary" onclick="goMorningStep(2)">다음 →</button>
@@ -827,6 +827,11 @@ function todayStr(){
   const d = new Date();
   return fmtDate(d);
 }
+// 현재 시각 문자열 (HH:MM, 로컬 기준)
+function nowTimeStr(){
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
 // 어제 날짜 문자열
 function yesterdayStr(){
   const d = new Date();
@@ -953,7 +958,7 @@ function openNightModal(){
     return;
   }
   // draft 없으면 취침 기록
-  document.getElementById('night-sleep-time').value='23:50';
+  document.getElementById('night-sleep-time').value=nowTimeStr();
   document.getElementById('night-sleep-date').value=todayStr();
   updateNightDateHint();
   openModal('modal-night');
@@ -1004,7 +1009,7 @@ function openMorningModal(rec){
   document.getElementById('morning-title').textContent='☀️ 좋은 아침이에요!';
   document.getElementById('morning-sleep-info').textContent=
     `${formatDateFull(rec.date)} 취침 ${rec.sleepTime} → 완성해볼게요`;
-  document.getElementById('morning-wake-time').value='07:45';
+  document.getElementById('morning-wake-time').value=nowTimeStr();
   document.getElementById('morning-interruptions-list').innerHTML='';
   document.getElementById('morning-score').value=5;
   updateMorningScore(5);
@@ -1072,8 +1077,8 @@ function openEditModal(dateStr){
   _editDate=dateStr;
   document.getElementById('edit-modal-title').textContent='수면 기록 수정';
   document.getElementById('edit-date').value=rec.date;
-  document.getElementById('edit-sleep').value=rec.sleepTime||'00:30';
-  document.getElementById('edit-wake').value=rec.wakeTime||'07:45';
+  document.getElementById('edit-sleep').value=rec.sleepTime||nowTimeStr();
+  document.getElementById('edit-wake').value=rec.wakeTime||nowTimeStr();
   document.getElementById('edit-score').value=rec.score||5;
   updateEditScore(rec.score||5);
   const list=document.getElementById('edit-interruptions-list');

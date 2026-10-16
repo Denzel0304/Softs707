@@ -82,7 +82,7 @@
     display: flex; align-items: center; justify-content: center; gap: 8px;
     min-width: 0;
   }
-  .title-icon { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; }
+  .title-icon { width: 22px; height: 22px; color: var(--clear); flex-shrink: 0; }
   .title {
     font-family: var(--font-title);
     font-size: 20px; font-weight: 700; letter-spacing: 0.02em;
@@ -131,13 +131,14 @@
     display: flex; align-items: center; gap: 8px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px 12px;
+    border-radius: 10px;
+    padding: 6px 12px;
   }
-  .search-bar svg { width: 18px; height: 18px; color: var(--text-mute); flex-shrink: 0; }
+  .search-bar svg { width: 17px; height: 17px; color: var(--text-mute); flex-shrink: 0; }
   .search-bar input {
     flex: 1; min-width: 0; border: none; outline: none; background: none;
-    font-size: 16px; padding: 3px 0;
+    font-size: 16px; padding: 0;
+    line-height: 1.4;
   }
   .search-bar input::placeholder { color: var(--text-mute); }
   .search-clear {
@@ -170,15 +171,20 @@
   .view { min-height: 100%; }
 
   /* === Main: 삼각형 하늘 === */
+  /* 메인(삼각형) 화면은 스크롤 없이 화면에 딱 맞게 고정 */
+  .list-container.lock { overflow: hidden; }
+  .list-container.lock #mainView { height: 100%; min-height: 0; }
   .sky {
-    min-height: calc(100% - 10px);
+    height: 100%;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 20px 16px calc(110px + var(--safe-bottom));
+    padding: 12px 16px calc(88px + var(--safe-bottom));
   }
   .tri-box {
     position: relative;
-    width: min(100%, 420px);
+    width: min(100%, 420px, calc((100vh - var(--header-h) - var(--safe-bottom) - 180px) * 100 / 108));
+    width: min(100%, 420px, calc((100dvh - var(--header-h) - var(--safe-bottom) - 180px) * 100 / 108));
     aspect-ratio: 100 / 108;
+    flex-shrink: 0;
   }
   .tri-lines {
     position: absolute; inset: 0;
@@ -702,7 +708,10 @@
     .list { padding: 16px 20px calc(100px + var(--selbar-h) + var(--safe-bottom)); gap: 12px; }
     .card-title { font-size: 16.5px; }
     .card-snippet { font-size: 14.5px; }
-    .tri-box { width: min(100%, 500px); }
+    .tri-box {
+      width: min(100%, 500px, calc((100vh - var(--header-h) - 180px) * 100 / 108));
+      width: min(100%, 500px, calc((100dvh - var(--header-h) - 180px) * 100 / 108));
+    }
     .tile-name { font-size: 22px; }
     .tile-desc { font-size: 13px; }
     .sky-hint { font-size: 14px; }
@@ -756,7 +765,7 @@
     <div class="left"></div>
     <div class="title-wrap">
       <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 3.2 21 19.5H3z"/><circle cx="12" cy="14" r="2.4"/>
+        <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>
       </svg>
       <div class="title">마음 글쓰기</div>
     </div>
@@ -1296,6 +1305,12 @@ function updateBadges(counts) {
 
 /* ---------- Render ---------- */
 function render() {
+  // 메인 삼각형 화면일 때만 스크롤 고정
+  const lc = document.getElementById('listContainer');
+  const lock = !currentStage && !currentSearch.trim();
+  if (lock && !lc.classList.contains('lock')) lc.scrollTop = 0;
+  lc.classList.toggle('lock', lock);
+
   const counts = countByStage();
   updateBadges(counts);
 

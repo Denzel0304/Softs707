@@ -254,8 +254,8 @@
     box-shadow: 0 0 0 2.5px var(--bg);
     line-height: 1;
   }
-  .stage-tile[data-stage="storm"]  .badge { left: 84%; top: 10%; }
-  .stage-tile[data-stage="cloudy"] .badge { left: 66%; top: 17%; }
+  .stage-tile[data-stage="storm"]  .badge { left: 66%; top: 17%; }
+  .stage-tile[data-stage="cloudy"] .badge { left: 84%; top: 10%; }
   .stage-tile[data-stage="clear"]  .badge { left: 78%; top: 17%; }
   .stage-tile[data-stage="storm"]  .badge { background: var(--badge); }
   .stage-tile[data-stage="cloudy"] .badge { background: #f08a24; }
@@ -821,7 +821,7 @@
     <section class="sky intro" id="sky">
       <div class="tri-box">
         <svg class="tri-lines" viewBox="0 0 100 108" aria-hidden="true">
-          <polygon points="50,18.7 24,76 76,76"/>
+          <polygon points="50,24.7 24,76 76,76"/>
         </svg>
         <button class="stage-tile" data-stage="storm"></button>
         <button class="stage-tile" data-stage="cloudy"></button>
@@ -1271,10 +1271,10 @@ function countByStage() {
 }
 
 /* ---------- 메인 삼각형 타일 (최초 1회 생성) ---------- */
-// 단계별 모양: 폭풍=사각형, 흐림=삼각형, 맑음=동그라미
+// 단계별 모양: 폭풍=삼각형, 흐림=사각형, 맑음=동그라미
 const TILE_SHAPES = {
-  storm:  { svg: '<rect class="tri-fill flat" x="16" y="6" width="88" height="88" rx="18"/>', icon: 'translate(40.8,30.8) scale(1.6)' },
-  cloudy: { svg: '<polygon class="tri-fill" points="60,10 110,98 10,98"/>',               icon: 'translate(40.8,48.8) scale(1.6)' },
+  storm:  { svg: '<polygon class="tri-fill" points="60,10 110,98 10,98"/>',               icon: 'translate(40.8,48.8) scale(1.6)' },
+  cloudy: { svg: '<rect class="tri-fill flat" x="16" y="6" width="88" height="88" rx="18"/>', icon: 'translate(40.8,30.8) scale(1.6)' },
   clear:  { svg: '<circle class="tri-fill flat" cx="60" cy="50" r="46"/>',                 icon: 'translate(40.8,30.8) scale(1.6)' }
 };
 

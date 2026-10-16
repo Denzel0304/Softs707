@@ -7,7 +7,7 @@
 <title>마음 글쓰기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Nanum+Gothic+Coding:wght@400;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #eef5ec;
@@ -39,7 +39,6 @@
     --shadow-md: 0 4px 14px rgba(35, 49, 40, 0.08);
     --shadow-lg: 0 12px 32px rgba(35, 49, 40, 0.16);
 
-    --font-type: "Courier Prime", "Nanum Gothic Coding", "Courier New", monospace;
     --font-ui: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", serif;
     --font-title: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", serif;
 
@@ -241,7 +240,7 @@
     border-radius: 999px;
     background: var(--badge);
     color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-family: var(--font-ui);
     font-size: 13px; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 0 2.5px var(--bg);
@@ -499,7 +498,7 @@
   .stage-option[data-stage="clear"].selected  { background: var(--clear);  border-color: var(--clear);  color: #fff; box-shadow: 0 2px 8px rgba(176, 132, 28, 0.35); }
 
   .editor-title {
-    font-family: var(--font-type);
+    font-family: var(--font-ui);
     width: 100%;
     flex-shrink: 0;
     border: 1.5px solid var(--border);
@@ -517,7 +516,7 @@
   .editor-title:focus { border-color: var(--accent); }
 
   .editor-textarea {
-    font-family: var(--font-type);
+    font-family: var(--font-ui);
     flex: 1;
     width: 100%;
     min-height: 140px;

@@ -1283,7 +1283,7 @@ function renderHome(){
     <div class="sleep-card-inner">
       <div class="sleep-card-text">
         <div class="today-status">${minutesToHHMM(totalMin)}</div>
-        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회 · 설잠 ${done.lightSleeps?.length||0}회</div>
+        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 깸 ${done.interruptions?.length||0}회 · 설잠 ${done.lightSleeps?.length||0}회</div>
       </div>
       <div class="sleep-wave-outer${overflowClass}" id="sleep-gauge-outer">
         <div class="sleep-wave-fill" id="sleep-gauge-fill" style="height:0%"></div>
@@ -1358,7 +1358,8 @@ function renderRecords(){
     const interMin=calcInterruptionMinutes(rec.interruptions); const lightMin=calcLightSleepDeduct(rec.lightSleeps);
     const pureMin=totalMin!==null?Math.max(0,totalMin-interMin-lightMin):null;
     const sleepText=isDraft?`취침 ${rec.sleepTime} (미완성)`:minutesToHHMM(totalMin);
-    const metaText=isDraft?'기상 기록 필요':(`순수 ${minutesToHHMM(pureMin)} · 깸 ${rec.interruptions?.length||0}회 · 설잠 ${rec.lightSleeps?.length||0}회`);
+    const metaText=isDraft?'기상 기록 필요':(`순수 ${minutesToHHMM(pureMin)}`);
+    const metaText2=isDraft?'':`깸 ${rec.interruptions?.length||0}회 · 설잠 ${rec.lightSleeps?.length||0}회`;
     const scoreBadge=isDraft
       ?`<div class="record-score-badge draft">미완성</div>`
       :`<div class="record-score-badge">${rec.score||'—'}</div>`;
@@ -1371,6 +1372,7 @@ function renderRecords(){
         <div class="record-info">
           <div class="record-sleep-time${isDraft?' draft-text':''}">${sleepText}</div>
           <div class="record-meta">${metaText}</div>
+          ${metaText2?`<div class="record-meta">${metaText2}</div>`:''}
         </div>
         ${scoreBadge}
         <div class="record-actions" onclick="event.stopPropagation()">

@@ -133,6 +133,7 @@
   .tl-dot.wake   { background: var(--moon-gold);    box-shadow: 0 0 6px var(--moon-gold); }
   .tl-dot.inter  { background: var(--danger);       box-shadow: 0 0 6px var(--danger); }
   .tl-dot.resleep{ background: var(--aurora-teal);  box-shadow: 0 0 6px var(--aurora-teal); }
+  .tl-dot.lightsleep{ background: var(--aurora-purple); box-shadow: 0 0 6px var(--aurora-purple); }
   .tl-label { color: var(--text-secondary); font-size: 12px; min-width: 80px; }
   .tl-val { color: var(--text-primary); font-weight: 500; }
 
@@ -602,6 +603,10 @@
       <div class="chart-wrap"><canvas id="chartWakes"></canvas></div>
     </div>
     <div class="card">
+      <div class="card-title">설잠 시간 (시간)</div>
+      <div class="chart-wrap"><canvas id="chartLight"></canvas></div>
+    </div>
+    <div class="card">
       <div class="card-title">월 통계</div>
       <div class="stats-grid" id="stats-grid"></div>
     </div>
@@ -679,6 +684,11 @@
         <div id="morning-interruptions-list"></div>
         <button class="btn-add-inter" onclick="addMorningInterruption()">＋ 깬 구간 추가</button>
       </div>
+      <div class="modal-section">
+        <div class="modal-section-title">😪 설잠 구간이 있나요? <span style="font-size:11px;color:var(--text-secondary);font-weight:400">(수면시간 50% 인정)</span></div>
+        <div id="morning-lightsleeps-list"></div>
+        <button class="btn-add-inter" onclick="addMorningLightSleep()">＋ 설잠 구간 추가</button>
+      </div>
       <button class="btn-primary" onclick="goMorningStep(3)">다음 →</button>
       <button class="btn-secondary" onclick="goMorningStep(1)">← 이전</button>
     </div>
@@ -732,6 +742,11 @@
       <div class="modal-section-title">⚡ 중간에 깸</div>
       <div id="edit-interruptions-list"></div>
       <button class="btn-add-inter" onclick="addEditInterruption()">＋ 깬 구간 추가</button>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">😪 설잠 구간 <span style="font-size:11px;color:var(--text-secondary);font-weight:400">(수면시간 50% 인정)</span></div>
+      <div id="edit-lightsleeps-list"></div>
+      <button class="btn-add-inter" onclick="addEditLightSleep()">＋ 설잠 구간 추가</button>
     </div>
     <div class="modal-section">
       <div class="modal-section-title">⭐ 숙면 점수</div>
@@ -863,6 +878,14 @@ function calcInterruptionMinutes(inters){
   inters.forEach(it=>{ if(!it.woke||!it.slept) return; let d=parseTime(it.slept)-parseTime(it.woke); if(d<0)d+=1440; total+=d; });
   return total;
 }
+function calcLightSleepMinutes(ls){
+  if(!ls||!ls.length) return 0;
+  let total=0;
+  ls.forEach(it=>{ if(!it.start||!it.end) return; let d=parseTime(it.end)-parseTime(it.start); if(d<0)d+=1440; total+=d; });
+  return total;
+}
+// 설잠 구간은 50%만 수면으로 인정 → 순수 수면에서 설잠 시간의 50%를 차감
+function calcLightSleepDeduct(ls){ return Math.round(calcLightSleepMinutes(ls)*0.5); }
 function minutesToHHMM(min){
   if(min===null||min===undefined||isNaN(min)) return '—';
   const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
@@ -1019,6 +1042,7 @@ function openMorningModal(rec){
     `${formatDateFull(rec.date)} 취침 ${rec.sleepTime} → 완성해볼게요`;
   document.getElementById('morning-wake-time').value=nowTimeStr();
   document.getElementById('morning-interruptions-list').innerHTML='';
+  document.getElementById('morning-lightsleeps-list').innerHTML='';
   document.getElementById('morning-score').value=5;
   updateMorningScore(5);
   goMorningStep(1, true);
@@ -1048,6 +1072,30 @@ function addMorningInterruption(woke='',slept=''){
   list.appendChild(div);
 }
 
+function _addLightSleepBlock(listId,start='',end=''){
+  const list=document.getElementById(listId);
+  const idx=list.children.length;
+  const div=document.createElement('div');
+  div.className='interruption-block';
+  const defaultStart = start || '04:00';
+  div.innerHTML=`
+    <div class="inter-head"><span class="inter-head-title" style="color:var(--aurora-purple)">설잠 구간 ${idx+1}</span><button type="button" class="btn-remove-inter" onclick="this.closest('.interruption-block').remove()" aria-label="설잠 구간 삭제">✕</button></div>
+    <div class="form-row"><label class="form-label">설잠 시작</label><input type="time" class="ls-start" value="${defaultStart}"></div>
+    <div class="form-row"><label class="form-label">설잠 끝</label><input type="time" class="ls-end" value="${end}"></div>`;
+  list.appendChild(div);
+}
+function addMorningLightSleep(start='',end=''){ _addLightSleepBlock('morning-lightsleeps-list',start,end); }
+function addEditLightSleep(start='',end=''){ _addLightSleepBlock('edit-lightsleeps-list',start,end); }
+function collectLightSleeps(listId){
+  const out=[];
+  document.querySelectorAll('#'+listId+' .interruption-block').forEach(b=>{
+    const start=b.querySelector('.ls-start').value;
+    const end=b.querySelector('.ls-end').value;
+    if(start||end) out.push({start,end});
+  });
+  return out;
+}
+
 function updateMorningScore(val){
   val=parseInt(val);
   document.getElementById('morning-score-display').textContent=val;
@@ -1066,7 +1114,8 @@ function saveMorningRecord(){
     if(woke||slept) inters.push({woke,slept});
   });
   const existing=getRecord(_morningDate)||{};
-  const rec={ ...existing, wakeTime, interruptions:inters, score, status:'done' };
+  const lightSleeps=collectLightSleeps('morning-lightsleeps-list');
+  const rec={ ...existing, wakeTime, interruptions:inters, lightSleeps, score, status:'done' };
   upsertRecord(rec);
   closeModal('modal-morning');
   updateFAB();
@@ -1092,6 +1141,8 @@ function openEditModal(dateStr){
   const list=document.getElementById('edit-interruptions-list');
   list.innerHTML='';
   (rec.interruptions||[]).forEach(it=>addEditInterruption(it.woke,it.slept));
+  document.getElementById('edit-lightsleeps-list').innerHTML='';
+  (rec.lightSleeps||[]).forEach(it=>addEditLightSleep(it.start,it.end));
   openModal('modal-edit');
 }
 
@@ -1130,7 +1181,8 @@ function saveEditRecord(){
   // 날짜가 바뀐 경우 기존 날짜 삭제
   if(_editDate&&_editDate!==date) deleteRecord(_editDate);
   const existing=getRecord(date)||{};
-  const rec={ ...existing, date, sleepTime, wakeTime, interruptions:inters, score, status: wakeTime?'done':'draft' };
+  const lightSleeps=collectLightSleeps('edit-lightsleeps-list');
+  const rec={ ...existing, date, sleepTime, wakeTime, interruptions:inters, lightSleeps, score, status: wakeTime?'done':'draft' };
   upsertRecord(rec);
   closeModal('modal-edit');
   updateFAB();
@@ -1214,8 +1266,8 @@ function renderHome(){
   }
 
   const totalMin=calcSleepMinutes(done.sleepTime, done.wakeTime);
-  const interMin=calcInterruptionMinutes(done.interruptions);
-  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+  const interMin=calcInterruptionMinutes(done.interruptions); const lightMin=calcLightSleepDeduct(done.lightSleeps);
+  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin-lightMin):null;
 
   const isYesterday=done.date===yesterdayStr();
   const label=isYesterday?'어젯밤 수면':'최근 수면 · '+formatDateFull(done.date);
@@ -1231,7 +1283,7 @@ function renderHome(){
     <div class="sleep-card-inner">
       <div class="sleep-card-text">
         <div class="today-status">${minutesToHHMM(totalMin)}</div>
-        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회</div>
+        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 중간에 깸 ${done.interruptions?.length||0}회 · 설잠 ${done.lightSleeps?.length||0}회</div>
       </div>
       <div class="sleep-wave-outer${overflowClass}" id="sleep-gauge-outer">
         <div class="sleep-wave-fill" id="sleep-gauge-fill" style="height:0%"></div>
@@ -1253,6 +1305,9 @@ function renderHome(){
   (done.interruptions||[]).forEach((it,i)=>{
     html+=`<div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'}</span></div>
            <div class="tl-row"><div class="tl-dot resleep"></div><span class="tl-label">다시 잠</span><span class="tl-val">${it.slept||'—'}</span></div>`;
+  });
+  (done.lightSleeps||[]).forEach((it,i)=>{
+    html+=`<div class="tl-row"><div class="tl-dot lightsleep"></div><span class="tl-label">설잠 ${i+1}</span><span class="tl-val">${it.start||'—'} → ${it.end||'—'}</span></div>`;
   });
   html+=`<div class="tl-row"><div class="tl-dot wake"></div><span class="tl-label">기상</span><span class="tl-val">${done.wakeTime||'—'}</span></div>`;
   tlEl.innerHTML=html;
@@ -1300,10 +1355,10 @@ function renderRecords(){
     const d=new Date(rec.date+'T00:00:00');
     const isDraft=rec.status==='draft';
     const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-    const interMin=calcInterruptionMinutes(rec.interruptions);
-    const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+    const interMin=calcInterruptionMinutes(rec.interruptions); const lightMin=calcLightSleepDeduct(rec.lightSleeps);
+    const pureMin=totalMin!==null?Math.max(0,totalMin-interMin-lightMin):null;
     const sleepText=isDraft?`취침 ${rec.sleepTime} (미완성)`:minutesToHHMM(totalMin);
-    const metaText=isDraft?'기상 기록 필요':(`순수 ${minutesToHHMM(pureMin)} · 깸 ${rec.interruptions?.length||0}회`);
+    const metaText=isDraft?'기상 기록 필요':(`순수 ${minutesToHHMM(pureMin)} · 깸 ${rec.interruptions?.length||0}회 · 설잠 ${rec.lightSleeps?.length||0}회`);
     const scoreBadge=isDraft
       ?`<div class="record-score-badge draft">미완성</div>`
       :`<div class="record-score-badge">${rec.score||'—'}</div>`;
@@ -1332,8 +1387,8 @@ function renderRecords(){
 function showDetail(dateStr){
   const rec=getRecord(dateStr); if(!rec) return;
   const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-  const interMin=calcInterruptionMinutes(rec.interruptions);
-  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+  const interMin=calcInterruptionMinutes(rec.interruptions); const lightMin=calcLightSleepDeduct(rec.lightSleeps);
+  const pureMin=totalMin!==null?Math.max(0,totalMin-interMin-lightMin):null;
   document.getElementById('detail-title').textContent=formatDateFull(dateStr);
   let html=`<div class="card" style="margin-bottom:10px"><div class="card-title">수면 정보</div><div class="timeline">
     <div class="tl-row"><div class="tl-dot sleep"></div><span class="tl-label">취침 시간</span><span class="tl-val">${rec.sleepTime||'—'}</span></div>
@@ -1347,6 +1402,14 @@ function showDetail(dateStr){
     rec.interruptions.forEach((it,i)=>{
       const itMin=calcInterruptionMinutes([it]);
       html+=`<div class="tl-row"><div class="tl-dot inter"></div><span class="tl-label">깸 ${i+1}</span><span class="tl-val">${it.woke||'—'} → ${it.slept||'—'} (${minutesToHHMM(itMin)})</span></div>`;
+    });
+    html+=`</div></div>`;
+  }
+  if(rec.lightSleeps&&rec.lightSleeps.length){
+    html+=`<div class="card" style="margin-bottom:10px"><div class="card-title">설잠 기록 (${rec.lightSleeps.length}회)</div><div class="timeline">`;
+    rec.lightSleeps.forEach((it,i)=>{
+      const lsMin=calcLightSleepMinutes([it]);
+      html+=`<div class="tl-row"><div class="tl-dot lightsleep"></div><span class="tl-label">설잠 ${i+1}</span><span class="tl-val">${it.start||'—'} → ${it.end||'—'} (${minutesToHHMM(lsMin)} → 인정 ${minutesToHHMM(Math.round(lsMin*0.5))})</span></div>`;
     });
     html+=`</div></div>`;
   }
@@ -1417,21 +1480,23 @@ function renderChart(){
   document.getElementById('chart-month-label').textContent=`${y}년 ${m}월`;
   const data=loadData(); const monthData=data[mk]||{};
   const daysInMonth=new Date(y,m,0).getDate();
-  const labels=[], sleepArr=[], pureArr=[], scoreArr=[], wakesArr=[];
+  const labels=[], sleepArr=[], pureArr=[], scoreArr=[], wakesArr=[], lightArr=[], lightCntArr=[];
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${mk}-${String(d).padStart(2,'0')}`;
     const rec=monthData[ds];
     labels.push(d);
     if(rec&&rec.status==='done'){
       const totalMin=calcSleepMinutes(rec.sleepTime, rec.wakeTime);
-      const interMin=calcInterruptionMinutes(rec.interruptions);
-      const pureMin=totalMin!==null?Math.max(0,totalMin-interMin):null;
+      const interMin=calcInterruptionMinutes(rec.interruptions); const lightMin=calcLightSleepDeduct(rec.lightSleeps);
+      const pureMin=totalMin!==null?Math.max(0,totalMin-interMin-lightMin):null;
       sleepArr.push(totalMin!==null?+(totalMin/60).toFixed(2):null);
       pureArr.push(pureMin!==null?+(pureMin/60).toFixed(2):null);
       scoreArr.push(rec.score||null);
       wakesArr.push(rec.interruptions?.length||0);
+      lightArr.push(+(calcLightSleepMinutes(rec.lightSleeps)/60).toFixed(2));
+      lightCntArr.push(rec.lightSleeps?.length||0);
     } else {
-      sleepArr.push(null); pureArr.push(null); scoreArr.push(null); wakesArr.push(null);
+      sleepArr.push(null); pureArr.push(null); scoreArr.push(null); wakesArr.push(null); lightArr.push(null); lightCntArr.push(null);
     }
   }
   const chartDefaults={
@@ -1456,11 +1521,14 @@ function renderChart(){
   makeChart('chartPure',pureArr,'#4dd9c0');
   makeChart('chartScore',scoreArr,'#a78bfa');
   makeChart('chartWakes',wakesArr,'#ff6b8a');
+  makeChart('chartLight',lightArr,'#a78bfa');
 
   const validSleep=sleepArr.filter(v=>v!==null);
   const validPure=pureArr.filter(v=>v!==null);
   const validScore=scoreArr.filter(v=>v!==null);
   const validWakes=wakesArr.filter(v=>v!==null);
+  const validLight=lightArr.filter(v=>v!==null);
+  const validLightCnt=lightCntArr.filter(v=>v!==null);
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):null;
   const fmtH=val=>val===null?'—':`${Math.floor(val)}h ${Math.round((val%1)*60)}m`;
   const fmtN=(val,d)=>val===null?'—':val.toFixed(d||1);
@@ -1469,6 +1537,8 @@ function renderChart(){
     <div class="stat-item"><div class="stat-label">평균 순수 수면</div><div class="stat-val purple">${fmtH(avg(validPure))}</div></div>
     <div class="stat-item"><div class="stat-label">평균 숙면 점수</div><div class="stat-val gold">${fmtN(avg(validScore))}</div></div>
     <div class="stat-item"><div class="stat-label">평균 깨기 횟수</div><div class="stat-val red">${fmtN(avg(validWakes))}회</div></div>
+    <div class="stat-item"><div class="stat-label">평균 설잠 시간</div><div class="stat-val purple">${fmtH(avg(validLight))}</div></div>
+    <div class="stat-item"><div class="stat-label">평균 설잠 횟수</div><div class="stat-val purple">${fmtN(avg(validLightCnt))}회</div></div>
     <div class="stat-item"><div class="stat-label">완성 기록일수</div><div class="stat-val teal">${validSleep.length}일</div></div>
     <div class="stat-item"><div class="stat-label">총 수면시간</div><div class="stat-val purple">${fmtH(validSleep.reduce((a,b)=>a+b,0)||null)}</div></div>`;
 }

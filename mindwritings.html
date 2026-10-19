@@ -359,6 +359,26 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
+  /* 인지 재구성 완료 표시 */
+  .card-snippet.reframed {
+    margin-top: 6px;
+    padding: 7px 10px 7px 9px;
+    background: #fbf3e4;
+    border-left: 3px solid #e2b06a;
+    border-radius: 0 8px 8px 0;
+    color: #5e4a2f;
+  }
+  .rf-icon { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; color: var(--accent); }
+  .rf-icon svg { width: 14px; height: 14px; display: block; }
+  .card-rf-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 700;
+    padding: 2px 8px 2px 6px;
+    border-radius: 5px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+  }
+  .card-rf-badge svg { width: 13px; height: 13px; }
   .card-date {
     margin-top: 7px;
     font-size: 11.5px;
@@ -552,6 +572,48 @@
   .editor-textarea::placeholder { color: var(--text-mute); }
   .editor-textarea:focus { border-color: var(--accent); }
 
+  /* 인지 재구성 입력 */
+  .reframe-toggle {
+    flex-shrink: 0;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--border-strong);
+    background: transparent;
+    color: var(--accent-strong);
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .reframe-toggle svg { width: 16px; height: 16px; }
+  .reframe-toggle:active { background: var(--accent-soft); }
+  .reframe-wrap {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin-top: 10px;
+  }
+  .sheet.reframe-open .reframe-wrap { display: flex; }
+  .sheet.reframe-open .reframe-toggle { display: none; }
+  .reframe-label {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13.5px; font-weight: 700;
+    color: var(--accent-strong);
+    margin: 0 0 6px 2px;
+  }
+  .reframe-label svg { width: 15px; height: 15px; }
+  .editor-textarea.reframe-textarea {
+    background-color: #fdf8ee;
+    border-color: #ead9b8;
+  }
+  .editor-textarea.reframe-textarea:focus { border-color: #d9a75c; }
+  .sheet.reframe-open { overflow-y: auto; }
+  .sheet.reframe-open .editor-textarea {
+    min-height: 110px;
+    max-height: 28vh;
+  }
+
   .editor-links {
     display: flex;
     flex-direction: column;
@@ -739,6 +801,10 @@
       max-height: 70vh !important;
     }
     .editor-links { max-height: 18vh; overflow-y: auto; }
+    .sheet.reframe-open .editor-textarea {
+      min-height: 22vh !important;
+      max-height: 30vh !important;
+    }
   }
 
   @media (min-width: 1100px) {
@@ -863,6 +929,11 @@
     <div class="stage-select" id="stageSelect"></div>
     <input type="text" class="editor-title" id="editorTitle" placeholder="제목" maxlength="100" autocomplete="off" enterkeyhint="next">
     <textarea class="editor-textarea" id="editorText" placeholder="지금 마음을 그대로 적어 보세요" enterkeyhint="enter"></textarea>
+    <button class="reframe-toggle" id="reframeToggle" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>+ 인지 재구성</button>
+    <div class="reframe-wrap" id="reframeWrap">
+      <div class="reframe-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>인지 재구성</div>
+      <textarea class="editor-textarea reframe-textarea" id="editorReframe" placeholder="지금의 나는 그 일을 어떻게 바라보나요?" enterkeyhint="enter"></textarea>
+    </div>
     <div class="editor-links" id="editorLinks"></div>
     <div class="editor-actions" id="editorActions" style="display:none;">
       <button class="btn-delete" id="editorDelete">삭제</button>
@@ -907,6 +978,8 @@ const ICON_PATHS = {
   cloudy: '<path d="M16.5 19H7a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 10.2a4.4 4.4 0 0 1-.5 8.8z"/><path d="M14.6 6.4a3.8 3.8 0 0 1 6.6 3.1"/>',
   clear:  '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'
 };
+const SPROUT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>';
+
 function iconSvg(stage, cls, sw) {
   return `<svg ${cls ? `class="${cls}"` : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[stage]}</svg>`;
 }
@@ -1360,7 +1433,8 @@ function renderMain() {
   list.hidden = false;
 
   const found = sortedByNewest(posts.filter(p =>
-    stripZws(p.title).toLowerCase().includes(q) || stripZws(p.content).toLowerCase().includes(q)
+    stripZws(p.title).toLowerCase().includes(q) || stripZws(p.content).toLowerCase().includes(q) ||
+    stripZws(p.reframe).toLowerCase().includes(q)
   ));
 
   if (found.length === 0) {
@@ -1405,16 +1479,25 @@ function renderStage(counts) {
 function cardHtml(p, q, withCheck) {
   const title = stripZws(p.title || '').trim();
   const content = stripZws(p.content || '');
+  const reframe = stripZws(p.reframe || '');
+  const hasReframe = !!reframe.trim();
   const isChecked = withCheck && selected.has(p.id);
   const titleHtml = title
     ? `<div class="card-title">${highlight(title, q)}</div>`
     : `<div class="card-title untitled">제목 없음</div>`;
-  const snippetHtml = content.trim()
-    ? `<div class="card-snippet">${highlight(content, q)}</div>`
-    : '';
-  const metaHtml = withCheck ? '' : `
+  const snippetHtml = hasReframe
+    ? `<div class="card-snippet reframed"><span class="rf-icon">${SPROUT_SVG}</span>${highlight(reframe, q)}</div>`
+    : (content.trim()
+      ? `<div class="card-snippet">${highlight(content, q)}</div>`
+      : '');
+  const rfBadgeHtml = hasReframe ? `<span class="card-rf-badge">${SPROUT_SVG}재구성 완료</span>` : '';
+  const metaHtml = withCheck
+    ? (hasReframe ? `
+        <div class="card-meta">${rfBadgeHtml}</div>` : '')
+    : `
         <div class="card-meta">
           <span class="card-tag" data-stage="${p.stage}">${iconSvg(p.stage, '', 2)}${STAGE_INFO[p.stage] ? STAGE_INFO[p.stage].label : ''}</span>
+          ${rfBadgeHtml}
         </div>`;
   const checkHtml = withCheck ? `
       <button class="card-check" data-action="check" data-id="${p.id}" aria-label="선택" aria-pressed="${isChecked}">
@@ -1511,8 +1594,9 @@ function extractUrls(text) {
 
 function updateEditorLinks() {
   const et = document.getElementById('editorText');
+  const er = document.getElementById('editorReframe');
   const box = document.getElementById('editorLinks');
-  const urls = extractUrls(stripZws(et.value));
+  const urls = extractUrls(stripZws(et.value) + '\n' + stripZws(er.value));
   if (urls.length === 0) {
     box.innerHTML = '';
     return;
@@ -1543,9 +1627,15 @@ function refreshStageUI() {
 
 let resetListMode = null;   // 자동 넘버링 모드 초기화 함수 (bindEvents에서 할당)
 
+function setReframeOpen(open) {
+  document.querySelector('#editorModal .sheet').classList.toggle('reframe-open', !!open);
+}
+
 function resetEditor() {
   const et = document.getElementById('editorText');
   et.value = '';
+  document.getElementById('editorReframe').value = '';
+  setReframeOpen(false);
   document.getElementById('editorTitle').value = '';
   document.getElementById('editorLinks').innerHTML = '';
   document.getElementById('editorActions').style.display = 'none';
@@ -1570,6 +1660,9 @@ function openEditor(id) {
     editingStage = STAGE_INFO[p.stage] ? p.stage : DEFAULT_STAGE;
     ti.value = p.title || '';
     et.value = p.content || '';
+    const rf = p.reframe || '';
+    document.getElementById('editorReframe').value = rf;
+    setReframeOpen(!!stripZws(rf).trim());
     document.getElementById('editorActions').style.display = 'flex';
   }
   refreshStageUI();
@@ -1577,6 +1670,8 @@ function openEditor(id) {
   document.getElementById('editorModal').classList.add('show');
   setTimeout(() => {
     et.scrollTop = 0;
+    document.getElementById('editorReframe').scrollTop = 0;
+    document.querySelector('#editorModal .sheet').scrollTop = 0;
     document.getElementById('editorLinks').scrollTop = 0;
     if (!p) ti.focus();
   }, 50);
@@ -1585,7 +1680,9 @@ function openEditor(id) {
 function trySave() {
   const title = document.getElementById('editorTitle').value.trim();
   const text = document.getElementById('editorText').value.trim();
-  if (!title && !stripZws(text).trim()) {
+  const reframe = document.getElementById('editorReframe').value.trim();
+  const reframeVal = stripZws(reframe).trim() ? reframe : '';
+  if (!title && !stripZws(text).trim() && !reframeVal) {
     toast('제목이나 내용을 입력해주세요');
     return;
   }
@@ -1596,6 +1693,7 @@ function trySave() {
       const moved = p.stage !== editingStage;
       p.title = title;
       p.content = text;
+      p.reframe = reframeVal;
       p.stage = editingStage;
       p.updatedAt = now;
       if (moved) selected.delete(p.id);
@@ -1606,6 +1704,7 @@ function trySave() {
       id: genId(),
       title: title,
       content: text,
+      reframe: reframeVal,
       stage: editingStage,
       createdAt: now,
       updatedAt: now
@@ -1722,6 +1821,17 @@ function bindEvents() {
     refreshStageUI();
   });
 
+  // 인지 재구성 칸 펼치기
+  document.getElementById('reframeToggle').addEventListener('click', () => {
+    setReframeOpen(true);
+    const er = document.getElementById('editorReframe');
+    requestAnimationFrame(() => {
+      er.focus();
+      er.selectionStart = er.selectionEnd = er.value.length;
+      er.scrollIntoView({ block: 'nearest' });
+    });
+  });
+
   // 제목에서 Enter → 본문으로
   document.getElementById('editorTitle').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) {
@@ -1755,10 +1865,8 @@ function bindEvents() {
   }
 
   // ── aimemo 방식 자동 넘버링 (keydown + beforeinput + input) ──
-  (function() {
-    const ta = editorText;
+  function setupAutoList(ta) {
     let mode = null; // null | 'bullet' | 'number'
-    resetListMode = () => { mode = null; };
 
     // ZWS: Android IME가 번호 prefix 숫자를 조합 버퍼로 잡는 것을 방지
     const ZWS = '\u200b';
@@ -1935,7 +2043,12 @@ function bindEvents() {
       if (mode === 'number' && !e.isComposing) renumberAll();
       scrollCursorIntoView(ta);
     });
-  })();
+
+    return () => { mode = null; };
+  }
+  const resetTextMode = setupAutoList(editorText);
+  const resetReframeMode = setupAutoList(document.getElementById('editorReframe'));
+  resetListMode = () => { resetTextMode(); resetReframeMode(); };
 
   // Confirm modal
   document.getElementById('confirmCancel').addEventListener('click', () => closeTop());

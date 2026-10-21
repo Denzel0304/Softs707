@@ -694,15 +694,13 @@
   document.getElementById('headerDate').textContent = `${m}월 ${d}일 ${dow}요일`;
 })();
 
-const SERVICE_KEY = '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25';
-const KMA_BASE = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
-const AIR_BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
-const STN_BASE = 'https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc';
+// 중간 서버(GAS 웹앱) 주소 — 배포 후 받은 URL로 교체 (서비스 키는 GAS 안에만 있음)
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyiB-k5EPaAY_YNfy-qOZp3JnUkkGb7dumTIaU9bpEc16-Kwa5S_JmgQe6RzBy3lJDp/exec';
 
 // 캐시 키
 const LS_LOC = 'weather_loc_v1';        // 현재 선택된 위치
 const LS_WX_PREFIX = 'weather_wx_';      // 날씨 캐시 (위치별)
-const LS_AIR_PREFIX = 'weather_air_v2_'; // 대기질 캐시 (시도별, v2: 매칭 로직 변경)
+const LS_AIR_PREFIX = 'weather_air_v3_'; // 대기질 캐시 (위치별, v3: 네이버 형식)
 const LS_STN_PREFIX = 'weather_stn_';    // 측정소 캐시 (시군구별)
 
 const WX_CACHE_MS = 30 * 60 * 1000;      // 30분
@@ -1131,9 +1129,9 @@ class ApiError extends Error {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function fetchJsonOnce(url, label) {
+async function fetchJsonOnce(url, label, timeoutMs = FETCH_TIMEOUT_MS) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let r, text;
   try {
     r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
@@ -1175,68 +1173,27 @@ async function fetchJsonOnce(url, label) {
   return j;
 }
 
-async function fetchJson(url, label) {
+async function fetchJson(url, label, timeoutMs = FETCH_TIMEOUT_MS, retries = FETCH_RETRIES) {
   let lastErr;
-  for (let attempt = 0; attempt <= FETCH_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      return await fetchJsonOnce(url, label);
+      return await fetchJsonOnce(url, label, timeoutMs);
     } catch (e) {
       lastErr = e;
-      if (!e.retryable || attempt === FETCH_RETRIES) break;
+      if (!e.retryable || attempt === retries) break;
       await sleep(600 * (attempt + 1)); // 0.6초, 1.2초 후 재시도
     }
   }
   throw lastErr;
 }
 
-// 기상청: 해당 발표 데이터가 아직 없으면(03 NO_DATA 또는 빈 응답) 직전 발표로 한 번 더 시도
-async function fetchKmaWithFallback(buildUrl, label) {
-  for (let back = 0; back <= 1; back++) {
-    try {
-      const j = await fetchJson(buildUrl(back), label);
-      const items = j.response?.body?.items?.item;
-      if (items && items.length) return items;
-      if (back === 1) throw new ApiError(`${label}: 데이터 없음`);
-    } catch (e) {
-      if (e.code === '03' && back === 0) continue;
-      throw e;
-    }
-  }
-}
-
-async function fetchKmaUltraNcst(nx, ny) {
-  return fetchKmaWithFallback(back => {
-    const { base_date, base_time } = ultraNcstBase(back);
-    return `${KMA_BASE}/getUltraSrtNcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
-  }, '초단기실황');
-}
-
-async function fetchKmaVilageFcst(nx, ny) {
-  return fetchKmaWithFallback(back => {
-    const { base_date, base_time } = vilageFcstBase(back);
-    return `${KMA_BASE}/getVilageFcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
-  }, '단기예보');
-}
-
-// 시도별 실시간 측정값 → 측정소 이름으로 필터
-async function fetchAirBySido(sidoName) {
-  const url = `${AIR_BASE}/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=200&pageNo=1&sidoName=${encodeURIComponent(sidoName)}&ver=1.0`;
-  const j = await fetchJson(url, '대기질');
-  return j.response.body.items;
-}
-
-// TM 좌표 변환 (주소 → TM)
-async function fetchTmCoord(umdName) {
-  const url = `${STN_BASE}/getTMStdrCrdnt?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=10&pageNo=1&umdName=${encodeURIComponent(umdName)}`;
-  const j = await fetchJson(url, 'TM좌표');
-  return j.response.body.items;
-}
-
-// 근접 측정소
-async function fetchNearbyStation(tmX, tmY) {
-  const url = `${STN_BASE}/getNearbyMsrstnList?serviceKey=${SERVICE_KEY}&returnType=json&tmX=${tmX}&tmY=${tmY}&ver=1.1`;
-  const j = await fetchJson(url, '근접측정소');
-  return j.response.body.items;
+// GAS 중간 서버 호출: 날씨 + 대기질을 한 번에 (GAS가 네이버에서 위치 이름으로 검색)
+const GAS_TIMEOUT_MS = 20000;
+async function fetchFromGas(loc, force) {
+  const url = `${GAS_URL}?q=${encodeURIComponent(loc.name)}${force ? '&force=1' : ''}`;
+  const j = await fetchJson(url, '서버', GAS_TIMEOUT_MS, 1);
+  if (!j || j.ok !== true) throw new ApiError(`서버: ${(j && j.error) || '응답 오류'}`);
+  return j; // { ok, wx: {t,data,stale,error}, air: {t,data,stale,error} }
 }
 
 /* ============================================================
@@ -1261,8 +1218,8 @@ function getCacheEntry(key) {
     return o;
   } catch { return null; }
 }
-function setCache(key, value) {
-  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value })); } catch {}
+function setCache(key, value, t = Date.now()) {
+  try { localStorage.setItem(key, JSON.stringify({ t, v: value })); } catch {}
 }
 
 /* ============================================================
@@ -1722,7 +1679,7 @@ function render(loc, weather, air, fetchedAt = Date.now(), isStale = false) {
 
     <!-- 대기질 -->
     <div class="card">
-      <div class="card-title">🌫 대기질 ${air ? '· ' + escapeHtml(air.stationName) : ''}</div>
+      <div class="card-title">🌫 대기질 ${air && air.stationName ? '· ' + escapeHtml(air.stationName) + ' 측정소' : ''}${air && air.dataTime ? ' · ' + escapeHtml(String(air.dataTime).slice(-5)) + ' 기준' : ''}</div>
       ${air ? `
       <div class="air-grid">
         <div class="air-tile">
@@ -1737,13 +1694,17 @@ function render(loc, weather, air, fetchedAt = Date.now(), isStale = false) {
         </div>
         <div class="air-tile">
           <div class="label">통합대기지수</div>
-          <div class="val">${air.khaiValue ?? '-'}</div>
-          <span class="grade grade-${air.khaiGrade || 0}">${gradeText(air.khaiGrade)}</span>
+          ${air.khaiValue != null ? `
+          <div class="val">${air.khaiValue}</div>
+          <span class="grade grade-${air.khaiGrade || 0}">${gradeText(air.khaiGrade)}</span>` : `
+          <div class="val">${escapeHtml(air.khaiText || '-')}</div>`}
         </div>
         <div class="air-tile">
           <div class="label">오존 O₃</div>
-          <div class="val">${air.o3 != null ? air.o3.toFixed(3) : '-'}</div>
-          <span class="grade grade-1">ppm</span>
+          ${air.o3 != null ? `
+          <div class="val">${air.o3.toFixed(3)}</div>
+          <span class="grade grade-1">ppm</span>` : `
+          <div class="val">${escapeHtml(air.o3Text || '-')}</div>`}
         </div>
       </div>
       ` : `<div style="color:#7E8B96; font-size:13px;">대기질 정보를 불러올 수 없어요.</div>`}
@@ -1763,7 +1724,9 @@ const STALE_MAX_MS = 12 * 60 * 60 * 1000; // 12시간
 
 // 측정소 매칭 (기존 로직 그대로 분리)
 function pickAir(loc, airList) {
-  if (!airList || !airList.length) return null;
+  if (!airList) return null;
+  if (!Array.isArray(airList)) return airList; // 네이버 형식: 이미 한 위치 값
+  if (!airList.length) return null;
   // 측정소 매칭 우선순위:
   // 1) sgg와 정확히 일치 (예: 서울 종로구 → "종로구")
   // 2) 우선 매칭 테이블 (도시별 대표 측정소)
@@ -1812,8 +1775,8 @@ async function loadAndRender(loc, force = false) {
   refreshBtn.classList.add('spinning');
 
   // 캐시 키
-  const wxKey = LS_WX_PREFIX + loc.nx + '_' + loc.ny;
-  const airKey = LS_AIR_PREFIX + loc.sido + '_' + (loc.sgg || '');
+  const wxKey = LS_WX_PREFIX + loc.name;
+  const airKey = LS_AIR_PREFIX + loc.name;
 
   const nowMs = Date.now();
   const wxEntry = getCacheEntry(wxKey);
@@ -1838,51 +1801,53 @@ async function loadAndRender(loc, force = false) {
       ${escapeHtml(loc.name)} 정보를 불러오는 중<span class="dots"></span>
     </div>`;
 
-  // 3) 날씨와 대기질을 동시에 요청
-  const wxPromise = wxFresh
-    ? Promise.resolve(null)
-    : Promise.all([
-        fetchKmaUltraNcst(loc.nx, loc.ny),
-        fetchKmaVilageFcst(loc.nx, loc.ny)
-      ]).then(([ncstItems, fcstItems]) => parseKmaItems(ncstItems, fcstItems));
-
-  const airPromise = airFresh
-    ? Promise.resolve(null)
-    : fetchAirBySido(loc.sido);
-
-  const [wxRes, airRes] = await Promise.allSettled([wxPromise, airPromise]);
+  // 3) GAS에 날씨+대기질 한 번에 요청
+  let gas = null, gasErr = null;
+  try { gas = await fetchFromGas(loc, force); }
+  catch (e) { gasErr = e; }
   if (!isCurrent()) return; // 그 사이 다른 위치로 바뀜
 
   try {
     // 날씨 결과 정리
-    let weather, wxTime, wxStale = false;
+    let weather, wxTime, wxStale = false, wxErrMsg = '';
+    const gw = gas && gas.wx;
     if (wxFresh) {
       weather = wxEntry.v; wxTime = wxEntry.t;
-    } else if (wxRes.status === 'fulfilled') {
-      weather = wxRes.value; wxTime = Date.now();
-      setCache(wxKey, weather);
-    } else if (wxUsable) {
-      weather = wxEntry.v; wxTime = wxEntry.t; wxStale = true;
+    } else if (gw && gw.data && !gw.stale) {
+      weather = gw.data; wxTime = gw.t;
+      setCache(wxKey, weather, gw.t);
     } else {
-      throw wxRes.reason;
+      wxErrMsg = (gw && gw.error) || (gasErr && gasErr.message) || '오류';
+      // 서버 저장본 vs 브라우저 저장본 중 더 최근 것
+      const cands = [];
+      if (gw && gw.data) cands.push({ v: gw.data, t: gw.t });
+      if (wxUsable) cands.push({ v: wxEntry.v, t: wxEntry.t });
+      if (!cands.length) throw new Error(wxErrMsg);
+      cands.sort((x, y) => y.t - x.t);
+      weather = cands[0].v; wxTime = cands[0].t; wxStale = true;
     }
 
     // 대기질 결과 정리 (실패해도 날씨는 표시)
     let airList = null;
+    const ga = gas && gas.air;
     if (airFresh) {
       airList = airEntry.v;
-    } else if (airRes.status === 'fulfilled') {
-      airList = airRes.value;
-      setCache(airKey, airList);
+    } else if (ga && ga.data && !ga.stale) {
+      airList = ga.data;
+      setCache(airKey, airList, ga.t);
     } else {
-      console.warn('대기질 로드 실패', airRes.reason);
-      if (airEntry && (Date.now() - airEntry.t) <= STALE_MAX_MS) airList = airEntry.v;
+      console.warn('대기질 로드 실패', (ga && ga.error) || gasErr);
+      const cands = [];
+      if (ga && ga.data) cands.push({ v: ga.data, t: ga.t });
+      if (airEntry && (Date.now() - airEntry.t) <= STALE_MAX_MS) cands.push({ v: airEntry.v, t: airEntry.t });
+      cands.sort((x, y) => y.t - x.t);
+      if (cands.length) airList = cands[0].v;
     }
 
     render(loc, weather, pickAir(loc, airList), wxTime, wxStale || (Date.now() - wxTime) > WX_CACHE_MS);
 
     if (wxStale) {
-      showToast(`최신 날씨를 받지 못해 이전 정보를 보여드려요 (${wxRes.reason?.message || '오류'})`);
+      showToast(`최신 날씨를 받지 못해 이전 정보를 보여드려요 (${wxErrMsg})`);
     }
   } catch (e) {
     console.error(e);

@@ -1822,29 +1822,23 @@ async function loadAndRender(loc, force = false) {
   const wxFresh = !force && wxEntry && (nowMs - wxEntry.t) <= WX_CACHE_MS;
   const airFresh = !force && airEntry && (nowMs - airEntry.t) <= AIR_CACHE_MS;
 
-  // 1) 저장된 날씨가 있으면 즉시 표시, 없으면 로딩 화면
-  let shownStale = false;
-  if (wxUsable) {
+  // 1) 날씨·대기질 모두 30분 이내 저장본이면 네트워크 호출 없이 바로 표시
+  if (wxFresh && airFresh) {
     try {
-      render(loc, wxEntry.v, pickAir(loc, airEntry?.v), wxEntry.t, !wxFresh);
-      shownStale = true;
+      render(loc, wxEntry.v, pickAir(loc, airEntry.v), wxEntry.t, false);
+      refreshBtn.classList.remove('spinning');
+      return;
     } catch (e) { console.warn('캐시 렌더 실패', e); }
   }
-  if (!shownStale) {
-    document.getElementById('content').innerHTML = `
-      <div class="loading">
-        <div style="font-size:42px; margin-bottom:10px;">🌤</div>
-        ${escapeHtml(loc.name)} 정보를 불러오는 중<span class="dots"></span>
-      </div>`;
-  }
 
-  // 둘 다 신선하면 네트워크 호출 없이 종료
-  if (wxFresh && airFresh) {
-    refreshBtn.classList.remove('spinning');
-    return;
-  }
+  // 2) 그 외에는 항상 로딩 화면 (오래된 저장본은 실패했을 때만 사용)
+  document.getElementById('content').innerHTML = `
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🌤</div>
+      ${escapeHtml(loc.name)} 정보를 불러오는 중<span class="dots"></span>
+    </div>`;
 
-  // 2) 날씨와 대기질을 동시에 요청
+  // 3) 날씨와 대기질을 동시에 요청
   const wxPromise = wxFresh
     ? Promise.resolve(null)
     : Promise.all([

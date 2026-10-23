@@ -124,6 +124,7 @@
   .today-date { text-align: center; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
   .today-status { text-align: center; font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px; }
   .today-hint { text-align: center; font-size: 12px; color: var(--text-secondary); }
+  .today-hint.oneline { white-space: nowrap; font-size: clamp(9px, 3.1vw, 12px); letter-spacing: -.3px; }
 
   /* ── 타임라인 ── */
   .timeline { display: flex; flex-direction: column; gap: 8px; }
@@ -1283,7 +1284,7 @@ function renderHome(){
     <div class="sleep-card-inner">
       <div class="sleep-card-text">
         <div class="today-status">${minutesToHHMM(totalMin)}</div>
-        <div class="today-hint"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 깸 ${done.interruptions?.length||0}회 · 설잠 ${done.lightSleeps?.length||0}회</div>
+        <div class="today-hint oneline"><span style="color:#4dd9c0;font-weight:500">순수 수면 ${minutesToHHMM(pureMin)}</span> · 깸 ${done.interruptions?.length||0}회 · 설잠 ${done.lightSleeps?.length||0}회</div>
       </div>
       <div class="sleep-wave-outer${overflowClass}" id="sleep-gauge-outer">
         <div class="sleep-wave-fill" id="sleep-gauge-fill" style="height:0%"></div>

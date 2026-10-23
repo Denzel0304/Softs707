@@ -1050,7 +1050,31 @@ function openMorningModal(rec){
   openModal('modal-morning');
 }
 
+// 깬 구간/설잠 구간: 시작·끝 중 하나만 입력된 경우 막기 (둘 다 비어 있으면 무시)
+function validateSegments(interListId, lsListId){
+  const checks=[
+    {list:interListId, a:'.inter-woke', b:'.inter-slept', name:'깬 구간', aName:'깬 시간', bName:'다시 잠'},
+    {list:lsListId,    a:'.ls-start',   b:'.ls-end',      name:'설잠 구간', aName:'설잠 시작', bName:'설잠 끝'}
+  ];
+  for(const c of checks){
+    const blocks=document.querySelectorAll('#'+c.list+' .interruption-block');
+    for(let i=0;i<blocks.length;i++){
+      const aEl=blocks[i].querySelector(c.a), bEl=blocks[i].querySelector(c.b);
+      const aV=aEl.value, bV=bEl.value;
+      if(aV&&!bV){ showToast(`${c.name} ${i+1}의 '${c.bName}' 시간을 입력해주세요`); _focusInput(bEl); return false; }
+      if(!aV&&bV){ showToast(`${c.name} ${i+1}의 '${c.aName}' 시간을 입력해주세요`); _focusInput(aEl); return false; }
+    }
+  }
+  return true;
+}
+function _focusInput(el){
+  try{ el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
+  try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); }
+}
+
 function goMorningStep(step, init=false){
+  // 2단계 → 3단계 이동 시 구간 검증 (실패 시 2단계 유지)
+  if(!init && step===3 && !validateSegments('morning-interruptions-list','morning-lightsleeps-list')) return;
   [1,2,3].forEach(i=>{
     document.getElementById(`step-${i}`).classList.toggle('active', i===step);
     const dot=document.getElementById(`sdot-${i}`);
@@ -1107,6 +1131,7 @@ function updateMorningScore(val){
 function saveMorningRecord(){
   const wakeTime=document.getElementById('morning-wake-time').value;
   if(!wakeTime){ showToast('기상 시간을 입력해주세요'); return; }
+  if(!validateSegments('morning-interruptions-list','morning-lightsleeps-list')){ goMorningStep(2, true); return; }
   const score=parseInt(document.getElementById('morning-score').value);
   const inters=[];
   document.querySelectorAll('#morning-interruptions-list .interruption-block').forEach(b=>{
@@ -1172,6 +1197,7 @@ function saveEditRecord(){
   const sleepTime=document.getElementById('edit-sleep').value;
   const wakeTime=document.getElementById('edit-wake').value;
   if(!date||!sleepTime){ showToast('날짜와 취침 시간을 입력해주세요'); return; }
+  if(!validateSegments('edit-interruptions-list','edit-lightsleeps-list')) return;
   const score=parseInt(document.getElementById('edit-score').value);
   const inters=[];
   document.querySelectorAll('#edit-interruptions-list .interruption-block').forEach(b=>{

@@ -457,7 +457,15 @@
       width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
       background: var(--accent);
     }
-    .mini-cell.today { color: var(--accent-strong); font-weight: 700; }
+    .mini-cell.today::before {
+      content: "";
+      position: absolute; left: 50%; top: 50%;
+      width: 1.5em; height: 1.3em;
+      border: 1.5px solid var(--accent);
+      border-radius: 55% 45% 52% 48% / 50% 55% 45% 50%;
+      transform: translate(-50%, -50%) rotate(-6deg);
+      pointer-events: none;
+    }
     .mini-cell:hover { background: var(--paper-2); }
     .mini-cell.inweek:hover { background: var(--hl); }
 

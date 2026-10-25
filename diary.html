@@ -155,6 +155,25 @@
     overflow: hidden;
   }
   .ph-small { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  /* 달력 제목의 월·연도: 보이는 글자 위에 투명한 선택 상자를 겹쳐 둔다 */
+  .ph-pick {
+    position: relative;
+    display: inline-flex; align-items: baseline; gap: 3px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .ph-pick:hover .ph-big, .ph-pick:hover .ph-small { color: var(--accent-strong); }
+  .ph-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .ph-caret { width: 13px; height: 13px; color: var(--ink-soft); align-self: center; }
+  .ph-select {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 16px;   /* iOS 확대 방지 */
+    border: none;
+    -webkit-appearance: none; appearance: none;
+  }
   .ph-nav { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .nav-btn {
     width: 38px; height: 38px; border-radius: 50%;
@@ -758,8 +777,16 @@
         <section class="page left">
           <div class="page-head">
             <div class="ph-title">
-              <span class="ph-big" id="calMonth"></span>
-              <span class="ph-small" id="calYear"></span>
+              <label class="ph-pick" title="달 고르기">
+                <span class="ph-big" id="calMonth"></span>
+                <svg class="ph-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                <select class="ph-select" id="calMonthSel" aria-label="달 고르기"></select>
+              </label>
+              <label class="ph-pick" title="연도 고르기">
+                <span class="ph-small" id="calYear"></span>
+                <svg class="ph-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                <select class="ph-select" id="calYearSel" aria-label="연도 고르기"></select>
+              </label>
             </div>
             <div class="ph-nav">
               <button class="today-btn" id="calToday">오늘</button>
@@ -1319,6 +1346,7 @@ function renderCalendar() {
   const y = viewMonth.getFullYear(), m = viewMonth.getMonth();
   document.getElementById('calMonth').textContent = (m + 1) + '월';
   document.getElementById('calYear').textContent = y + '년';
+  fillMonthYearPickers(y, m);
 
   const first = new Date(y, m, 1);
   const daysIn = new Date(y, m + 1, 0).getDate();
@@ -1344,6 +1372,39 @@ function renderCalendar() {
   grid.innerHTML = html;
 
   renderMonthList();
+}
+
+// 월·연도 선택 상자 채우기 (연도: 기록이 있는 해 ~ 올해 앞뒤까지)
+function fillMonthYearPickers(y, m) {
+  const ms = document.getElementById('calMonthSel');
+  const ys = document.getElementById('calYearSel');
+  if (ms.options.length !== 12) {
+    ms.innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${i}">${i + 1}월</option>`).join('');
+  }
+  ms.value = String(m);
+  const thisYear = new Date().getFullYear();
+  let minY = Math.min(thisYear - 10, y), maxY = Math.max(thisYear + 5, y);
+  Object.keys(entries).forEach(k => {
+    const yy = parseInt(k.slice(0, 4), 10);
+    if (yy < minY) minY = yy;
+    if (yy > maxY) maxY = yy;
+  });
+  const sig = minY + '-' + maxY;
+  if (ys.dataset.sig !== sig) {
+    let html = '';
+    for (let yy = maxY; yy >= minY; yy--) html += `<option value="${yy}">${yy}년</option>`;
+    ys.innerHTML = html;
+    ys.dataset.sig = sig;
+  }
+  ys.value = String(y);
+}
+
+function jumpToMonth(y, m) {
+  const t = new Date(y, m, 1);
+  const dir = t > viewMonth ? 1 : (t < viewMonth ? -1 : 0);
+  viewMonth = t;
+  renderCalendar();
+  turn(document.getElementById('calBook'), dir);
 }
 
 function renderMonthList() {
@@ -1507,14 +1568,27 @@ function renderSearch() {
            `<div class="sresult-date">${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일</div>` +
            `<div class="sresult-text">${highlight(snippet(entries[k].c, q), q)}</div></button>`;
   };
-  if (isPcLayout()) {
-    const half = Math.ceil(keys.length / 2);
-    list.innerHTML = keys.slice(0, half).map(item).join('');
-    list2.innerHTML = keys.slice(half).map(item).join('');
-  } else {
-    list.innerHTML = keys.map(item).join('');
-    list2.innerHTML = '';
+  list.innerHTML = keys.map(item).join('');
+  list2.innerHTML = '';
+  if (isPcLayout()) flowSearchToRight();
+}
+
+// PC: 왼쪽 페이지에 들어가지 않는 결과부터 오른쪽 페이지로 옮긴다.
+// (오른쪽까지 넘치면 오른쪽 페이지에 스크롤이 생긴다)
+function flowSearchToRight() {
+  const list = document.getElementById('searchList');
+  const list2 = document.getElementById('searchList2');
+  const items = Array.from(list.children);
+  if (items.length < 2) return;
+  const limit = list.parentElement.getBoundingClientRect().bottom;
+  let cut = -1;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].getBoundingClientRect().bottom > limit + 0.5) { cut = Math.max(1, i); break; }
   }
+  if (cut < 0) return;
+  items.slice(cut).forEach(el => list2.appendChild(el));
+  list.parentElement.scrollTop = 0;
+  list2.parentElement.scrollTop = 0;
 }
 
 /* =========================================================
@@ -1688,6 +1762,12 @@ function bindEvents() {
   document.getElementById('calPrev').addEventListener('click', () => stepMonth(-1));
   document.getElementById('calNext').addEventListener('click', () => stepMonth(1));
   document.getElementById('calToday').addEventListener('click', gotoThisMonth);
+  document.getElementById('calMonthSel').addEventListener('change', (e) => {
+    jumpToMonth(viewMonth.getFullYear(), parseInt(e.target.value, 10));
+  });
+  document.getElementById('calYearSel').addEventListener('change', (e) => {
+    jumpToMonth(parseInt(e.target.value, 10), viewMonth.getMonth());
+  });
   document.getElementById('calGrid').addEventListener('click', (e) => {
     const c = e.target.closest('.cell');
     if (c) openWeek(c.dataset.date);
@@ -1985,7 +2065,7 @@ function bindEvents() {
     }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     const tag = (document.activeElement && document.activeElement.tagName) || '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     const dir = e.key === 'ArrowRight' ? 1 : -1;
     if (layers.length === 0) { e.preventDefault(); stepMonth(dir); }
     else if (topLayer() === 'week') { e.preventDefault(); stepWeek(dir); }
@@ -2026,13 +2106,17 @@ window.addEventListener('pageshow', (e) => { if (e.persisted && getAK()) syncNow
 
 // 화면 폭이 바뀌면(회전, 창 크기) 검색 결과 배치를 다시 그린다
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(() => fitOneLine(document.getElementById('weekTitle')));
+  document.fonts.ready.then(() => {
+    fitOneLine(document.getElementById('weekTitle'));
+    if (!document.getElementById('searchView').hidden) renderSearch();
+  });
 }
 let _wasPc = isPcLayout();
 window.addEventListener('resize', () => {
   fitOneLine(document.getElementById('weekTitle'));
   const now = isPcLayout();
   if (now !== _wasPc) { _wasPc = now; renderAll(); }
+  else if (now && !document.getElementById('searchView').hidden) renderSearch();   // 페이지 높이가 바뀌면 다시 나눈다
 });
 
 // 날짜가 바뀌면 '오늘' 표시를 갱신한다

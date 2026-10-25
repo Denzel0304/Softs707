@@ -576,6 +576,9 @@
       flex: 0 1 auto;                         /* 키보드가 올라와 공간이 좁아지면 줄어든다 */
       height: calc(28px * 10 + 24px + 3px);   /* 10줄 + 위아래 여백 + 테두리 */
     }
+    /* 키보드가 올라와 있을 때: 6줄 */
+    body.kb-open .editor-textarea { height: calc(28px * 6 + 24px + 3px); }
+    body.kb-open .sheet { padding-bottom: 14px; }
   }
 
   .editor-links {
@@ -2031,21 +2034,36 @@ setInterval(() => {
   if (k !== _todayKey) { _todayKey = k; renderAll(); }
 }, 60000);
 
-// 키보드가 올라오면 sheet의 padding-bottom을 키보드 높이만큼 늘려
-// 내용(링크, 삭제버튼)이 키보드에 가리지 않게 한다.
+// 키보드가 올라오면 모달을 '키보드 위에 실제로 보이는 영역'에 맞춘다.
+// (키보드 높이만큼 아래 여백을 두던 방식은 기기에 따라 빈 공간이 생기고 입력칸이 4줄로 줄었음)
+// 브라우저가 화면 높이를 줄이는 방식/줄이지 않는 방식 모두에서 작동하도록,
+// 키보드 없을 때의 높이(_baseH)와 지금 보이는 높이를 비교해 판단한다.
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', function() {
+  let _baseH = window.innerHeight;
+  const onViewport = function() {
     const vv = window.visualViewport;
-    const keyboardHeight = window.innerHeight - vv.height;
-    document.querySelectorAll('.sheet').forEach(sheet => {
-      if (keyboardHeight > 0) {
-        sheet.style.paddingBottom = keyboardHeight + 'px';
-        sheet.style.maxHeight = (vv.height - 24) + 'px';
+    if (window.innerHeight > _baseH) _baseH = window.innerHeight;
+    const kbOpen = (_baseH - vv.height) > 120;
+    document.body.classList.toggle('kb-open', kbOpen);
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      if (kbOpen) {
+        ov.style.top = vv.offsetTop + 'px';
+        ov.style.height = vv.height + 'px';
+        ov.style.bottom = 'auto';
       } else {
-        sheet.style.paddingBottom = '';
-        sheet.style.maxHeight = '';
+        ov.style.top = ''; ov.style.height = ''; ov.style.bottom = '';
       }
     });
+    document.querySelectorAll('.sheet').forEach(sheet => {
+      sheet.style.paddingBottom = '';
+      sheet.style.maxHeight = kbOpen ? (vv.height - 24) + 'px' : '';
+    });
+  };
+  window.visualViewport.addEventListener('resize', onViewport);
+  window.visualViewport.addEventListener('scroll', onViewport);
+  // 화면 회전 시 기준 높이를 새로 잡는다
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => { _baseH = window.innerHeight; onViewport(); }, 400);
   });
 }
 </script>

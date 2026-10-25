@@ -387,6 +387,13 @@
     .page + .page { border-top: none; }
     .page-head-right { display: flex; }
     .search-right { display: flex; }
+    #sCalGrid .cell { cursor: default; }
+    #sCalGrid .cell:hover, #sCalGrid .cell:active { background: none; }
+    #sCalGrid .cell.focus, #sCalGrid .cell.focus:hover {
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 2px var(--accent);
+      border-radius: 6px;
+    }
     .ph-nav-mobile { display: none; }
     #weekView .page.left { padding-bottom: 26px; }
     #weekRightPage { padding-top: 26px; }
@@ -859,8 +866,15 @@
           </div>
         </section>
         <section class="page right search-right">
-          <div class="page-body scroll-y">
-            <div id="searchList2"></div>
+          <div class="page-head">
+            <div class="ph-title">
+              <span class="ph-big" id="sCalMonth"></span>
+              <span class="ph-small" id="sCalYear"></span>
+            </div>
+          </div>
+          <div class="page-body">
+            <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+            <div class="cal-grid" id="sCalGrid"></div>
           </div>
         </section>
       </div>
@@ -1549,12 +1563,12 @@ function snippet(text, q) {
 function renderSearch() {
   const q = currentSearch.trim();
   const list = document.getElementById('searchList');
-  const list2 = document.getElementById('searchList2');
   const count = document.getElementById('searchCount');
   document.getElementById('searchClear').hidden = currentSearch.length === 0;
   if (!q) {
     count.textContent = '찾을 낱말을 입력하면 그 낱말이 들어간 날짜를 모아 보여 드립니다.';
-    list.innerHTML = ''; list2.innerHTML = '';
+    list.innerHTML = '';
+    renderSearchCal(todayKey(), false);
     return;
   }
   const ql = q.toLowerCase();
@@ -1569,26 +1583,42 @@ function renderSearch() {
            `<div class="sresult-text">${highlight(snippet(entries[k].c, q), q)}</div></button>`;
   };
   list.innerHTML = keys.map(item).join('');
-  list2.innerHTML = '';
-  if (isPcLayout()) flowSearchToRight();
+  // 오른쪽 달력: 처음에는 가장 최근 결과의 달
+  if (keys.length) renderSearchCal(keys[0], true);
+  else renderSearchCal(todayKey(), false);
 }
 
-// PC: 왼쪽 페이지에 들어가지 않는 결과부터 오른쪽 페이지로 옮긴다.
-// (오른쪽까지 넘치면 오른쪽 페이지에 스크롤이 생긴다)
-function flowSearchToRight() {
-  const list = document.getElementById('searchList');
-  const list2 = document.getElementById('searchList2');
-  const items = Array.from(list.children);
-  if (items.length < 2) return;
-  const limit = list.parentElement.getBoundingClientRect().bottom;
-  let cut = -1;
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].getBoundingClientRect().bottom > limit + 0.5) { cut = Math.max(1, i); break; }
+// PC 검색 화면 오른쪽 페이지: 가리킨 날짜가 속한 달의 달력 (메인 달력과 같은 모양, 보기 전용)
+let sCalShown = null;   // 지금 오른쪽 달력이 가리키는 날짜 (같은 항목 위에서 다시 그리지 않기 위함)
+function renderSearchCal(dateKey, withFocus) {
+  sCalShown = withFocus ? dateKey : null;
+  const base = parseYmd(dateKey);
+  const y = base.getFullYear(), m = base.getMonth();
+  document.getElementById('sCalMonth').textContent = (m + 1) + '월';
+  document.getElementById('sCalYear').textContent = y + '년';
+  const first = new Date(y, m, 1);
+  const daysIn = new Date(y, m + 1, 0).getDate();
+  const rows = Math.ceil((first.getDay() + daysIn) / 7);
+  const start = addDays(first, -first.getDay());
+  const tk = todayKey();
+  let html = '';
+  for (let i = 0; i < rows * 7; i++) {
+    const d = addDays(start, i);
+    const k = ymd(d);
+    const e = entries[k];
+    const cls = ['cell', dowClass(d)];
+    if (d.getMonth() !== m) cls.push('out');
+    if (k === tk) cls.push('today');
+    if (e) cls.push('has');
+    if (withFocus && k === dateKey) cls.push('focus');
+    const prev = e ? escapeHtml(firstLine(e.c)) : '';
+    html += `<div class="${cls.join(' ')}">` +
+            `<span class="cell-num">${d.getDate()}</span>` +
+            `<span class="cell-prev">${prev}</span></div>`;
   }
-  if (cut < 0) return;
-  items.slice(cut).forEach(el => list2.appendChild(el));
-  list.parentElement.scrollTop = 0;
-  list2.parentElement.scrollTop = 0;
+  const grid = document.getElementById('sCalGrid');
+  grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+  grid.innerHTML = html;
 }
 
 /* =========================================================
@@ -1827,7 +1857,13 @@ function bindEvents() {
     if (r) openEditor(r.dataset.date);
   };
   document.getElementById('searchList').addEventListener('click', onResult);
-  document.getElementById('searchList2').addEventListener('click', onResult);
+  // PC: 결과에 마우스를 올리거나(또는 키보드로 옮기면) 오른쪽 달력이 그 날짜로 바뀐다
+  const onResultPoint = (e) => {
+    const r = e.target.closest('.sresult');
+    if (r && isPcLayout() && r.dataset.date !== sCalShown) renderSearchCal(r.dataset.date, true);
+  };
+  document.getElementById('searchList').addEventListener('mouseover', onResultPoint);
+  document.getElementById('searchList').addEventListener('focusin', onResultPoint);
 
   // Editor
   document.getElementById('editorCancel').addEventListener('click', () => closeTop());
@@ -2106,17 +2142,13 @@ window.addEventListener('pageshow', (e) => { if (e.persisted && getAK()) syncNow
 
 // 화면 폭이 바뀌면(회전, 창 크기) 검색 결과 배치를 다시 그린다
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(() => {
-    fitOneLine(document.getElementById('weekTitle'));
-    if (!document.getElementById('searchView').hidden) renderSearch();
-  });
+  document.fonts.ready.then(() => fitOneLine(document.getElementById('weekTitle')));
 }
 let _wasPc = isPcLayout();
 window.addEventListener('resize', () => {
   fitOneLine(document.getElementById('weekTitle'));
   const now = isPcLayout();
   if (now !== _wasPc) { _wasPc = now; renderAll(); }
-  else if (now && !document.getElementById('searchView').hidden) renderSearch();   // 페이지 높이가 바뀌면 다시 나눈다
 });
 
 // 날짜가 바뀌면 '오늘' 표시를 갱신한다

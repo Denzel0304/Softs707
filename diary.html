@@ -9,6 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=block" rel="stylesheet">
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEduHyeonokT_OTFMediumA.woff" as="font" type="font/woff" crossorigin>
+<style>
+  @font-face {
+    font-family: "GangwonEduHyeonokT";
+    src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEduHyeonokT_OTFMediumA.woff") format("woff");
+    font-weight: 400;
+    font-display: block;
+  }
+</style>
 <script>
 /* 폰트 로딩 전 기본 글씨체가 잠깐 보이는 현상 방지: 폰트 준비될 때까지 화면 숨김 (최대 3초) */
 (function () {
@@ -20,6 +29,7 @@
   setTimeout(show, 3000);
   Promise.all([
     document.fonts.load('400 20px "Nanum Pen Script"', '가나다월화수목금토일0123456789'),
+    document.fonts.load('400 18px "GangwonEduHyeonokT"', '가나다'),
     document.fonts.load('400 15px "Gowun Batang"', '가나다'),
     document.fonts.load('700 15px "Gowun Batang"', '가나다')
   ]).then(function () { return document.fonts.ready; }).then(show, show);
@@ -54,6 +64,7 @@
 
     --font-ui: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", serif;
     --font-hand: "Nanum Pen Script", "Gaegu", "Gowun Batang", cursive;
+    --font-note: "GangwonEduHyeonokT", "Nanum Pen Script", "Gowun Batang", cursive;
 
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -276,8 +287,8 @@
   .mitem-date.sun b, .mitem-date.sun span { color: var(--sun); }
   .mitem-date.sat b, .mitem-date.sat span { color: var(--sat); }
   .mitem-text {
-    font-family: var(--font-hand);
-    font-size: 19px; line-height: 22.4px;
+    font-family: var(--font-note);
+    font-size: 17.5px; line-height: 22.4px;
     color: var(--ink);
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     overflow: hidden;
@@ -319,8 +330,8 @@
     margin-top: 6px;
     min-height: 78px;
     overflow: hidden;
-    font-family: var(--font-hand);
-    font-size: 19.5px;
+    font-family: var(--font-note);
+    font-size: 18px;
     line-height: 26px;
     white-space: pre-wrap; word-break: break-word;
     background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 25px, var(--rule) 25px, var(--rule) 26px);
@@ -379,7 +390,7 @@
   }
   .sresult:active { background: var(--paper-2); }
   .sresult-date { font-family: var(--font-hand); font-size: 23px; line-height: 1.1; color: var(--ink-soft); }
-  .sresult-text { font-family: var(--font-hand); font-size: 19px; line-height: 23.1px; margin-top: 3px; white-space: pre-wrap; word-break: break-word; }
+  .sresult-text { font-family: var(--font-note); font-size: 17.5px; line-height: 23.1px; margin-top: 3px; white-space: pre-wrap; word-break: break-word; }
   .search-count { font-size: 12.5px; color: var(--ink-soft); padding: 4px 2px 8px; }
   mark { background: var(--hl); color: inherit; border-radius: 2px; padding: 0 1px; }
 
@@ -452,8 +463,8 @@
     .cell-prev {
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       overflow: hidden;
-      font-family: var(--font-hand);
-      font-size: 15.5px; line-height: 16.7px;
+      font-family: var(--font-note);
+      font-size: 14.5px; line-height: 16.7px;
       color: var(--ink-soft);
       padding: 2px 2px 0;
       word-break: break-all;
@@ -602,7 +613,7 @@
   .editor-save:active { background: var(--accent-strong); transform: scale(0.96); }
 
   .editor-textarea {
-    font-family: var(--font-hand);
+    font-family: var(--font-note);
     flex: 1;
     width: 100%;
     min-height: 140px;
@@ -613,7 +624,7 @@
     background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--rule) 27px, var(--rule) 28px);
     background-attachment: local;
     background-position: 0 12px;
-    font-size: 21.5px;
+    font-size: 20px;
     line-height: 28px;
     resize: none;
     outline: none;
@@ -625,7 +636,7 @@
 
   /* 모바일: 입력칸은 10줄 높이로, 모달은 내용만큼만 */
   @media (max-width: 899.98px) {
-    #editorModal { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+    body:has(#editorModal.show) .app { -webkit-filter: blur(14px); filter: blur(14px); }
     .sheet { height: auto; }
     .editor-textarea {
       flex: 0 1 auto;                         /* 키보드가 올라와 공간이 좁아지면 줄어든다 */

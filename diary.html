@@ -479,9 +479,16 @@
     .day-body {
       min-height: 0;
       display: block; -webkit-line-clamp: unset;
-      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent);
-              mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent);
+      font-size: 20px;
+      line-height: 29px;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 28px, var(--rule) 28px, var(--rule) 29px);
+      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 29px), transparent);
+              mask-image: linear-gradient(to bottom, #000 calc(100% - 29px), transparent);
     }
+    /* PC: 내용 글자 살짝 크게 (월간 목록, 검색 결과, 작성창) */
+    .mitem-text { font-size: 19.25px; line-height: 24.6px; }
+    .sresult-text { font-size: 19.25px; line-height: 25.4px; }
+    #editorModal .editor-textarea { font-size: 22px; }   /* 기본 규칙이 뒤쪽에 있어 우선순위를 높임 */
     .day-body:empty { -webkit-mask-image: none; mask-image: none; }
     .mini {
       display: flex; flex-direction: column;

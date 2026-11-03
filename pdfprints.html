@@ -239,8 +239,20 @@
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
                         await page.render({canvasContext: context, viewport: viewport}).promise;
+
+                        // 가로 페이지이면 90° 반시계 방향으로 회전 → 세로 A4에 맞춤
+                        let outCanvas = canvas;
+                        if (viewport.width > viewport.height) {
+                            outCanvas = document.createElement('canvas');
+                            outCanvas.width = canvas.height;
+                            outCanvas.height = canvas.width;
+                            const rctx = outCanvas.getContext('2d');
+                            rctx.translate(0, outCanvas.height);
+                            rctx.rotate(-Math.PI / 2);
+                            rctx.drawImage(canvas, 0, 0);
+                        }
                         
-                        const imgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                        const imgDataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
                         const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
                         const img = await mergedPdf.embedJpg(imgBytes);
                         

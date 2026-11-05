@@ -3,25 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#E9EEF1">
+<meta name="theme-color" content="#FFF3DC">
 <title>Soon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #E9EEF1;
-    --panel: #F8FAFB;
-    --ink: #1F2B38;
-    --muted: #6B7A88;
-    --line: #CBD5DC;
+    --bg: #FFF3DC;
+    --bg-2: #FFE3B8;
+    --panel: #FFFBF3;
+    --ink: #5A3A12;
+    --muted: #A57B48;
+    --line: #F1D6A8;
+    --accent: #E8730A;
+    --accent-soft: #FFE2BF;
+    --edge: #D98A2E;
     --amber: #F0A202;
     --amber-deep: #C67A00;
     --foam: #FFFDF6;
     --sand: #D8A65B;
     --sand-deep: #B07D35;
     --wood: #5B4636;
-    --glass: rgba(255, 255, 255, 0.5);
+    --glass: rgba(255, 255, 255, 0.7);
     --danger: #B6412C;
     color-scheme: light;
     box-sizing: border-box;
@@ -32,7 +36,7 @@
   html, body { height: 100%; }
   body {
     margin: 0;
-    background: var(--bg);
+    background: radial-gradient(120% 80% at 50% 0%, #FFFAF0 0%, var(--bg) 45%, var(--bg-2) 100%) fixed var(--bg);
     color: var(--ink);
     font-family: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -68,6 +72,7 @@
     font-size: clamp(30px, 5vw, 40px);
     letter-spacing: -0.03em;
     line-height: 1;
+    color: var(--accent);
   }
   .icon-btn {
     grid-column: 3;
@@ -79,7 +84,7 @@
     display: grid; place-items: center;
     padding: 0;
   }
-  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn svg { width: 20px; height: 20px; color: var(--accent); }
 
   .modes {
     align-self: center;
@@ -87,7 +92,7 @@
     display: inline-flex;
     padding: 4px;
     border-radius: 999px;
-    background: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.75);
     border: 1px solid var(--line);
   }
   .modes button {
@@ -99,7 +104,7 @@
     font-weight: 500;
     color: var(--muted);
   }
-  .modes button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .modes button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 600; }
 
   /* ---------- Stage ---------- */
   .stage {
@@ -140,7 +145,7 @@
     position: absolute;
     left: 50%; top: -4px;
     transform: translate(-50%, 0);
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     font-weight: 700;
     font-size: 15px;
@@ -158,7 +163,7 @@
 
   /* SVG parts */
   .glass-back { fill: var(--glass); }
-  .glass-line { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+  .glass-line { fill: none; stroke: var(--edge); stroke-width: 3; stroke-linejoin: round; }
   .glare { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; opacity: .7; }
   .facet { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; opacity: .28; }
   .beer-body { fill: url(#beerGrad); }
@@ -200,7 +205,7 @@
     letter-spacing: -0.01em;
     transition: color .4s;
   }
-  .remain-val.hot { color: var(--amber-deep); }
+  .remain-val.hot { color: var(--accent); }
   .remain-val.beat { animation: beat 1s ease-in-out infinite; }
   @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.08); } 30% { transform: scale(1); } }
   .msg {
@@ -248,7 +253,7 @@
   .sheet-backdrop {
     position: fixed; inset: 0;
     z-index: 50;
-    background: rgba(31,43,56,.35);
+    background: rgba(90,58,18,.3);
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -316,12 +321,12 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.2);
     transition: transform .2s;
   }
-  .switch input:checked + span { background: var(--ink); }
+  .switch input:checked + span { background: var(--accent); }
   .switch input:checked + span::after { transform: translateX(18px); }
   .switch input:focus-visible + span { outline: 3px solid var(--amber); outline-offset: 2px; }
 
   .chk { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; cursor: pointer; }
-  .chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+  .chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
   .day-chips { display: flex; gap: 6px; }
   .chip {
     flex: 1; min-width: 0;
@@ -333,7 +338,7 @@
   }
   .chip.sun { color: #C0392B; }
   .chip.sat { color: #2F6FA8; }
-  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
   .uni-time {
     display: grid;
     grid-template-columns: 1fr 14px 1fr;
@@ -378,7 +383,7 @@
   .error { min-height: 20px; margin: 16px 0 0; font-size: 14px; color: var(--danger); }
   .sheet-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
   .btn { border-radius: 10px; padding: 10px 18px; font-size: 15px; font-weight: 500; }
-  .btn.primary { background: var(--ink); color: #fff; border: 1px solid var(--ink); }
+  .btn.primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); font-weight: 600; }
   .btn.ghost { background: #fff; border: 1px solid var(--line); }
 
   @media (prefers-reduced-motion: reduce) {
@@ -821,8 +826,8 @@
     const ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const colors = mode === 'beer'
-      ? ['#F0A202', '#F7B733', '#FFFDF6', '#1F2B38', '#C67A00']
-      : ['#D8A65B', '#B07D35', '#5B4636', '#1F2B38', '#F0A202'];
+      ? ['#F0A202', '#F7B733', '#FFFDF6', '#E8730A', '#FF9F6B']
+      : ['#D8A65B', '#B07D35', '#5B4636', '#E8730A', '#F0A202'];
     const count = reduceMotion ? 0 : (w < 600 ? 110 : 180);
     confettiParts = [];
     for (let i = 0; i < count; i++) {

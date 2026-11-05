@@ -187,14 +187,11 @@
   .vessel-wrap.busy .stream { stroke-width: 4; animation-duration: .35s; }
   @keyframes fall { to { stroke-dashoffset: -7; } }
 
-  /* Coin jar */
-  .jar-lid { fill: var(--accent); }
-  .jar-slot { fill: #8A4A08; }
-  .coin-fill { fill: url(#coinPat); }
-  .coin-top { fill: #FFD25A; stroke: #C98A12; stroke-width: 1.5; }
-  .drop-coin { fill: #FFD25A; stroke: #C98A12; stroke-width: 1.5; opacity: 0; }
-  .vessel-wrap.earning .drop-coin { animation: coinDrop 1.6s ease-in infinite; }
-  @keyframes coinDrop {
+  /* Bill stack */
+  .bill-shadow { fill: #E9C48A; opacity: .55; }
+  .drop-bill { opacity: 0; }
+  .vessel-wrap.earning .drop-bill { animation: billDrop 1.8s ease-in infinite; }
+  @keyframes billDrop {
     0% { transform: translateY(0); opacity: 0; }
     10% { opacity: 1; }
     85% { opacity: 1; }
@@ -480,33 +477,14 @@
         <path class="glare" d="M41 40 L41 250"/>
       </svg>
 
-      <!-- Coin jar -->
+      <!-- Bill stack -->
       <svg id="paySvg" viewBox="0 0 200 300" aria-hidden="true" hidden>
-        <defs>
-          <clipPath id="jarClip">
-            <path d="M58 50 Q30 56 30 84 L30 270 Q30 286 46 286 L154 286 Q170 286 170 270 L170 84 Q170 56 142 50 Z"/>
-          </clipPath>
-          <pattern id="coinPat" width="26" height="12" patternUnits="userSpaceOnUse">
-            <rect width="26" height="12" fill="#E9A91E"/>
-            <ellipse cx="13" cy="6" rx="12" ry="5" fill="#FFD25A" stroke="#C98A12" stroke-width="1.2"/>
-            <ellipse cx="0" cy="12" rx="12" ry="5" fill="#F7C23E" stroke="#C98A12" stroke-width="1.2"/>
-            <ellipse cx="26" cy="12" rx="12" ry="5" fill="#F7C23E" stroke="#C98A12" stroke-width="1.2"/>
-            <ellipse cx="0" cy="0" rx="12" ry="5" fill="#F7C23E" stroke="#C98A12" stroke-width="1.2"/>
-            <ellipse cx="26" cy="0" rx="12" ry="5" fill="#F7C23E" stroke="#C98A12" stroke-width="1.2"/>
-          </pattern>
-        </defs>
-        <path class="glass-back" d="M58 50 Q30 56 30 84 L30 270 Q30 286 46 286 L154 286 Q170 286 170 270 L170 84 Q170 56 142 50 Z"/>
-        <g clip-path="url(#jarClip)">
-          <g id="coinFill" transform="translate(0,300)">
-            <rect class="coin-fill" x="0" y="0" width="200" height="320"/>
-            <path class="coin-top" d="M20 2 Q45 -6 70 2 T120 2 T170 2 T220 2 L220 8 L20 8 Z"/>
-          </g>
+        <ellipse class="bill-shadow" cx="100" cy="288" rx="92" ry="9"/>
+        <g id="billStack"></g>
+        <g class="drop-bill" id="dropBill">
+          <polygon points="62,14 132,6 142,18 72,26" fill="#A8D497" stroke="#5E9A5A" stroke-width="0.8"/>
+          <ellipse cx="120" cy="15" rx="6" ry="3" fill="#8CC283"/>
         </g>
-        <ellipse class="drop-coin" id="dropCoin" cx="100" cy="40" rx="9" ry="4"/>
-        <path class="glass-line" d="M58 50 Q30 56 30 84 L30 270 Q30 286 46 286 L154 286 Q170 286 170 270 L170 84 Q170 56 142 50"/>
-        <rect class="jar-lid" x="52" y="24" width="96" height="24" rx="6"/>
-        <rect class="jar-slot" x="84" y="32" width="32" height="5" rx="2.5"/>
-        <path class="glare" d="M42 92 L42 250"/>
       </svg>
 
       <!-- Hourglass -->
@@ -715,7 +693,7 @@
     spDate: $('spDate'), spStart: $('spStart'), spEnd: $('spEnd'), setError: $('setError'),
     weekUniform: $('weekUniform'), spRange: $('spRange'), spDateEnd: $('spDateEnd'),
     spDays: $('spDays'), spAddBox: $('spAddBox'),
-    paySvg: $('paySvg'), coinFill: $('coinFill'), dropCoin: $('dropCoin'),
+    paySvg: $('paySvg'), billStack: $('billStack'), dropBill: $('dropBill'),
     payInfo: $('payInfo'), payMonth: $('payMonth'), payToday: $('payToday'), payState: $('payState'),
     payOn: $('payOn'), payAmount: $('payAmount')
   };
@@ -824,7 +802,7 @@
     const y = d.getUTCFullYear(), m = d.getUTCMonth(), today = d.getUTCDate();
     const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
     const sec = d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds() + d.getUTCMilliseconds() / 1000;
-    let total = 0, done = 0, todayDur = 0, todayDone = 0, days = 0, state = 'off', tw = null;
+    let total = 0, done = 0, todayDur = 0, todayDone = 0, days = 0, doneDays = 0, state = 'off', tw = null;
     for (let day = 1; day <= last; day++) {
       const w = settings.weekly[new Date(Date.UTC(y, m, day)).getUTCDay()];
       if (!w || !w.on) continue;
@@ -832,7 +810,7 @@
       if (!(e > s)) continue;
       const dur = e - s;
       total += dur; days++;
-      if (day < today) done += dur;
+      if (day < today) { done += dur; doneDays++; }
       else if (day === today) {
         todayDur = dur;
         todayDone = Math.min(dur, Math.max(0, sec - s));
@@ -843,22 +821,79 @@
     }
     const rate = total ? settings.salary.amount / total : 0;
     return {
-      state, w: tw, days, total,
+      state, w: tw, days, total, doneDays,
+      frac: todayDur ? todayDone / todayDur : 0,
       month: rate * done, today: rate * todayDone, todayFull: rate * todayDur,
       p: total ? done / total * 100 : 0
     };
   }
   const won = v => Math.floor(v).toLocaleString('ko-KR');
 
-  function drawJar(p) {
-    const top = p <= 0 ? 300 : 286 - 222 * (p / 100);
-    els.coinFill.setAttribute('transform', `translate(0,${top.toFixed(2)})`);
-    els.dropCoin.style.setProperty('--fall', Math.max(0, top - 40).toFixed(1) + 'px');
+  /* ===== 지폐 다발 (근무일 1일 = 1묶음) ===== */
+  const BILL_X = 25, BILL_W = 120, BILL_DX = 30, BILL_DY = 18, BILL_BASE = 282;
+  const BILL_SOLID = { front: '#5E9A5A', line: '#8CC283', side: '#3F7A3C', top: '#A8D497', band: '#E8730A', band2: '#F28C2B', deco: '#8CC283', edge: '#5E9A5A' };
+  const BILL_GHOST = { front: '#E4EDDC', line: '#F1F6EC', side: '#D3E0C9', top: '#EEF4E8', band: '#F6DCC0', band2: '#F9E5CF', deco: '#E2ECD9', edge: '#D3E0C9' };
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  let billKey = '';
+  let billClipRect = null;
+
+  function svgEl(tag, attrs, parent) {
+    const e = document.createElementNS(SVG_NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e);
+    return e;
+  }
+  function drawBundle(parent, y, h, c, isTop) {
+    const x = BILL_X, W = BILL_W, dx = BILL_DX, dy = BILL_DY;
+    svgEl('rect', { x, y, width: W, height: h, fill: c.front }, parent);
+    for (let i = 2; i < h - 0.5; i += 2.4) {
+      svgEl('line', { x1: x, y1: y + i, x2: x + W, y2: y + i, stroke: c.line, 'stroke-width': 0.7 }, parent);
+    }
+    svgEl('line', { x1: x, y1: y + h - 0.5, x2: x + W, y2: y + h - 0.5, stroke: c.side, 'stroke-width': 1 }, parent);
+    svgEl('polygon', { points: `${x + W},${y} ${x + W + dx},${y - dy} ${x + W + dx},${y - dy + h} ${x + W},${y + h}`, fill: c.side }, parent);
+    svgEl('polygon', { points: `${x},${y} ${x + W},${y} ${x + W + dx},${y - dy} ${x + dx},${y - dy}`, fill: c.top, stroke: c.edge, 'stroke-width': 0.6 }, parent);
+    svgEl('rect', { x: x + 50, y, width: 18, height: h, fill: c.band }, parent);
+    if (isTop) {
+      svgEl('polygon', { points: `${x + 9},${y - 3} ${x + 113},${y - 3} ${x + 135},${y - dy + 3} ${x + 31},${y - dy + 3}`, fill: 'none', stroke: c.deco, 'stroke-width': 0.8 }, parent);
+      svgEl('ellipse', { cx: x + 104, cy: y - dy / 2, rx: 10, ry: 4.5, fill: c.deco }, parent);
+      svgEl('polygon', { points: `${x + 50},${y} ${x + 68},${y} ${x + 68 + dx},${y - dy} ${x + 50 + dx},${y - dy}`, fill: c.band2 }, parent);
+    }
+  }
+  function drawBills(pay) {
+    const n = pay.days;
+    const h = n ? Math.min(12, (BILL_BASE - 40 - BILL_DY) / n) : 0;
+    const todayIdx = pay.w ? pay.doneDays : -1;
+    const key = `${n}|${pay.doneDays}|${todayIdx}`;
+    if (key !== billKey) {
+      billKey = key;
+      billClipRect = null;
+      els.billStack.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const y = BILL_BASE - (i + 1) * h;
+        const isTop = i === n - 1;
+        if (i < pay.doneDays) {
+          drawBundle(els.billStack, y, h, BILL_SOLID, isTop);
+        } else if (i === todayIdx) {
+          drawBundle(els.billStack, y, h, BILL_GHOST, isTop);
+          const clip = svgEl('clipPath', { id: 'todayBillClip' }, els.billStack);
+          billClipRect = svgEl('rect', { x: BILL_X - 2, y: 0, width: 0, height: 300 }, clip);
+          const g = svgEl('g', { 'clip-path': 'url(#todayBillClip)' }, els.billStack);
+          drawBundle(g, y, h, BILL_SOLID, isTop);
+        } else {
+          drawBundle(els.billStack, y, h, BILL_GHOST, isTop);
+        }
+      }
+    }
+    if (billClipRect) {
+      billClipRect.setAttribute('width', (pay.frac * (BILL_W + BILL_DX + 4)).toFixed(2));
+    }
+    const target = todayIdx >= 0 ? BILL_BASE - (todayIdx + 1) * h - BILL_DY / 2 : BILL_BASE;
+    els.dropBill.style.setProperty('--fall', Math.max(0, target - 20).toFixed(1) + 'px');
   }
 
   function renderPay() {
     const pay = computePay(kstNow());
-    drawJar(pay.p);
+    drawBills(pay);
     els.vessel.classList.remove('idle', 'busy', 'glow');
     els.vessel.classList.toggle('earning', pay.state === 'work' && settings.salary.amount > 0);
     els.vessel.setAttribute('aria-valuenow', pay.p.toFixed(2));

@@ -274,6 +274,33 @@
     .times { margin-top: 18px; font-size: 14px; }
   }
 
+  /* ---------- Mobile: 한 화면에 딱 맞춤 (스크롤 없음) ---------- */
+  @media (max-width: 859px) {
+    :root { padding-top: 0; padding-bottom: 0; }
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    .title { font-size: clamp(28px, 8vw, 36px); }
+    .modes { margin-top: 12px; }
+    .stage {
+      min-height: 0;
+      grid-template-rows: minmax(0, 1fr) auto;
+      align-content: stretch;
+      gap: 10px;
+      padding: 14px 0 0;
+    }
+    .vessel-wrap { height: 100%; min-height: 0; max-width: 100%; }
+    .info { min-height: 0; }
+    .remain { margin-top: 6px; }
+    .msg { padding-top: 8px; font-size: clamp(26px, 7.5vw, 40px); }
+    .times { margin-top: 8px; }
+    .pay-sub { margin-top: 6px; }
+  }
+
   /* ---------- Celebration ---------- */
   .celebrate {
     position: fixed; inset: 0;
@@ -1096,13 +1123,35 @@
     els.payAmount.value = draft.salary.amount ? draft.salary.amount.toLocaleString('ko-KR') : '';
     els.payAmount.disabled = !draft.salary.on;
     els.sheet.hidden = false;
+    if (!sheetPushed) {
+      try { history.pushState({ soonSheet: 1 }, ''); sheetPushed = true; } catch (e) { /* 무시 */ }
+    }
     $('sheetClose').focus();
   }
-  function closeSheet() {
+  function hideSheet() {
     els.sheet.hidden = true;
     draft = null;
     $('openSettings').focus();
   }
+  /* 모달이 열릴 때만 history 1칸 추가, 닫을 때 그 1칸을 되돌려 스택이 쌓이지 않게 함 */
+  let sheetPushed = false;
+  let pendingBack = false;
+  function closeSheet() {
+    hideSheet();
+    if (sheetPushed) {
+      sheetPushed = false;
+      pendingBack = true;
+      history.back();
+    }
+  }
+  window.addEventListener('popstate', () => {
+    if (pendingBack) { pendingBack = false; return; }
+    if (!els.sheet.hidden) hideSheet();
+    sheetPushed = false;
+  });
+  try {
+    if (history.state && history.state.soonSheet) history.replaceState(null, '');
+  } catch (e) { /* 무시 */ }
 
   function makeChips(box, isOn, onToggle) {
     box.innerHTML = '';

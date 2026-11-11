@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF 제한 해제</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF1; --surface:#F7F9FA; --ink:#18212B; --muted:#5A6673; --line:#CBD3DB;
+  --brass:#9C7019; --brass-ink:#FFFFFF; --brass-soft:#F1E4C4;
+  --ok:#2A735E; --ok-soft:#D9EEE6; --bad:#A93C35; --bad-soft:#F5DEDB;
+  --info:#3E6A8F; --info-soft:#DCE7F1; --skip:#6B7280; --skip-soft:#E5E7EB;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12171D; --surface:#1A2129; --ink:#E6EBF0; --muted:#93A0AD; --line:#2C3641;
+    --brass:#D6A84A; --brass-ink:#1A1408; --brass-soft:#3A2F17;
+    --ok:#5CC2A2; --ok-soft:#17352C; --bad:#E07A72; --bad-soft:#3D201E;
+    --info:#7FAED6; --info-soft:#1C2C3B; --skip:#9CA3AF; --skip-soft:#262D36;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12171D; --surface:#1A2129; --ink:#E6EBF0; --muted:#93A0AD; --line:#2C3641;
+  --brass:#D6A84A; --brass-ink:#1A1408; --brass-soft:#3A2F17;
+  --ok:#5CC2A2; --ok-soft:#17352C; --bad:#E07A72; --bad-soft:#3D201E;
+  --info:#7FAED6; --info-soft:#1C2C3B; --skip:#9CA3AF; --skip-soft:#262D36;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:760px; margin:0 auto; padding:48px 20px 64px}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brass); outline-offset:3px; border-radius:6px}
+
+/* 헤더 */
+.head{display:flex; gap:20px; align-items:center; margin-bottom:28px}
+.lock{width:64px; height:88px; flex:none; color:var(--brass)}
+.lock .shackle{transition:transform .5s cubic-bezier(.3,1.6,.5,1)}
+.lock.open .shackle{transform:translateY(-9px)}
+.lock .key{transition:opacity .3s}
+.lock.open .key{opacity:0}
+h1{font-size:30px; line-height:1.2; margin:0 0 6px; font-weight:700; letter-spacing:-.01em}
+
+
+/* 드롭존 */
+.drop{
+  background:var(--surface); border:2px dashed var(--line); border-radius:18px;
+  padding:36px 20px; text-align:center; transition:border-color .2s, background .2s;
+}
+.drop.over{border-color:var(--brass); background:var(--brass-soft)}
+.drop p{margin:0 0 14px; color:var(--muted)}
+.btn{
+  display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+  background:var(--surface); padding:10px 18px; border-radius:999px; cursor:pointer;
+  font-weight:500; font-size:15px; transition:background .15s, border-color .15s;
+}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.primary{background:var(--brass); border-color:var(--brass); color:var(--brass-ink); font-weight:600}
+.btn.primary:hover:not(:disabled){filter:brightness(1.06); border-color:var(--brass)}
+.btn.ghost{background:transparent}
+.btn svg{width:18px; height:18px}
+
+/* 툴바 + 진행바 */
+.bar-area{margin:26px 0 12px}
+.toolbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.count{font-weight:600}
+.count small{font-weight:400; color:var(--muted); margin-left:6px}
+.actions{display:flex; gap:8px; flex-wrap:wrap}
+.progress{margin-top:16px; display:none}
+.progress.show{display:block}
+.track{height:10px; background:var(--line); border-radius:999px; overflow:hidden}
+.fill{height:100%; width:0; background:var(--brass); border-radius:999px; transition:width .25s ease}
+.ptext{display:flex; justify-content:space-between; font-size:13.5px; color:var(--muted); margin-top:6px}
+
+/* 목록 */
+.list{list-style:none; margin:0; padding:0; background:var(--surface); border-radius:14px; border:1px solid var(--line); overflow:hidden}
+.list:empty{display:none}
+.row{display:grid; grid-template-columns:34px 1fr auto auto; gap:12px; align-items:center; padding:12px 14px; border-top:1px solid var(--line)}
+.row:first-child{border-top:none}
+.doc{width:30px; height:36px; color:var(--muted)}
+.meta{min-width:0}
+.name{font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sub{font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 14px}
+.sub .msg{color:var(--bad)}
+.row.s-done .sub .msg{color:var(--ok)}
+.row.s-notenc .sub .msg{color:var(--muted)}
+.chip{font-size:12.5px; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap; background:var(--skip-soft); color:var(--skip)}
+.s-working .chip{background:var(--info-soft); color:var(--info)}
+.s-done .chip{background:var(--ok-soft); color:var(--ok)}
+.s-error .chip,.s-password .chip{background:var(--bad-soft); color:var(--bad)}
+.s-notenc .chip{background:var(--brass-soft); color:var(--brass)}
+.x{border:none; background:none; width:30px; height:30px; border-radius:8px; cursor:pointer; color:var(--muted); font-size:20px; line-height:1}
+.x:hover:not(:disabled){background:var(--bg); color:var(--ink)}
+.x:disabled{visibility:hidden}
+.empty{color:var(--muted); font-size:14.5px; text-align:center; padding:18px 0}
+
+.foot{margin-top:28px; font-size:13px; color:var(--muted); display:flex; align-items:center; gap:8px}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--skip)}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.wait{background:var(--brass)}
+
+/* 폴더 허용 대화상자 */
+dialog{border:none; border-radius:16px; padding:0; max-width:460px; width:calc(100% - 32px); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+.dlg{padding:24px}
+.dlg h2{margin:0 0 10px; font-size:19px}
+.dlg p{margin:0 0 10px; font-size:14.5px; color:var(--muted)}
+.dlg .fname{color:var(--ink); font-weight:600; word-break:break-all}
+.dlg .warn{display:none; background:var(--bad-soft); color:var(--bad); padding:8px 12px; border-radius:8px; font-size:14px; margin:4px 0 10px}
+.dlg .warn.show{display:block}
+.dlg .row-btn{display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:16px}
+
+.toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:14px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; max-width:calc(100% - 32px); text-align:center}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+@media (max-width:520px){
+  .wrap{padding-top:28px}
+  h1{font-size:24px}
+  .lock{width:48px; height:66px}
+  .row{grid-template-columns:28px 1fr auto; }
+  .row .x{grid-column:3; grid-row:1}
+  .row .chip{grid-column:2; justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <svg class="lock" id="lock" viewBox="0 -12 64 88" aria-hidden="true">
+      <path class="shackle" d="M18 34V22a14 14 0 0 1 28 0v12" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+      <rect x="6" y="32" width="52" height="40" rx="9" fill="currentColor"/>
+      <g class="key" fill="var(--surface)">
+        <circle cx="32" cy="49" r="5"/>
+        <rect x="29.5" y="51" width="5" height="11" rx="2"/>
+      </g>
+    </svg>
+    <div>
+      <h1>PDF 제한 해제</h1>
+    </div>
+  </header>
+
+  <section class="drop" id="drop">
+    <p>PDF를 여기로 끌어 놓거나</p>
+    <button class="btn primary" id="btnPick">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      파일 불러오기
+    </button>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+  </section>
+
+  <div class="bar-area">
+    <div class="toolbar">
+      <div class="count" id="count">불러온 파일 없음</div>
+      <div class="actions">
+        <button class="btn ghost" id="btnClear" disabled>목록 비우기</button>
+        <button class="btn primary" id="btnRun" disabled>제한 해제 시작</button>
+      </div>
+    </div>
+    <div class="progress" id="progress" aria-live="polite">
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="ptext"><span id="ptextL"></span><span id="ptextR"></span></div>
+    </div>
+  </div>
+
+  <ul class="list" id="list"></ul>
+  <div class="empty" id="empty">여러 위치에서 여러 번 불러와도 목록에 계속 쌓입니다.</div>
+
+  <div class="foot"><span class="dot wait" id="engDot"></span><span id="engText">변환 엔진 불러오는 중</span></div>
+</div>
+
+<dialog id="dlg">
+  <div class="dlg">
+    <h2>저장할 폴더를 허용해 주세요</h2>
+    <p><span class="fname" id="dlgName"></span> 파일이 있는 폴더를 선택하면, 결과 파일이 원본 옆에 저장됩니다.</p>
+    <p id="dlgMore"></p>
+    <p>상위 폴더를 선택하면 그 아래 하위 폴더에 있는 파일까지 한 번에 허용됩니다.</p>
+    <div class="warn" id="dlgWarn"></div>
+    <div class="row-btn">
+      <button class="btn ghost" id="dlgCancel">취소</button>
+      <button class="btn ghost" id="dlgSkip">이 파일 건너뛰기</button>
+      <button class="btn primary" id="dlgPick">폴더 선택</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const CDN = 'https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/';
+  const FS_OK = 'showOpenFilePicker' in window && 'showDirectoryPicker' in window;
+  const POOL_SIZE = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    lock: $('lock'), drop: $('drop'), btnPick: $('btnPick'), fileInput: $('fileInput'),
+    count: $('count'), btnClear: $('btnClear'), btnRun: $('btnRun'), progress: $('progress'), fill: $('fill'),
+    ptextL: $('ptextL'), ptextR: $('ptextR'), list: $('list'), empty: $('empty'),
+    engDot: $('engDot'), engText: $('engText'), dlg: $('dlg'), dlgName: $('dlgName'), dlgMore: $('dlgMore'),
+    dlgWarn: $('dlgWarn'), dlgCancel: $('dlgCancel'), dlgSkip: $('dlgSkip'), dlgPick: $('dlgPick'), toast: $('toast')
+  };
+
+  const STATUS = {
+    pending: '대기', working: '처리 중', done: '완료', notenc: '제한 없음',
+    password: '열기 비밀번호 필요', error: '실패', skipped: '건너뜀'
+  };
+
+  /** @type {Array<{id:number,name:string,size:number,handle:any,file:File|null,dir:any,path:string[]|null,dirLabel:string,status:string,msg:string}>} */
+  let items = [];
+  let nextId = 1;
+  let running = false;
+  const grantedDirs = [];
+  let dlBucket = null;   // 다운로드 방식일 때 결과를 모았다가 한 번에 저장
+
+  // ---------- 유틸 ----------
+  function fmtSize(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+  function unlockedName(name) {
+    const m = name.match(/^(.*?)(\.pdf)$/i);
+    return m ? m[1] + '_unlocked' + m[2] : name + '_unlocked.pdf';
+  }
+  let toastTimer;
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 3200);
+  }
+  const isPdfName = n => /\.pdf$/i.test(n);
+
+  // ---------- 변환 엔진 (Web Worker 풀, 병렬 처리) ----------
+  const WORKER_SRC = `
+let lastErr = '';
+let ready;
+const _ce = console.error.bind(console), _cw = console.warn.bind(console);
+console.error = (...a) => { lastErr = a.join(' '); };
+console.warn = (...a) => { lastErr = a.join(' '); };
+try {
+  importScripts('${CDN}qpdf.js');
+  ready = self.Module({ locateFile: p => '${CDN}' + p, print: () => {}, printErr: s => { lastErr = String(s); } });
+} catch (e) { ready = Promise.reject(e); }
+ready.then(() => postMessage({ type: 'ready' }), e => postMessage({ type: 'fatal', msg: String((e && e.message) || e) }));
+self.onmessage = async (ev) => {
+  const { id, buf } = ev.data;
+  let q;
+  try { q = await ready; } catch (e) { postMessage({ type: 'result', id, code: 'error', msg: '엔진을 불러오지 못했습니다' }); return; }
+  const inP = '/in_' + id + '.pdf', outP = '/out_' + id + '.pdf';
+  const run = a => { lastErr = ''; try { return q.callMain(a); } catch (e) { lastErr = String((e && e.message) || e); return 2; } };
+  try {
+    q.FS.writeFile(inP, new Uint8Array(buf));
+    const enc = run(['--is-encrypted', inP]);
+    if (enc !== 0) {
+      const s = run(['--show-encryption', inP]);
+      if (s === 0) postMessage({ type: 'result', id, code: 'notenc' });
+      else postMessage({ type: 'result', id, code: /password/i.test(lastErr) ? 'password' : 'error', msg: lastErr });
+      return;
+    }
+    const r = run(['--decrypt', inP, outP]);
+    if (r === 0 || r === 3) {
+      const out = q.FS.readFile(outP);
+      const ab = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);
+      postMessage({ type: 'result', id, code: 'ok', buf: ab, warn: r === 3 }, [ab]);
+    } else {
+      postMessage({ type: 'result', id, code: /password/i.test(lastErr) ? 'password' : 'error', msg: lastErr });
+    }
+  } catch (e) {
+    postMessage({ type: 'result', id, code: 'error', msg: String((e && e.message) || e) });
+  } finally {
+    try { q.FS.unlink(inP); } catch (e) {}
+    try { q.FS.unlink(outP); } catch (e) {}
+  }
+};`;
+
+  const pool = [];
+  let engineResolve;
+  const engineReady = new Promise(r => { engineResolve = r; });
+
+  function updateEngine() {
+    const ok = pool.filter(s => s.ok === true).length;
+    const settled = pool.filter(s => s.ok !== null).length;
+    if (ok > 0) {
+      els.engDot.className = 'dot ok';
+      els.engText.textContent = `변환 엔진 준비됨, 동시에 ${ok}개씩 처리`;
+      engineResolve(true);
+    } else if (settled === pool.length) {
+      els.engDot.className = 'dot bad';
+      els.engText.textContent = '변환 엔진을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.';
+      engineResolve(false);
+    }
+  }
+
+  function initPool() {
+    let url;
+    try {
+      url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
+    } catch (e) { engineResolve(false); return; }
+    for (let i = 0; i < POOL_SIZE; i++) {
+      const slot = { w: null, ok: null, pending: null };
+      try {
+        slot.w = new Worker(url);
+      } catch (e) { slot.ok = false; pool.push(slot); continue; }
+      slot.w.onmessage = e => {
+        const d = e.data;
+        if (d.type === 'ready') { slot.ok = true; updateEngine(); }
+        else if (d.type === 'fatal') { slot.ok = false; updateEngine(); }
+        else if (d.type === 'result') {
+          const p = slot.pending; slot.pending = null;
+          if (p) p(d);
+        }
+      };
+      slot.w.onerror = e => {
+        e.preventDefault();
+        if (slot.ok === null) slot.ok = false;
+        if (slot.pending) { const p = slot.pending; slot.pending = null; p({ code: 'error', msg: '처리 중 오류가 발생했습니다' }); }
+        updateEngine();
+      };
+      pool.push(slot);
+    }
+    if (!pool.length) engineResolve(false);
+    updateEngine();
+  }
+
+  function runOn(slot, id, buf) {
+    return new Promise(resolve => {
+      slot.pending = resolve;
+      slot.w.postMessage({ id, buf }, [buf]);
+    });
+  }
+
+  // ---------- 목록 ----------
+  function render() {
+    els.list.textContent = '';
+    for (const it of items) {
+      const li = document.createElement('li');
+      li.className = 'row s-' + it.status;
+
+      li.innerHTML = `<svg class="doc" viewBox="0 0 30 36" aria-hidden="true"><path d="M3 3h16l8 8v22H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M19 3v8h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name; nm.title = it.name;
+      const sub = document.createElement('div'); sub.className = 'sub';
+      const s1 = document.createElement('span'); s1.textContent = fmtSize(it.size); sub.appendChild(s1);
+      if (it.dirLabel) { const s2 = document.createElement('span'); s2.textContent = '📁 ' + it.dirLabel; sub.appendChild(s2); }
+      if (it.msg) { const s3 = document.createElement('span'); s3.className = 'msg'; s3.textContent = it.msg; sub.appendChild(s3); }
+      meta.append(nm, sub);
+
+      const chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = STATUS[it.status];
+
+      const x = document.createElement('button'); x.className = 'x'; x.textContent = '×';
+      x.setAttribute('aria-label', it.name + ' 목록에서 제거');
+      x.disabled = running;
+      x.onclick = () => { items = items.filter(i => i !== it); render(); };
+
+      li.append(meta, chip, x);
+      els.list.appendChild(li);
+    }
+    const n = items.length;
+    const waiting = targets().length;
+    els.count.innerHTML = n ? `${n}개 파일<small>처리 대기 ${waiting}개</small>` : '불러온 파일 없음';
+    els.empty.style.display = n ? 'none' : '';
+    els.btnClear.disabled = running || !n;
+    els.btnRun.disabled = running || !waiting;
+    els.btnPick.disabled = running;
+  }
+
+  const targets = () => items.filter(i => ['pending', 'error', 'skipped'].includes(i.status));
+
+  function resetLock() { els.lock.classList.remove('open'); }
+
+  async function tryAssign(it) {
+    if (!it.handle) return false;
+    for (const d of grantedDirs) {
+      try {
+        const p = await d.resolve(it.handle);
+        if (p) {
+          it.dir = d; it.path = p;
+          it.dirLabel = [d.name, ...p.slice(0, -1)].join('/');
+          return true;
+        }
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  async function addHandles(handles) {
+    let added = 0, ignored = 0;
+    for (const h of handles) {
+      if (!h || h.kind !== 'file' || !isPdfName(h.name)) { ignored++; continue; }
+      let dup = false;
+      for (const it of items) {
+        if (it.handle) { try { if (await it.handle.isSameEntry(h)) { dup = true; break; } } catch (e) {} }
+      }
+      if (dup) continue;
+      let size = 0;
+      try { size = (await h.getFile()).size; } catch (e) {}
+      const it = { id: nextId++, name: h.name, size, handle: h, file: null, dir: null, path: null, dirLabel: '', status: 'pending', msg: '' };
+      await tryAssign(it);
+      items.push(it); added++;
+    }
+    afterAdd(added, ignored);
+  }
+
+  function addFiles(files) {
+    let added = 0, ignored = 0;
+    for (const f of files) {
+      if (!isPdfName(f.name)) { ignored++; continue; }
+      if (items.some(i => i.file && i.file.name === f.name && i.file.size === f.size && i.file.lastModified === f.lastModified)) continue;
+      items.push({ id: nextId++, name: f.name, size: f.size, handle: null, file: f, dir: null, path: null, dirLabel: '', status: 'pending', msg: '' });
+      added++;
+    }
+    afterAdd(added, ignored);
+  }
+
+  function afterAdd(added, ignored) {
+    if (added) resetLock();
+    if (ignored) toast(`PDF가 아닌 항목 ${ignored}개는 제외했습니다`);
+    els.progress.classList.remove('show');
+    render();
+  }
+
+  // ---------- 불러오기 ----------
+  // 새 파일을 불러오면 이전에 완료된 항목만 목록에서 지움
+  function clearDone() { items = items.filter(i => i.status !== 'done'); }
+
+  els.btnPick.onclick = async () => {
+    if (!FS_OK) { els.fileInput.click(); return; }
+    try {
+      const hs = await window.showOpenFilePicker({
+        id: 'pdfunlock-open',
+        multiple: true,
+        types: [{ description: 'PDF 문서', accept: { 'application/pdf': ['.pdf'] } }]
+      });
+      clearDone();
+      await addHandles(hs);
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('파일을 불러오지 못했습니다: ' + e.message);
+    }
+  };
+  els.fileInput.onchange = () => { clearDone(); addFiles([...els.fileInput.files]); els.fileInput.value = ''; };
+
+  // 드래그 앤 드롭
+  ['dragenter', 'dragover'].forEach(t => els.drop.addEventListener(t, e => { e.preventDefault(); if (!running) els.drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => els.drop.addEventListener(t, () => els.drop.classList.remove('over')));
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => e.preventDefault());
+  els.drop.addEventListener('drop', async e => {
+    e.preventDefault();
+    if (running) return;
+    const dtItems = [...e.dataTransfer.items].filter(i => i.kind === 'file');
+    if (!dtItems.length) return;
+    if (FS_OK && dtItems.length && typeof dtItems[0].getAsFileSystemHandle === 'function') {
+      const ps = dtItems.map(i => i.getAsFileSystemHandle());
+      const hs = (await Promise.all(ps)).filter(Boolean);
+      clearDone();
+      if (hs.some(h => h.kind === 'directory')) toast('폴더는 끌어 놓을 수 없습니다. PDF 파일을 선택해 주세요');
+      await addHandles(hs.filter(h => h.kind === 'file'));
+    } else {
+      clearDone();
+      addFiles([...e.dataTransfer.files]);
+    }
+  });
+
+  els.btnClear.onclick = () => { items = []; resetLock(); els.progress.classList.remove('show'); render(); };
+
+  // ---------- 폴더 허용 ----------
+  let dlgResolve = null;
+  let dlgItem = null;
+
+  function askFolder(it, count, warn) {
+    dlgItem = it;
+    els.dlgName.textContent = `‘${it.name}’`;
+    els.dlgMore.textContent = count > 1 ? `아직 위치가 허용되지 않은 파일이 ${count}개 있습니다.` : '';
+    els.dlgWarn.textContent = warn || '';
+    els.dlgWarn.classList.toggle('show', !!warn);
+    els.dlg.showModal();
+    return new Promise(r => { dlgResolve = r; });
+  }
+  function closeDlg(val) {
+    els.dlg.close();
+    const r = dlgResolve; dlgResolve = null;
+    if (r) r(val);
+  }
+  els.dlgCancel.onclick = () => closeDlg('cancel');
+  els.dlgSkip.onclick = () => closeDlg('skip');
+  els.dlg.addEventListener('cancel', e => { e.preventDefault(); closeDlg('cancel'); });
+  els.dlgPick.onclick = async () => {
+    try {
+      const d = await window.showDirectoryPicker({ mode: 'readwrite', startIn: dlgItem.handle });
+      closeDlg(d);
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        els.dlgWarn.textContent = '폴더를 열지 못했습니다: ' + e.message;
+        els.dlgWarn.classList.add('show');
+      }
+    }
+  };
+
+  async function ensureDirs(list) {
+    for (const it of list) if (!it.dir) await tryAssign(it);
+    let warn = '';
+    while (true) {
+      const need = list.filter(t => !t.dir && t.handle && t.status !== 'skipped');
+      if (!need.length) return true;
+      const first = need[0];
+      const r = await askFolder(first, need.length, warn);
+      warn = '';
+      if (r === 'cancel') return false;
+      if (r === 'skip') { first.status = 'skipped'; first.msg = ''; render(); continue; }
+      grantedDirs.push(r);
+      for (const t of need) await tryAssign(t);
+      render();
+      if (!first.dir) warn = `선택한 ‘${r.name}’ 폴더 안에 이 파일이 없습니다. 파일이 있는 폴더나 그 상위 폴더를 선택해 주세요.`;
+    }
+  }
+
+  // ---------- 저장 ----------
+  async function saveOut(it, buf) {
+    const outName = unlockedName(it.name);
+    if (!it.dir) {
+      dlBucket.push({ it, name: outName, buf });
+      return;
+    }
+    let d = it.dir;
+    for (const seg of it.path.slice(0, -1)) d = await d.getDirectoryHandle(seg);
+    const fh = await d.getFileHandle(outName, { create: true });
+    const ws = await fh.createWritable();   // 같은 이름이 있으면 덮어쓰기
+    await ws.write(buf);
+    await ws.close();
+  }
+
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  // ZIP 만들기 (무압축 저장 방식, 한글 파일명 UTF-8)
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(u8) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function makeZip(files) {
+    const enc = new TextEncoder();
+    const now = new Date();
+    const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+    const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    const parts = [], central = [];
+    let offset = 0;
+    for (const f of files) {
+      const nameB = enc.encode(f.name);
+      const data = new Uint8Array(f.buf);
+      const crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+      lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, nameB.length, true); lh.setUint16(28, 0, true);
+      parts.push(lh.buffer, nameB, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint16(10, 0, true); ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+      ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, nameB.length, true);
+      ch.setUint32(42, offset, true);
+      central.push(ch.buffer, nameB);
+      offset += 30 + nameB.length + data.length;
+    }
+    const cdSize = central.reduce((s, p) => s + p.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+  }
+  function zipName() {
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    return `PDF_unlocked_${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}.zip`;
+  }
+  function flushDownloads() {
+    const b = dlBucket; dlBucket = null;
+    if (!b || !b.length) return 0;
+    if (b.length === 1) {
+      downloadBlob(new Blob([b[0].buf], { type: 'application/pdf' }), b[0].name);
+      return 1;
+    }
+    const used = new Set();
+    for (const f of b) {   // ZIP 안에서 이름이 겹치면 (2), (3) 붙이기
+      let n = f.name, k = 2;
+      const m = n.match(/^(.*?)(\.pdf)$/i);
+      while (used.has(n.toLowerCase())) n = m ? `${m[1]}(${k++})${m[2]}` : `${f.name}(${k++})`;
+      used.add(n.toLowerCase()); f.name = n;
+    }
+    const zn = zipName();
+    downloadBlob(makeZip(b), zn);
+    for (const f of b) f.it.msg = `${f.name} → ${zn}에 포함`;
+    return b.length;
+  }
+
+  // ---------- 처리 ----------
+  function setProgress(done, total) {
+    const pct = total ? Math.round(done / total * 100) : 0;
+    els.fill.style.width = pct + '%';
+    els.ptextL.textContent = `${done} / ${total} 처리`;
+    els.ptextR.textContent = pct + '%';
+  }
+
+  els.btnRun.onclick = async () => {
+    if (running) return;
+    let list = targets();
+    if (!list.length) return;
+
+    running = true; render();
+
+    if (FS_OK) {
+      list.forEach(i => { if (i.status === 'skipped') i.status = 'pending'; });
+      render();
+      const ok = await ensureDirs(list);
+      if (!ok) { running = false; render(); toast('취소했습니다'); return; }
+      list = list.filter(i => i.status !== 'skipped');
+      if (!list.length) { running = false; render(); return; }
+    }
+
+    els.engText.textContent.includes('준비됨') || toast('변환 엔진을 준비하는 중입니다');
+    const engineOk = await engineReady;
+    const slots = pool.filter(s => s.ok);
+    if (!engineOk || !slots.length) {
+      running = false; render();
+      toast('변환 엔진을 불러오지 못했습니다. 새로고침해 주세요');
+      return;
+    }
+
+    resetLock();
+    const total = list.length;
+    let done = 0;
+    els.progress.classList.add('show');
+    setProgress(0, total);
+    list.forEach(i => { i.status = 'pending'; i.msg = ''; });
+    render();
+
+    dlBucket = [];
+    const queue = list.slice();
+    await Promise.all(slots.map(async slot => {
+      while (queue.length) {
+        const it = queue.shift();
+        it.status = 'working'; render();
+        let res;
+        try {
+          const file = it.handle ? await it.handle.getFile() : it.file;
+          const buf = await file.arrayBuffer();
+          res = slot.ok ? await runOn(slot, it.id, buf) : { code: 'error', msg: '엔진이 중단되었습니다' };
+        } catch (e) {
+          res = { code: 'error', msg: '파일을 읽지 못했습니다: ' + e.message };
+        }
+
+        if (res.code === 'ok') {
+          try {
+            await saveOut(it, res.buf);
+            it.status = 'done';
+            it.msg = unlockedName(it.name) + ' 저장' + (res.warn ? ' (경미한 경고 있음)' : '');
+          } catch (e) {
+            it.status = 'error'; it.msg = '저장 실패: ' + e.message;
+          }
+        } else if (res.code === 'notenc') {
+          it.status = 'notenc'; it.msg = '이미 제한이 없어 저장하지 않았습니다';
+        } else if (res.code === 'password') {
+          it.status = 'password'; it.msg = '파일을 여는 비밀번호가 걸려 있습니다';
+        } else {
+          it.status = 'error'; it.msg = res.msg ? String(res.msg).replace(/^.*?:\s*/, '') : '처리하지 못했습니다';
+        }
+        done++;
+        setProgress(done, total);
+        render();
+      }
+    }));
+
+    const zipped = flushDownloads() > 1;
+    running = false;
+    render();
+    const okN = list.filter(i => i.status === 'done').length;
+    const failN = list.filter(i => ['error', 'password'].includes(i.status)).length;
+    if (okN) els.lock.classList.add('open');
+    els.ptextL.textContent = `완료 ${okN}개` + (failN ? `, 실패 ${failN}개` : '') + (total - okN - failN ? `, 제한 없음 ${total - okN - failN}개` : '');
+    toast(okN ? (zipped ? `제한 해제 완료: ${okN}개를 ZIP 하나로 저장` : `제한 해제 완료: ${okN}개 저장`) : '저장된 파일이 없습니다');
+  };
+
+  initPool();
+  render();
+})();
+</script>
+</body>
+</html>

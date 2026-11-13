@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>암기장 출제</title>
+<title>영단어 출제</title>
 <style>
   :root{
     --ink:#1f2a44;        /* 남색 잉크 */
@@ -20,12 +20,39 @@
   html,body{margin:0;padding:0}
   body{font-family:var(--font);color:var(--ink);background:var(--paper)}
 
-  /* ───── 조작 화면 ───── */
+  /* ───── 화면 전환 ───── */
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ───── 메인 화면 ───── */
+  .home{max-width:980px;margin:0 auto;padding:36px 24px 60px}
+  .home h1{font-size:28px;margin:0 0 6px;letter-spacing:-.5px}
+  .home h1 span{background:linear-gradient(transparent 55%,var(--mark) 55%);padding:0 3px}
+  .home .lead{margin:0 0 24px;color:var(--ink-soft);font-size:14px}
+  .menus{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+  .menu{display:block;text-align:left;padding:22px 20px;border:1.5px solid var(--ink);border-radius:12px;background:var(--panel);
+        box-shadow:0 3px 0 #b9c3d8;cursor:pointer;transition:transform .1s,background .12s}
+  .menu:hover{background:#f4f6fb;transform:translateY(-2px)}
+  .menu b{display:block;font-size:19px;margin-bottom:6px}
+  .menu small{display:block;font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .lib{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .lib h2{font-size:17px;margin:0 0 6px}
+  .lib-top{display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:center;margin-bottom:12px}
+  .lib table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .lib th,.lib td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+  .lib th{font-size:12.5px;color:var(--ink-soft);font-weight:400}
+  .lib td.num,.lib th.num{text-align:right}
+  .lib .none{color:var(--ink-soft);text-align:center;padding:22px}
+  .lib .del{padding:4px 10px;font-size:12.5px;border-color:var(--warn);color:var(--warn)}
+  .store-warn{color:var(--warn);font-size:12.5px;margin-top:8px}
+
+  /* ───── 작업 화면 ───── */
   .app{display:grid;grid-template-columns:340px 1fr;min-height:100vh}
-  .controls{background:var(--panel);border-right:1px solid var(--line);padding:16px 18px 16px;
+  .controls{background:var(--panel);border-right:1px solid var(--line);padding:14px 18px 16px;
             position:sticky;top:0;height:100vh;overflow-y:auto}
-  .controls h1{font-size:20px;margin:0 0 12px;letter-spacing:-.5px}
+  .controls h1{font-size:20px;margin:0 0 10px;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
   .controls h1 span{background:linear-gradient(transparent 55%,var(--mark) 55%);padding:0 2px}
+  .back{font-size:12.5px;padding:4px 9px}
   .group{border-top:1px solid var(--line);padding:11px 0 3px}
   .group h2{font-size:14px;margin:0 0 7px}
   .guide{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0 0 8px}
@@ -42,17 +69,40 @@
   .info .row span:first-child{color:var(--ink-soft)}
   .hdr-ok{color:var(--ok)} .hdr-bad{color:var(--warn);font-weight:700}
   label.f{display:block;font-size:12px;color:var(--ink-soft);margin:0 0 4px}
-  select,input[type=text]{width:100%;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  select,input[type=text],input[type=number]{width:100%;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
   .set{display:grid;grid-template-columns:78px 1fr;gap:6px 8px;align-items:center}
   .set label{font-size:12px;color:var(--ink-soft)}
+  .hint{font-size:11.5px;color:var(--ink-soft);grid-column:2}
+  .radios{display:flex;gap:12px;font-size:13px}
+  .radios label{display:flex;align-items:center;gap:4px;cursor:pointer}
+  .checks{display:flex;flex-direction:column;gap:5px;font-size:13px;margin-top:2px}
+  .checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
   button{font:inherit;font-size:13.5px;padding:7px 10px;border-radius:6px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
   button.main{background:var(--ink);color:#fff}
   button.wide{grid-column:1 / -1}
   .btns.three{grid-template-columns:1fr 1fr 1fr}
   button:disabled{opacity:.4;cursor:not-allowed}
-  button:focus-visible,select:focus-visible,input:focus-visible,.drop:focus-visible{outline:3px solid var(--mark);outline-offset:1px}
+  button:focus-visible,select:focus-visible,input:focus-visible,.drop:focus-visible,.menu:focus-visible{outline:3px solid var(--mark);outline-offset:1px}
   .status{font-size:12.5px;margin-top:8px;min-height:1.2em}
+  .preview{padding:28px 20px 60px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .empty{margin-top:18vh;text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.7}
+
+  /* 학생 슬롯 */
+  .stu-main{min-width:0}
+  .slots{margin:20px 20px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto}
+  .slots table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+  .slots th{font-size:12px;color:var(--ink-soft);font-weight:400;text-align:left;padding:4px 5px;border-bottom:1px solid var(--line)}
+  .slots td{padding:4px 5px;border-bottom:1px solid #eef0f5}
+  .slots input[type=text],.slots input[type=number],.slots select{padding:5px 6px;font-size:13px}
+  .slots td.ck{width:30px;text-align:center}
+  .slots td.nm{width:18%} .slots td.bk{width:24%} .slots td.rg{width:18%} .slots td.ct{width:10%} .slots td.tp{width:13%}
+  .slots td.ac{white-space:nowrap;width:110px}
+  .slots td.ac button{padding:4px 8px;font-size:12px}
+  .slots .missing{border-color:var(--warn);color:var(--warn)}
+  .slots .none{color:var(--ink-soft);text-align:center;padding:18px}
+
+  /* 오류 창 */
   dialog.err{width:min(640px,92vw);max-height:80vh;border:none;border-top:5px solid var(--warn);border-radius:10px;
              padding:20px 22px 18px;color:var(--ink);font-family:var(--font);box-shadow:0 12px 40px rgba(31,42,68,.35)}
   dialog.err[open]{display:flex;flex-direction:column}
@@ -63,12 +113,12 @@
   .err-list{margin:0;padding:10px 12px 10px 34px;overflow:auto;flex:1;font-size:13px;line-height:1.6;
             background:#f7f8fb;border:1px solid var(--line);border-radius:6px;user-select:text}
   .err-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
-  .preview{padding:28px 20px 60px;display:flex;flex-direction:column;align-items:center;gap:18px}
-  .empty{margin-top:18vh;text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.7}
 
   /* ───── A4 페이지 ───── */
   .page{width:210mm;height:296.5mm;padding:10mm 12mm;background:#fff;color:#000;overflow:hidden;
         box-shadow:0 2px 10px rgba(31,42,68,.18);display:flex;flex-direction:column}
+  .page.blank{align-items:center;justify-content:center}
+  .blank-note{color:#9aa3b5;font-size:13pt;border:1px dashed #c3c9d6;padding:6mm 10mm;border-radius:3mm}
   .ph{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;height:14mm;border-bottom:.6mm solid #000;padding-bottom:1.5mm}
   .ph .lab{font-size:20pt;font-weight:700}
   .ph .ttl{font-size:24pt;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;padding:0 3mm}
@@ -87,36 +137,75 @@
   .sec .c{height:calc(var(--rh) - .35mm);line-height:calc(var(--rh) - .35mm);overflow:hidden;white-space:nowrap}
   .sec .c.two{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:calc((var(--rh) - .35mm) / 2)}
 
+  /* 단어 시험지 */
+  .tinfo{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:3mm}
+  .tinfo th,.tinfo td{border:.25mm solid #000;height:8mm;padding:0 2mm;font-size:11pt;white-space:nowrap;overflow:hidden}
+  .tinfo th{background:#eeeeee;font-weight:700;text-align:center}
+  .tinfo td.sc{text-align:right}
+  .tsec .ch th{height:6.5mm;font-size:10.5pt}
+  .tsec td.q{font-weight:600}
+  .tsec td.a{color:#000}
+  .page.key .tsec td.a{font-weight:700}
+
   @page{size:A4 portrait;margin:0}
   @media print{
     body{background:#fff}
+    .view:not(.active),.home,.controls,.slots,.screen-only{display:none!important}
     .app{display:block}
-    .controls{display:none}
     .preview{padding:0;gap:0;display:block}
     .page{box-shadow:none;break-after:page;page-break-after:always}
     .page:last-child{break-after:auto;page-break-after:auto}
-    .sec .rt th,.sec .ch th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .sec .rt th,.sec .ch th,.tinfo th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+
+<!-- ═════════════ 메인 화면 ═════════════ -->
+<section class="view" id="view-home">
+  <div class="home">
+    <h1><span>영단어</span> 출제</h1>
+    <p class="lead">단어장을 등록한 뒤 메뉴를 고르세요. 등록한 단어장은 이 브라우저에 저장됩니다.</p>
+    <div class="menus">
+      <button class="menu" data-go="memo"><b>암기장 제작</b><small>Day별 6회차 암기장과 시험지</small></button>
+      <button class="menu" data-go="test"><b>단어 시험 출제</b><small>범위를 정해 50문항 시험지 출제</small></button>
+      <button class="menu" data-go="students"><b>학생별 출제</b><small>학생마다 단어장과 범위를 저장해 한꺼번에 출제</small></button>
+    </div>
+    <div class="lib">
+      <div class="lib-top">
+        <div>
+          <h2>단어장 관리</h2>
+          <p class="guide" style="margin:0"><b>1행</b> 헤더, <b>2행부터</b> 데이터 (A: Day | B: 영어 | C: 뜻). DB 시트가 없으면 첫 번째 시트를 읽습니다.<br>
+            단어장 이름은 파일 이름으로 정해지고, 같은 이름을 다시 등록하면 덮어씁니다.</p>
+        </div>
+        <div class="drop" id="drop" tabindex="0" role="button"><b>단어장 등록</b><small>엑셀 파일을 누르거나 끌어다 놓으세요</small></div>
+      </div>
+      <input type="file" id="file" accept=".xlsx,.xlsm,.xls" multiple hidden>
+      <table>
+        <thead><tr><th>단어장 이름</th><th>범위</th><th class="num">Day 수</th><th class="num">단어 수</th><th>등록일</th><th></th></tr></thead>
+        <tbody id="libBody"></tbody>
+      </table>
+      <div class="store-warn" id="storeWarn" hidden>브라우저 저장소를 쓸 수 없어, 등록한 단어장이 창을 닫으면 사라집니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 암기장 제작 ═════════════ -->
+<section class="view" id="view-memo">
 <div class="app">
-  <aside class="controls" id="controls">
-    <h1><span>암기장</span> 출제</h1>
+  <aside class="controls">
+    <h1><button class="back" data-go="">← 메인</button><span>암기장</span> 제작</h1>
 
     <section class="group">
-      <h2>단어 DB</h2>
-      <p class="guide"><b>1행</b> 헤더, <b>2행부터</b> 데이터 (A: Day | B: 영어 | C: 뜻)<br>
-        Day당 최소 20개. DB 시트가 없으면 첫 번째 시트를 읽습니다.</p>
-      <div class="drop" id="drop" tabindex="0" role="button"><b>엑셀 파일 불러오기</b><small>누르거나 파일을 여기로 끌어다 놓으세요</small></div>
-      <input type="file" id="file" accept=".xlsx,.xlsm,.xls" hidden>
+      <h2>단어장</h2>
+      <select id="memoBook" aria-label="단어장 선택"></select>
       <div class="info" id="dbInfo"></div>
     </section>
 
     <section class="group">
       <h2>출제</h2>
-      <select id="daySel" disabled aria-label="Day 선택"><option>DB를 먼저 불러오세요</option></select>
+      <select id="daySel" disabled aria-label="Day 선택"><option>단어장을 먼저 고르세요</option></select>
       <div class="btns three">
         <button class="main" id="btnMake" disabled>출제</button>
         <button id="btnShuffle" disabled>다시 섞기</button>
@@ -126,6 +215,7 @@
 
     <section class="group">
       <h2>인쇄</h2>
+      <div class="checks"><label><input type="checkbox" class="opt-duplex"> 양면 프린터 사용</label></div>
       <div class="btns">
         <button class="main wide" id="btnPrint" disabled>현재 Day 인쇄 / PDF</button>
         <button class="wide" id="btnPrintAll" disabled>전체 Day 한 번에 인쇄 / PDF</button>
@@ -135,7 +225,6 @@
     <section class="group">
       <h2>상단 문구</h2>
       <div class="set">
-        <label for="setTitle">책 제목</label><input type="text" id="setTitle">
         <label for="setMemo">암기장 이름</label><input type="text" id="setMemo">
         <label for="setQuiz">시험지 이름</label><input type="text" id="setQuiz">
       </div>
@@ -143,16 +232,112 @@
 
     <div class="status" id="status" role="status"></div>
   </aside>
-
-  <main class="preview" id="preview">
-    <div class="empty">DB를 불러온 뒤 Day를 고르고 <b>출제</b>를 누르세요.</div>
+  <main class="preview" id="memoPreview">
+    <div class="empty">단어장과 Day를 고르고 <b>출제</b>를 누르세요.</div>
   </main>
 </div>
+</section>
+
+<!-- ═════════════ 단어 시험 출제 ═════════════ -->
+<section class="view" id="view-test">
+<div class="app">
+  <aside class="controls">
+    <h1><button class="back" data-go="">← 메인</button><span>단어 시험</span> 출제</h1>
+
+    <section class="group">
+      <h2>출제 조건</h2>
+      <div class="set">
+        <label for="tBook">단어장</label><select id="tBook"></select>
+        <label for="tRange">범위</label><input type="text" id="tRange" placeholder="예: 3-7, 10">
+        <span class="hint" id="tRangeHint"></span>
+        <label for="tCount">문항 수</label><input type="number" id="tCount" min="1" value="50">
+        <span class="hint" id="tCountHint"></span>
+        <label>유형</label>
+        <div class="radios" id="tType">
+          <label><input type="radio" name="tType" value="ek" checked> 영→한</label>
+          <label><input type="radio" name="tType" value="ke"> 한→영</label>
+          <label><input type="radio" name="tType" value="mix"> 혼합</label>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="main" id="tMake">출제</button>
+        <button id="tShuffle" disabled>다시 섞기</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>인쇄</h2>
+      <div class="checks">
+        <label><input type="checkbox" class="opt-answer"> 정답지 함께 출력</label>
+        <label><input type="checkbox" class="opt-duplex"> 양면 프린터 사용</label>
+      </div>
+      <div class="btns"><button class="main wide" id="tPrint" disabled>인쇄 / PDF</button></div>
+    </section>
+
+    <div class="status" id="tStatus" role="status"></div>
+  </aside>
+  <main class="preview" id="testPreview">
+    <div class="empty">단어장과 범위를 정하고 <b>출제</b>를 누르세요.</div>
+  </main>
+</div>
+</section>
+
+<!-- ═════════════ 학생별 출제 ═════════════ -->
+<section class="view" id="view-students">
+<div class="app">
+  <aside class="controls">
+    <h1><button class="back" data-go="">← 메인</button><span>학생별</span> 출제</h1>
+
+    <section class="group">
+      <h2>학생 목록</h2>
+      <p class="guide">체크한 학생만 출제합니다. 학생마다 다른 문제가 무작위로 나옵니다.</p>
+      <div class="btns">
+        <button id="sAdd">학생 추가</button>
+        <button id="sToggle">전체 선택/해제</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>출제와 인쇄</h2>
+      <div class="checks">
+        <label><input type="checkbox" class="opt-answer"> 정답지 함께 출력</label>
+        <label><input type="checkbox" class="opt-duplex"> 양면 프린터 사용</label>
+      </div>
+      <div class="btns">
+        <button class="main" id="sMake">선택한 학생 출제</button>
+        <button class="main" id="sPrint" disabled>인쇄 / PDF</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>학생 목록 백업</h2>
+      <div class="btns">
+        <button id="sExport">파일로 내보내기</button>
+        <button id="sImport">파일에서 가져오기</button>
+      </div>
+      <input type="file" id="sImportFile" accept=".json" hidden>
+    </section>
+
+    <div class="status" id="sStatus" role="status"></div>
+  </aside>
+  <div class="stu-main">
+    <div class="slots">
+      <table>
+        <thead><tr><th></th><th>학생 이름</th><th>단어장</th><th>범위</th><th>문항 수</th><th>유형</th><th></th></tr></thead>
+        <tbody id="slotBody"></tbody>
+      </table>
+    </div>
+    <main class="preview" id="stuPreview">
+      <div class="empty">학생을 체크하고 <b>선택한 학생 출제</b>를 누르세요.</div>
+    </main>
+  </div>
+</div>
+</section>
 
 <dialog id="errDlg" class="err" aria-labelledby="errTitle">
   <h2 id="errTitle">DB 파일을 불러오지 않았습니다</h2>
   <p class="err-file" id="errFile"></p>
-  <p class="err-help">아래 내용을 엑셀에서 고친 뒤 다시 불러오세요.</p>
+  <p class="err-help" id="errHelp">아래 내용을 엑셀에서 고친 뒤 다시 불러오세요.</p>
   <ol class="err-list" id="errList"></ol>
   <div class="err-btns">
     <button id="errCopy">오류 내용 복사</button>
@@ -191,12 +376,13 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 /* ========================================================
    설정값
    ======================================================== */
-const DEFAULT_SETTINGS = { title: "Premium Voca 중등실력", memo: "암기장", quiz: "시험지" };
-const MIN_WORDS = 20;        // Day당 최소 단어 수
+const DEFAULT_SETTINGS = { memo: "암기장", quiz: "시험지", answer: true, duplex: true };
+const MIN_WORDS = 20;        // 암기장: Day당 최소 단어 수
 const SET_MAX = 20;          // 한 세트(한 장)의 최대 단어 수. 넘으면 세트를 늘려 고르게 나눔
 const MAX_ERR_SHOW = 300;    // 오류 창에 보여 줄 최대 줄 수
 const LS_DB = "vocaMaker.db.v1";
 const LS_SET = "vocaMaker.settings.v1";
+const LS_SLOTS = "vocaMaker.slots.v1";
 
 // 페이지 치수 (mm)
 const PAGE_CONTENT_H = 296.5 - 20; // 위아래 여백 10mm씩
@@ -210,10 +396,18 @@ const WORD_MAX_RATIO = 0.62;       // 철자 칸 최대 비율
 const TABLE_W = 186;               // 표 전체 너비 (210 - 좌우 여백 12mm×2)
 const GAP_W = 6;                   // 좌우 표 사이 간격
 
+// 단어 시험지 (고정 양식)
+const TEST_PER_PAGE = 50;          // 한 장 50문항
+const TEST_ROWS = 25;              // 좌우 각 25줄
+const TEST_ROW_H = (PAGE_CONTENT_H - HEAD_H - 3 - 8 - 3 - 6.5 - 4) / TEST_ROWS;
+const TEST_FONT_PT = 12;
+const TEST_COL = { no: 8, q: 39, a: 43 };   // 한쪽 90mm = 번호 + 문제 + 답
+const TYPE_NAMES = { ek: "영→한", ke: "한→영", mix: "혼합" };
+
 /* ========================================================
    상태
    ======================================================== */
-const state = { db: null, settings: loadSettings(), current: null };
+const state = { db: null, settings: loadSettings(), current: null, books: new Map(), test: null, stuDocs: null, slots: loadSlots() };
 const $ = id => document.getElementById(id);
 
 /* ========================================================
@@ -226,13 +420,18 @@ const LATIN = /[A-Za-z]/;
 function coreWord(w){
   return w.replace(/\[[^\]]*\]|\([^)]*\)|［[^］]*］|（[^）]*）/g, " ").replace(/\s+/g, " ").trim();
 }
+// 시험용: [발음]만 뺌 (괄호 ( )는 숙어 일부일 수 있어 그대로 둠)
+function stripPron(s){
+  return s.replace(/\[[^\]]*\]|［[^］]*］/g, " ").replace(/\s+/g, " ").trim();
+}
 
 function cellStr(v){
   if (v === null || v === undefined) return "";
   return String(v).trim();
 }
 
-// DB 검사: 문제가 하나라도 있으면 errors에 담고, 호출한 쪽에서 파일 전체를 거부
+// DB 형식 검사: 문제가 하나라도 있으면 errors에 담고, 호출한 쪽에서 파일 전체를 거부
+// (Day당 최소 개수는 암기장에서만 따로 검사)
 function parseRows(rows){
   const errors = [];
   const header = (rows[0] || []).slice(0, 3).map(cellStr);
@@ -283,9 +482,6 @@ function parseRows(rows){
       if (seen.has(k)) errors.push(`${it.line}행: ${pfx} ${d}에 "${it.w}" 단어가 중복됩니다. (${seen.get(k)}행과 같음)`);
       else seen.set(k, it.line);
     }
-    if (list.length < MIN_WORDS){
-      errors.push(`${pfx} ${d}: 단어가 ${list.length}개입니다. Day당 최소 ${MIN_WORDS}개가 필요합니다.`);
-    }
   }
   return { header, prefix: pfx, map, days, errors };
 }
@@ -330,7 +526,7 @@ function interleave(a, b){
 }
 
 /* ========================================================
-   출제 (원래 엑셀 매크로와 같은 방식)
+   암기장 출제 (원래 엑셀 매크로와 같은 방식)
    1회차: A그룹 랜덤          2회차: 1회차를 다시 섞음
    3회차: (1회차 섞음)·(5회차 섞음) 번갈아
    4회차: (2회차 섞음)·(6회차 섞음) 번갈아
@@ -364,7 +560,7 @@ function buildDay(words){
 }
 
 /* ========================================================
-   페이지 나누기와 크기 계산
+   암기장 페이지 나누기와 크기 계산
    ======================================================== */
 // 세트 나누기: 엑셀 순서대로, SET_MAX 이하로 고르게 (나머지는 앞 세트부터 1개씩)
 function splitSets(words){
@@ -391,10 +587,19 @@ function rowHeightFor(sections){
 }
 
 /* ========================================================
-   그리기
+   그리기 (공통)
    ======================================================== */
 function esc(s){
   return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+}
+// 양면 프린터용 빈 면 (화면에서만 안내 글자가 보임)
+function blankPage(){
+  return `<div class="page blank"><div class="blank-note screen-only">빈 면 (양면 인쇄용)</div></div>`;
+}
+// 양면 프린터 사용 시, 묶음이 홀수 장이면 빈 면을 더해 다음 묶음이 새 종이에서 시작하게 함
+function padDuplex(pagesHtml){
+  if (state.settings.duplex && pagesHtml.length % 2 === 1) pagesHtml.push(blankPage());
+  return pagesHtml.join("");
 }
 // 글자 크기에 맞춰 번호·철자 칸 너비(mm) 계산
 function textWidthMM(text, fontPt, weight){
@@ -459,10 +664,11 @@ function dayPagesHTML(dayNum, built){
   let html = "";
   const page = (sections, label, showMeaning, idx) => {
     const part = total > 1 ? ` <span class="part">(${idx + 1}/${total})</span>` : "";
-    html += `<div class="page">
-      <div class="ph"><div class="lab">${esc(label)}</div><div class="ttl">${esc(set.title)}</div><div class="day">${esc(dayLabel(dayNum))}${part}</div></div>
+    // 암기장·시험지는 각각 한 장 → 양면 프린터면 빈 면을 더해 서로 다른 종이로
+    html += padDuplex([`<div class="page">
+      <div class="ph"><div class="lab">${esc(label)}</div><div class="ttl">${esc(state.db.name)}</div><div class="day">${esc(dayLabel(dayNum))}${part}</div></div>
       ${sections.map(s => sectionHTML(s, showMeaning, rowH, fontPt, cw)).join("")}
-    </div>`;
+    </div>`]);
   };
   // 세트별로 암기장 → 시험지 번갈아
   built.sets.forEach((b, idx) => {
@@ -506,7 +712,7 @@ function fitCells(root){
   });
 }
 function renderDays(list){
-  const pv = $("preview");
+  const pv = $("memoPreview");
   pv.innerHTML = list.map(x => dayPagesHTML(x.day, x.built)).join("");
   fitCells(pv);
 }
@@ -517,7 +723,7 @@ function renderDays(list){
 function loadSettings(){
   try{
     const s = JSON.parse(localStorage.getItem(LS_SET) || "null");
-    if (s) return Object.assign({}, DEFAULT_SETTINGS, s);
+    if (s){ delete s.title; return Object.assign({}, DEFAULT_SETTINGS, s); }
   }catch(e){}
   return Object.assign({}, DEFAULT_SETTINGS);
 }
@@ -525,8 +731,56 @@ function saveSettings(){
   try{ localStorage.setItem(LS_SET, JSON.stringify(state.settings)); }catch(e){}
 }
 
+// 단어장 저장소 (IndexedDB, 실패하면 이번 창에서만 유지)
+const store = {
+  db: null,
+  ok: false,
+  open(){
+    return new Promise(res => {
+      try{
+        const r = indexedDB.open("vocaMaker", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("books", { keyPath: "name" });
+        r.onsuccess = () => { this.db = r.result; this.ok = true; res(true); };
+        r.onerror = () => res(false);
+      }catch(e){ res(false); }
+    });
+  },
+  tx(mode, fn){
+    return new Promise((res, rej) => {
+      if (!this.ok) return res(null);
+      const t = this.db.transaction("books", mode);
+      const req = fn(t.objectStore("books"));
+      t.oncomplete = () => res(req ? req.result : null);
+      t.onerror = () => rej(t.error);
+    });
+  },
+  all(){ return this.tx("readonly", s => s.getAll()); },
+  put(book){ return this.tx("readwrite", s => s.put(book)); },
+  del(name){ return this.tx("readwrite", s => s.delete(name)); },
+};
+function bookFromParsed(name, fileName, sheetName, parsed){
+  const days = parsed.days.map(d => [d, parsed.map.get(d).map(it => ({ w: it.w, m: it.m }))]);
+  const total = days.reduce((t, [, ws]) => t + ws.length, 0);
+  return { name, fileName, sheetName, prefix: parsed.prefix, header: parsed.header, days, total, savedAt: new Date().toISOString() };
+}
+function bookMap(book){
+  if (!book._map) book._map = new Map(book.days);
+  return book._map;
+}
+function bookRangeText(book){
+  const ds = book.days.map(x => x[0]);
+  return ds.length ? `${book.prefix} ${ds[0]} ~ ${book.prefix} ${ds[ds.length - 1]}` : "";
+}
+async function loadBooks(){
+  const ok = await store.open();
+  $("storeWarn").hidden = ok;
+  const list = ok ? (await store.all()) || [] : [];
+  state.books = new Map(list.map(b => [b.name, b]));
+  refreshBooks();
+}
+
 /* ========================================================
-   DB 불러오기 (화면용)
+   단어장 등록 / 삭제 (메인 화면)
    ======================================================== */
 function rowsFromWorkbook(wb){
   const name = wb.SheetNames.includes("DB") ? "DB" : wb.SheetNames[0];
@@ -534,32 +788,113 @@ function rowsFromWorkbook(wb){
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "", blankrows: true });
   return { sheetName: name, rows: rows.map(r => [cellStr(r[0]), cellStr(r[1]), cellStr(r[2])]) };
 }
-function applyDB(fileName, sheetName, rows){
-  const parsed = parseRows(rows);
-  if (parsed.errors.length){
-    clearDB();
-    showErrors(fileName, sheetName, parsed.errors);
-    status("DB 형식 오류로 파일을 불러오지 않았습니다.", true);
-    return false;
+function readAsBuffer(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = e => res(e.target.result);
+    fr.onerror = () => rej(fr.error);
+    fr.readAsArrayBuffer(file);
+  });
+}
+async function registerFiles(files){
+  if (!files.length) return;
+  if (typeof XLSX === "undefined"){ alert("엑셀 해석 라이브러리를 불러오지 못했습니다."); return; }
+  const fails = [];
+  let added = 0;
+  for (const file of files){
+    const name = file.name.replace(/\.[^.]+$/, "");
+    try{
+      const wb = XLSX.read(new Uint8Array(await readAsBuffer(file)), { type: "array" });
+      const { sheetName, rows } = rowsFromWorkbook(wb);
+      const parsed = parseRows(rows);
+      if (parsed.errors.length){
+        fails.push({ file: file.name, errors: parsed.errors });
+        continue;
+      }
+      if (state.books.has(name) && !confirm(`"${name}" 단어장이 이미 있습니다. 덮어쓸까요?\n(이 단어장을 쓰는 학생 목록은 그대로 연결됩니다)`)) continue;
+      const book = bookFromParsed(name, file.name, sheetName, parsed);
+      await store.put(book);
+      state.books.set(name, book);
+      added++;
+    }catch(err){
+      fails.push({ file: file.name, errors: ["엑셀 파일을 읽지 못했습니다: " + err.message] });
+    }
   }
-  state.db = { fileName, sheetName, rows, parsed };
+  refreshBooks();
+  if (fails.length){
+    const errs = fails.length === 1 ? fails[0].errors : fails.flatMap(f => f.errors.map(e => `[${f.file}] ${e}`));
+    showErrorBox("단어장을 등록하지 못했습니다", fails.map(f => f.file).join(", "), "아래 내용을 엑셀에서 고친 뒤 다시 등록하세요.", errs);
+  }
+}
+async function deleteBook(name){
+  if (!confirm(`"${name}" 단어장을 삭제할까요?`)) return;
+  await store.del(name);
+  state.books.delete(name);
+  if (state.db && state.db.name === name){ clearDB(); }
+  if (state.test && state.test.book === name){ resetTest(); }
+  refreshBooks();
+}
+function refreshBooks(){
+  const books = [...state.books.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  $("libBody").innerHTML = books.length ? books.map(b => `<tr>
+      <td><b>${esc(b.name)}</b></td><td>${esc(bookRangeText(b))}</td>
+      <td class="num">${b.days.length}</td><td class="num">${b.total}</td>
+      <td>${new Date(b.savedAt).toLocaleDateString("ko-KR")}</td>
+      <td style="text-align:right"><button class="del" data-del="${esc(b.name)}">삭제</button></td></tr>`).join("")
+    : `<tr><td colspan="6" class="none">등록된 단어장이 없습니다. 오른쪽 위 <b>단어장 등록</b>으로 엑셀 파일을 등록하세요.</td></tr>`;
+  const opts = books.map(b => `<option value="${esc(b.name)}">${esc(b.name)}</option>`).join("");
+  // 암기장
+  const mSel = $("memoBook"), mPrev = state.db ? state.db.name : mSel.value;
+  mSel.innerHTML = `<option value="">단어장 선택</option>` + opts;
+  mSel.value = state.books.has(mPrev) ? mPrev : "";
+  // 단어 시험
+  const tSel = $("tBook"), tPrev = tSel.value;
+  tSel.innerHTML = books.length ? opts : `<option value="">등록된 단어장 없음</option>`;
+  if (state.books.has(tPrev)) tSel.value = tPrev;
+  updateTestHints();
+  // 학생 목록
+  renderSlots();
+}
+
+/* ========================================================
+   암기장: 단어장 선택
+   ======================================================== */
+function selectMemoBook(name){
+  const book = state.books.get(name);
+  if (!book){ clearDB(); return; }
+  const map = bookMap(book);
+  const days = book.days.map(x => x[0]);
+  // 암기장 규칙: Day당 최소 20개 (하나라도 모자라면 단어장 전체 사용 불가)
+  const errors = days.filter(d => map.get(d).length < MIN_WORDS)
+    .map(d => `${book.prefix} ${d}: 단어가 ${map.get(d).length}개입니다. Day당 최소 ${MIN_WORDS}개가 필요합니다.`);
+  if (errors.length){
+    clearDB();
+    $("memoBook").value = "";
+    showErrorBox("이 단어장으로는 암기장을 만들 수 없습니다", book.fileName, "암기장은 Day당 최소 20개가 필요합니다. (단어 시험 출제에는 그대로 쓸 수 있습니다)", errors);
+    status("Day당 단어 수가 모자라 이 단어장은 암기장에 쓸 수 없습니다.", true);
+    return;
+  }
+  state.db = { name: book.name, fileName: book.fileName, sheetName: book.sheetName, parsed: { header: book.header, prefix: book.prefix, map, days, errors: [] } };
   state.current = null;
+  resetPreview();
   showDBInfo();
   fillDaySelect();
-  return true;
+  status("단어장을 골랐습니다.");
 }
 function clearDB(){
   state.db = null;
   $("dbInfo").innerHTML = "";
   const sel = $("daySel");
-  sel.innerHTML = "<option>DB를 먼저 불러오세요</option>";
+  sel.innerHTML = "<option>단어장을 먼저 고르세요</option>";
   sel.disabled = true;
   ["btnMake", "btnShuffle", "btnPrint", "btnPrintAll"].forEach(id => $(id).disabled = true);
   resetPreview();
 }
-function showErrors(fileName, sheetName, errors){
+function showErrorBox(title, sub, help, errors){
   const shown = errors.slice(0, MAX_ERR_SHOW);
-  $("errFile").textContent = `${fileName}${sheetName ? " · " + sheetName + " 시트" : ""} · 오류 ${errors.length}건`;
+  $("errTitle").textContent = title;
+  $("errFile").textContent = `${sub ? sub + " · " : ""}오류 ${errors.length}건`;
+  $("errHelp").textContent = help;
   $("errList").innerHTML = shown.map(e => `<li>${esc(e)}</li>`).join("") +
     (errors.length > shown.length ? `<li>…외 ${errors.length - shown.length}건 (복사하면 전체가 복사됩니다)</li>` : "");
   $("errDlg").dataset.all = errors.join("\n");
@@ -591,31 +926,14 @@ function fillDaySelect(){
   $("btnShuffle").disabled = true;
   $("btnPrint").disabled = true;
 }
-function readFile(file){
-  if (!file) return;
-  if (typeof XLSX === "undefined"){ status("엑셀 해석 라이브러리를 불러오지 못했습니다.", true); return; }
-  const fr = new FileReader();
-  fr.onload = e => {
-    try{
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
-      const { sheetName, rows } = rowsFromWorkbook(wb);
-      if (applyDB(file.name, sheetName, rows)) status("DB를 불러왔습니다.");
-    }catch(err){
-      clearDB();
-      showErrors(file.name, null, ["엑셀 파일을 읽지 못했습니다: " + err.message]);
-      status("엑셀 파일을 읽지 못했습니다.", true);
-    }
-  };
-  fr.readAsArrayBuffer(file);
-}
-function status(msg, bad){
-  const el = $("status");
+function status(msg, bad, id){
+  const el = $(id || "status");
   el.textContent = msg;
   el.style.color = bad ? "var(--warn)" : "var(--ok)";
 }
 
 /* ========================================================
-   버튼 동작
+   암기장: 버튼 동작
    ======================================================== */
 function makeCurrent(){
   const d = parseInt($("daySel").value, 10);
@@ -630,7 +948,7 @@ function makeCurrent(){
 }
 function resetPreview(){
   state.current = null;
-  $("preview").innerHTML = `<div class="empty">DB를 불러온 뒤 Day를 고르고 <b>출제</b>를 누르세요.</div>`;
+  $("memoPreview").innerHTML = `<div class="empty">단어장과 Day를 고르고 <b>출제</b>를 누르세요.</div>`;
 }
 function resetAll(){
   resetPreview();
@@ -654,8 +972,328 @@ function printAll(){
   }, 80);
 }
 
+/* ========================================================
+   단어 시험: 범위 해석과 문항 뽑기
+   ======================================================== */
+// "3-7, 10", "3~7", "Day 3-7" 등 → Day 번호 목록
+function parseRange(text, book){
+  const errors = [];
+  const map = bookMap(book);
+  const t = String(text || "").replace(/[A-Za-z가-힣]/g, " ").trim();
+  if (!t){ return { days: [], errors: ["범위를 입력하세요. (예: 3-7, 10)"] }; }
+  const set = new Set();
+  for (const tok of t.split(/[,，]/)){
+    if (!tok.trim()) continue;
+    const m = tok.match(/^\s*(\d+)\s*(?:[-~–]\s*(\d+))?\s*$/);
+    if (!m){ errors.push(`범위 "${tok.trim()}"을(를) 이해할 수 없습니다. (예: 3-7, 10)`); continue; }
+    let a = parseInt(m[1], 10), b = m[2] ? parseInt(m[2], 10) : a;
+    if (b < a) [a, b] = [b, a];
+    for (let d = a; d <= b; d++){
+      if (map.has(d)) set.add(d);
+      else errors.push(`${book.prefix} ${d}은(는) 이 단어장에 없습니다. (${bookRangeText(book)})`);
+    }
+  }
+  const days = [...set].sort((x, y) => x - y);
+  if (!days.length && !errors.length) errors.push("범위를 입력하세요. (예: 3-7, 10)");
+  return { days, errors };
+}
+// 범위 표시: 연속된 Day는 묶어서 "Day 3~7, 10"
+function rangeLabel(days, prefix){
+  const parts = [];
+  for (let i = 0; i < days.length; i++){
+    let j = i;
+    while (j + 1 < days.length && days[j + 1] === days[j] + 1) j++;
+    parts.push(i === j ? `${days[i]}` : `${days[i]}~${days[j]}`);
+    i = j;
+  }
+  return `${prefix} ${parts.join(", ")}`;
+}
+// Day별로 고르게 배분 (나머지는 무작위 Day에 1개씩, 단어가 모자란 Day는 전부 넣고 남은 수를 다시 나눔)
+function allocate(counts, n){
+  const alloc = new Map(counts.map(([d]) => [d, 0]));
+  let active = counts.filter(([, c]) => c > 0).map(([d]) => d);
+  const cap = new Map(counts);
+  let rem = n;
+  while (rem > 0 && active.length){
+    const k = active.length, q = Math.floor(rem / k), r = rem % k;
+    const order = shuffle(active);
+    const want = new Map(order.map((d, i) => [d, q + (i < r ? 1 : 0)]));
+    const capped = active.filter(d => alloc.get(d) + want.get(d) >= cap.get(d));
+    if (!capped.length){
+      for (const d of active) alloc.set(d, alloc.get(d) + want.get(d));
+      rem = 0;
+    } else {
+      for (const d of capped){
+        rem -= cap.get(d) - alloc.get(d);
+        alloc.set(d, cap.get(d));
+      }
+      active = active.filter(d => !capped.includes(d));
+    }
+  }
+  return alloc;
+}
+// 시험 만들기 → { test } 또는 { errors }
+function makeTest(bookName, rangeText, countText, type){
+  const book = state.books.get(bookName);
+  if (!book) return { errors: [bookName ? `"${bookName}" 단어장이 없습니다. 메인 화면에서 등록하세요.` : "단어장을 고르세요."] };
+  const { days, errors } = parseRange(rangeText, book);
+  const n = parseInt(countText, 10);
+  if (!(n >= 1)) errors.push("문항 수를 1 이상으로 입력하세요.");
+  if (errors.length) return { errors };
+  const map = bookMap(book);
+  const avail = days.reduce((t, d) => t + map.get(d).length, 0);
+  if (n > avail) return { errors: [`문항 수(${n})가 범위 안 단어 수(${avail}개)보다 많습니다.`] };
+
+  const alloc = allocate(days.map(d => [d, map.get(d).length]), n);
+  let picked = [];
+  for (const d of days) picked = picked.concat(shuffle(map.get(d)).slice(0, alloc.get(d)));
+  picked = shuffle(picked);
+  // 혼합: 정확히 반반 (홀수면 영→한 1개 더)
+  const ekSet = new Set(type === "mix" ? shuffle(picked.map((_, i) => i)).slice(0, Math.ceil(n / 2)) : []);
+  const items = picked.map((it, i) => {
+    const en = stripPron(it.w), ko = stripPron(it.m);
+    const ek = type === "ek" || (type === "mix" && ekSet.has(i));
+    return ek ? { q: en, a: ko } : { q: ko, a: en };
+  });
+  return { test: { book: book.name, prefix: book.prefix, days, range: rangeLabel(days, book.prefix), n, type, items } };
+}
+function todayText(){
+  const d = new Date();
+  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+}
+
+/* ========================================================
+   단어 시험: 그리기 (50칸 고정 양식)
+   ======================================================== */
+function testPageHTML(t, name, pageIdx, pages, isKey){
+  const cols = `<col style="width:${TEST_COL.no}mm"><col style="width:${TEST_COL.q}mm"><col style="width:${TEST_COL.a}mm">`;
+  const cell = s => `<div class="c">${s}</div>`;
+  const base = pageIdx * TEST_PER_PAGE;
+  const side = k => {
+    const i = base + k;
+    const it = t.items[i];
+    if (!it) return `<td class="no">${cell("")}</td><td class="q fit">${cell("")}</td><td class="a fit">${cell("")}</td>`;
+    return `<td class="no">${cell(i + 1)}</td><td class="q fit">${cell(esc(it.q))}</td><td class="a fit">${cell(isKey ? esc(it.a) : "")}</td>`;
+  };
+  let rows = "";
+  for (let r = 0; r < TEST_ROWS; r++) rows += `<tr class="d">${side(r)}<td class="gap"></td>${side(r + TEST_ROWS)}</tr>`;
+  const part = pages > 1 ? `<span class="part">(${pageIdx + 1}/${pages})</span>` : "";
+  return `<div class="page${isKey ? " key" : ""}">
+    <div class="ph"><div class="lab">${isKey ? "정답지" : "단어 시험"}</div><div class="ttl">${esc(t.book)}</div><div class="day">${part}</div></div>
+    <table class="tinfo"><colgroup><col style="width:8%"><col style="width:24%"><col style="width:8%"><col style="width:18%"><col style="width:8%"><col style="width:16%"><col style="width:8%"><col style="width:10%"></colgroup>
+      <tr><th>범위</th><td>${esc(t.range)}</td><th>이름</th><td>${esc(name || "")}</td><th>날짜</th><td>${esc(todayText())}</td><th>점수</th><td class="sc">/ ${t.n}</td></tr></table>
+    <div class="sec tsec"><table style="--rh:${TEST_ROW_H.toFixed(3)}mm;--fs:${TEST_FONT_PT}pt">
+      <colgroup>${cols}<col style="width:${GAP_W}mm">${cols}</colgroup>
+      <tr class="ch"><th class="no">번호</th><th>문제</th><th>답</th><th class="gap"></th><th class="no">번호</th><th>문제</th><th>답</th></tr>
+      ${rows}
+    </table></div>
+  </div>`;
+}
+// 학생 한 명(또는 시험 하나)의 묶음: 시험지 → (정답지), 양면이면 각각 새 종이에서 시작
+function testDocHTML(t, name){
+  const pages = Math.ceil(t.n / TEST_PER_PAGE);
+  const testPages = [], keyPages = [];
+  for (let p = 0; p < pages; p++){
+    testPages.push(testPageHTML(t, name, p, pages, false));
+    keyPages.push(testPageHTML(t, name, p, pages, true));
+  }
+  return padDuplex(testPages) + (state.settings.answer ? padDuplex(keyPages) : "");
+}
+function renderInto(el, html){
+  el.innerHTML = html;
+  fitCells(el);
+}
+function selectedType(){
+  const r = document.querySelector('input[name="tType"]:checked');
+  return r ? r.value : "ek";
+}
+function updateTestHints(){
+  const book = state.books.get($("tBook").value);
+  $("tRangeHint").textContent = book ? `전체: ${bookRangeText(book)}` : "";
+  if (!book){ $("tCountHint").textContent = ""; return; }
+  const { days, errors } = parseRange($("tRange").value, book);
+  if (errors.length || !days.length){ $("tCountHint").textContent = ""; return; }
+  const map = bookMap(book);
+  const avail = days.reduce((t, d) => t + map.get(d).length, 0);
+  $("tCountHint").textContent = `범위 안 단어 ${avail}개`;
+}
+function runTest(){
+  const r = makeTest($("tBook").value, $("tRange").value, $("tCount").value, selectedType());
+  if (r.errors){
+    resetTest();
+    showErrorBox("시험을 출제하지 못했습니다", $("tBook").value, "출제 조건을 확인하세요.", r.errors);
+    status("출제 조건을 확인하세요.", true, "tStatus");
+    return;
+  }
+  state.test = r.test;
+  renderInto($("testPreview"), testDocHTML(state.test, ""));
+  $("tShuffle").disabled = false;
+  $("tPrint").disabled = false;
+  status(`${state.test.range} · ${state.test.n}문항 · ${TYPE_NAMES[state.test.type]} 출제 완료`, false, "tStatus");
+}
+function resetTest(){
+  state.test = null;
+  $("testPreview").innerHTML = `<div class="empty">단어장과 범위를 정하고 <b>출제</b>를 누르세요.</div>`;
+  $("tShuffle").disabled = true;
+  $("tPrint").disabled = true;
+}
+
+/* ========================================================
+   학생별 출제
+   ======================================================== */
+function loadSlots(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_SLOTS) || "null");
+    if (Array.isArray(s)) return s;
+  }catch(e){}
+  return [];
+}
+function saveSlots(){
+  try{ localStorage.setItem(LS_SLOTS, JSON.stringify(state.slots)); }catch(e){}
+}
+function newSlot(from){
+  return Object.assign({ on: true, name: "", book: "", range: "", n: 50, type: "ek" }, from || {}, { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
+}
+function renderSlots(){
+  const books = [...state.books.keys()].sort((a, b) => a.localeCompare(b, "ko"));
+  const body = $("slotBody");
+  if (!state.slots.length){
+    body.innerHTML = `<tr><td colspan="7" class="none">학생이 없습니다. 왼쪽 <b>학생 추가</b>를 누르세요.</td></tr>`;
+    return;
+  }
+  body.innerHTML = state.slots.map(s => {
+    const missing = s.book && !state.books.has(s.book);
+    const opts = (missing ? [`<option value="${esc(s.book)}">${esc(s.book)} (삭제됨)</option>`] : [])
+      .concat([`<option value="">단어장 선택</option>`], books.map(b => `<option value="${esc(b)}">${esc(b)}</option>`)).join("");
+    const types = Object.entries(TYPE_NAMES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    return `<tr data-id="${s.id}">
+      <td class="ck"><input type="checkbox" data-k="on" ${s.on ? "checked" : ""} aria-label="선택"></td>
+      <td class="nm"><input type="text" data-k="name" value="${esc(s.name)}" placeholder="이름"></td>
+      <td class="bk"><select data-k="book" class="${missing ? "missing" : ""}" title="${missing ? "삭제된 단어장입니다. 다시 등록하거나 다른 단어장을 고르세요." : ""}">${opts}</select></td>
+      <td class="rg"><input type="text" data-k="range" value="${esc(s.range)}" placeholder="예: 3-7"></td>
+      <td class="ct"><input type="number" data-k="n" min="1" value="${esc(s.n)}"></td>
+      <td class="tp"><select data-k="type" data-v="${s.type}">${types}</select></td>
+      <td class="ac"><button data-act="copy">복사</button> <button data-act="del">삭제</button></td>
+    </tr>`;
+  }).join("");
+  body.querySelectorAll('select[data-k="book"]').forEach(sel => { sel.value = state.slots.find(s => s.id === sel.closest("tr").dataset.id).book; });
+  body.querySelectorAll('select[data-k="type"]').forEach(sel => { sel.value = sel.dataset.v; });
+}
+function onSlotInput(e){
+  const tr = e.target.closest("tr[data-id]");
+  if (!tr || !e.target.dataset.k) return;
+  const s = state.slots.find(x => x.id === tr.dataset.id);
+  const k = e.target.dataset.k;
+  s[k] = k === "on" ? e.target.checked : e.target.value;
+  if (k === "book") e.target.classList.toggle("missing", !!s.book && !state.books.has(s.book));
+  saveSlots();
+}
+function onSlotClick(e){
+  const act = e.target.dataset.act;
+  if (!act) return;
+  const tr = e.target.closest("tr[data-id]");
+  const i = state.slots.findIndex(x => x.id === tr.dataset.id);
+  if (act === "del"){
+    if (!confirm(`${state.slots[i].name || "이 학생"}을(를) 목록에서 삭제할까요?`)) return;
+    state.slots.splice(i, 1);
+  } else if (act === "copy"){
+    state.slots.splice(i + 1, 0, newSlot(Object.assign({}, state.slots[i], { name: "" })));
+  }
+  saveSlots();
+  renderSlots();
+}
+function runStudents(){
+  const chosen = state.slots.filter(s => s.on);
+  if (!chosen.length){ status("체크한 학생이 없습니다.", true, "sStatus"); return; }
+  const docs = [], errors = [];
+  chosen.forEach((s, i) => {
+    const who = s.name || `${state.slots.indexOf(s) + 1}번째 줄`;
+    const r = makeTest(s.book, s.range, s.n, s.type);
+    if (r.errors) r.errors.forEach(e => errors.push(`[${who}] ${e}`));
+    else docs.push({ name: s.name, test: r.test });
+  });
+  if (errors.length){
+    state.stuDocs = null;
+    $("sPrint").disabled = true;
+    $("stuPreview").innerHTML = `<div class="empty">학생을 체크하고 <b>선택한 학생 출제</b>를 누르세요.</div>`;
+    showErrorBox("학생별 출제를 하지 못했습니다", `체크한 학생 ${chosen.length}명`, "아래 학생의 조건을 고친 뒤 다시 출제하세요. (오류가 있으면 아무도 출제하지 않습니다)", errors);
+    status("학생 조건을 확인하세요.", true, "sStatus");
+    return;
+  }
+  state.stuDocs = docs;
+  renderStudents();
+  $("sPrint").disabled = false;
+  status(`${docs.length}명 출제 완료`, false, "sStatus");
+}
+function renderStudents(){
+  if (!state.stuDocs) return;
+  renderInto($("stuPreview"), state.stuDocs.map(d => testDocHTML(d.test, d.name)).join(""));
+}
+function exportSlots(){
+  const blob = new Blob([JSON.stringify({ app: "vocaMaker", slots: state.slots }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `학생목록_${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function importSlots(file){
+  if (!file) return;
+  try{
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data) ? data : data.slots;
+    if (!Array.isArray(list)) throw new Error("학생 목록 파일이 아닙니다.");
+    if (state.slots.length && !confirm("지금 학생 목록을 가져온 목록으로 바꿀까요?")) return;
+    state.slots = list.map(s => newSlot({ on: !!s.on, name: String(s.name || ""), book: String(s.book || ""), range: String(s.range || ""), n: s.n || 50, type: TYPE_NAMES[s.type] ? s.type : "ek" }));
+    saveSlots();
+    renderSlots();
+    status(`학생 ${state.slots.length}명을 가져왔습니다.`, false, "sStatus");
+  }catch(err){
+    showErrorBox("학생 목록을 가져오지 못했습니다", file.name, "내보내기로 만든 파일인지 확인하세요.", [err.message]);
+  }
+}
+
+/* ========================================================
+   화면 전환과 초기화
+   ======================================================== */
+const VIEWS = ["memo", "test", "students"];
+function showView(){
+  const v = location.hash.replace("#", "");
+  const name = VIEWS.includes(v) ? v : "home";
+  document.querySelectorAll(".view").forEach(el => el.classList.toggle("active", el.id === "view-" + name));
+  window.scrollTo(0, 0);
+}
+function go(v){
+  if (v) location.hash = v;
+  else history.pushState("", document.title, location.pathname + location.search), showView();
+}
+function syncOptions(){
+  document.querySelectorAll(".opt-answer").forEach(el => { el.checked = !!state.settings.answer; });
+  document.querySelectorAll(".opt-duplex").forEach(el => { el.checked = !!state.settings.duplex; });
+}
+function rerenderAll(){
+  if (state.current) renderDays([state.current]);
+  if (state.test) renderInto($("testPreview"), testDocHTML(state.test, ""));
+  renderStudents();
+}
+
 function initUI(){
-  ["title", "memo", "quiz"].forEach(k => {
+  // 화면 전환
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+  window.addEventListener("hashchange", showView);
+  showView();
+
+  // 공통 인쇄 옵션 (기억)
+  syncOptions();
+  document.querySelectorAll(".opt-answer, .opt-duplex").forEach(el => el.addEventListener("change", () => {
+    state.settings[el.classList.contains("opt-answer") ? "answer" : "duplex"] = el.checked;
+    saveSettings();
+    syncOptions();
+    rerenderAll();
+  }));
+
+  // 암기장 상단 문구
+  ["memo", "quiz"].forEach(k => {
     const el = $("set" + k[0].toUpperCase() + k.slice(1));
     el.value = state.settings[k];
     el.addEventListener("input", () => {
@@ -664,19 +1302,56 @@ function initUI(){
       if (state.current) renderDays([state.current]);
     });
   });
+
+  // 단어장 등록 (메인 화면)
   const drop = $("drop"), file = $("file");
   drop.addEventListener("click", () => file.click());
   drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); file.click(); } });
-  file.addEventListener("change", () => { readFile(file.files[0]); file.value = ""; });
-  ["dragenter", "dragover"].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
-  ["dragleave", "drop"].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === "drop" || e.target === document.documentElement) drop.classList.remove("over"); }));
-  document.addEventListener("drop", e => { drop.classList.remove("over"); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+  file.addEventListener("change", async () => { await registerFiles([...file.files]); file.value = ""; });
+  const onHome = () => $("view-home").classList.contains("active");
+  ["dragenter", "dragover"].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (onHome()) drop.classList.add("over"); }));
+  document.addEventListener("dragleave", e => { e.preventDefault(); if (e.target === document.documentElement) drop.classList.remove("over"); });
+  document.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); if (onHome() && e.dataTransfer.files.length) registerFiles([...e.dataTransfer.files]); });
+  $("libBody").addEventListener("click", e => { if (e.target.dataset.del) deleteBook(e.target.dataset.del); });
 
+  // 암기장
+  $("memoBook").addEventListener("change", e => selectMemoBook(e.target.value));
   $("btnMake").addEventListener("click", makeCurrent);
   $("btnShuffle").addEventListener("click", makeCurrent);
   $("btnReset").addEventListener("click", resetAll);
   $("btnPrint").addEventListener("click", printCurrent);
   $("btnPrintAll").addEventListener("click", printAll);
+
+  // 단어 시험
+  $("tBook").addEventListener("change", updateTestHints);
+  $("tRange").addEventListener("input", updateTestHints);
+  $("tMake").addEventListener("click", runTest);
+  $("tShuffle").addEventListener("click", runTest);
+  $("tPrint").addEventListener("click", () => { if (state.test) window.print(); });
+
+  // 학생별
+  $("slotBody").addEventListener("input", onSlotInput);
+  $("slotBody").addEventListener("change", onSlotInput);
+  $("slotBody").addEventListener("click", onSlotClick);
+  $("sAdd").addEventListener("click", () => {
+    const last = state.slots[state.slots.length - 1];
+    state.slots.push(newSlot(last ? { book: last.book, n: last.n, type: last.type } : null));
+    saveSlots(); renderSlots();
+    const inputs = $("slotBody").querySelectorAll('input[data-k="name"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+  $("sToggle").addEventListener("click", () => {
+    const all = state.slots.length && state.slots.every(s => s.on);
+    state.slots.forEach(s => { s.on = !all; });
+    saveSlots(); renderSlots();
+  });
+  $("sMake").addEventListener("click", runStudents);
+  $("sPrint").addEventListener("click", () => { if (state.stuDocs) window.print(); });
+  $("sExport").addEventListener("click", exportSlots);
+  $("sImport").addEventListener("click", () => $("sImportFile").click());
+  $("sImportFile").addEventListener("change", async e => { await importSlots(e.target.files[0]); e.target.value = ""; });
+
+  // 오류 창
   $("errClose").addEventListener("click", () => $("errDlg").close());
   $("errCopy").addEventListener("click", async () => {
     const text = $("errFile").textContent + "\n" + $("errDlg").dataset.all;
@@ -691,6 +1366,8 @@ function initUI(){
 
   // 이전 버전이 브라우저에 저장해 둔 DB 정리
   try{ localStorage.removeItem(LS_DB); }catch(e){}
+
+  loadBooks();
 }
 
 document.addEventListener("DOMContentLoaded", initUI);

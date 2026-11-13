@@ -205,7 +205,8 @@ const SEC_FIXED = 3 + 6 + 5.5;     // 섹션 위 간격 + 회차줄 + 열이름�
 const SAFETY = 5;
 const FONT_RATIO = 0.68;           // 줄 높이 대비 글자 크기
 const FONT_MAX_PT = 13;
-const WORD_BASIS = "insignificantly"; // 철자 칸 너비 기준 단어 (이보다 긴 것은 글자 축소/두 줄)
+const WORD_MIN_RATIO = 0.22;       // 철자 칸 최소 비율 (번호 칸 제외한 너비 기준)
+const WORD_MAX_RATIO = 0.62;       // 철자 칸 최대 비율
 const TABLE_W = 186;               // 표 전체 너비 (210 - 좌우 여백 12mm×2)
 const GAP_W = 6;                   // 좌우 표 사이 간격
 
@@ -402,12 +403,33 @@ function textWidthMM(text, fontPt, weight){
   ctx.font = `${weight} ${fontPt}pt ${getComputedStyle(document.body).fontFamily}`;
   return ctx.measureText(text).width * 25.4 / 96;
 }
-function colWidths(fontPt){
+// 철자·뜻 칸 너비: 그 Day의 실제 글자 길이를 재서, 글자를 줄여야 하는 칸이 가장 적어지도록 나눔
+// (발음이 철자 쪽에 있든 뜻 쪽에 있든 자동으로 균형)
+function colWidths(fontPt, items){
   const pad = 2.4 + 0.5;                               // 좌우 안쪽 여백 + 선
   const no = Math.max(5.5, textWidthMM("000", fontPt, 400) + pad, textWidthMM("번호", 8.5, 400) + 1.3);
-  const word = textWidthMM(WORD_BASIS, fontPt, 600) * 1.12 + pad;
   const half = (TABLE_W - GAP_W) / 2;
-  return { no, word, meaning: half - no - word };
+  const avail = half - no;
+  const room = 1.2;                                    // 글자 뒤에 남길 여유(mm)
+  const ws = items.map(it => textWidthMM(it.w, fontPt, 600) + pad + room);
+  const ms = items.map(it => textWidthMM(it.m, fontPt, 400) + pad + room);
+  const lo = avail * WORD_MIN_RATIO, hi = avail * WORD_MAX_RATIO, step = 0.25;
+  // 후보 너비마다 [넘치는 칸 수, 넘치는 정도 합] 계산
+  const cands = [];
+  for (let word = lo; word <= hi + 1e-9; word += step){
+    const mean = avail - word;
+    let cnt = 0, exc = 0;
+    for (const w of ws) if (w > word){ cnt++; exc += w / word - 1; }
+    for (const m of ms) if (m > mean){ cnt++; exc += m / mean - 1; }
+    cands.push({ word, cnt, exc });
+  }
+  const best = Math.min(...cands.map(c => c.cnt));
+  let pool = cands.filter(c => c.cnt === best);
+  const bestExc = Math.min(...pool.map(c => c.exc));
+  pool = pool.filter(c => c.exc <= bestExc + 1e-6);
+  // 같은 조건이면 그 범위의 가운데 → 두 칸에 여유를 고르게
+  const word = (pool[0].word + pool[pool.length - 1].word) / 2;
+  return { no, word, meaning: avail - word };
 }
 function sectionHTML(s, showMeaning, rowH, fontPt, cw){
   const len = s.cols[0].length;
@@ -432,7 +454,7 @@ function dayPagesHTML(dayNum, built){
   // 같은 Day 안에서는 가장 많은 세트 기준으로 줄 높이와 글자 크기를 통일
   const rowH = Math.min(...built.sets.map(b => rowHeightFor(b.memo)));
   const fontPt = Math.min(FONT_MAX_PT, rowH * FONT_RATIO * 2.835);
-  const cw = colWidths(fontPt);
+  const cw = colWidths(fontPt, built.sets.flatMap(b => b.memo[1].cols[0]));
   const total = built.sets.length;
   let html = "";
   const page = (sections, label, showMeaning, idx) => {

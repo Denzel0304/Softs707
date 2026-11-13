@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // 휴대폰으로 접속하면 모바일 전용 화면으로 이동 (PC·태블릿은 그대로)
+  if (/iPhone|iPod|Android.+Mobile|Windows Phone/i.test(navigator.userAgent)) location.replace('index-mobile.html');
+</script>
+<title>학원 관리</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css?v=20261113f">
+<link rel="stylesheet" href="soon.css?v=20261112t">
+<link rel="stylesheet" href="todo-ext.css?v=20261106a">
+</head>
+<body>
+<script>
+  // 이 기기에 기억된 테마를 화면을 그리기 전에 먼저 적용 (util.js의 Theme와 같은 키·이름. 서버 값은 동기화 뒤 따라감)
+  try { var _t = localStorage.getItem('mg77_theme'); if (/^(light|rose|lavender|cream|apricot|mint|mocha|gray)$/.test(_t || '')) { document.body.classList.add('theme-' + _t); } } catch (e) {}
+</script>
+
+<!-- 로그인 -->
+<div id="mg-login" class="login-overlay active">
+  <div class="login-box">
+    <div class="login-title">학원 관리</div>
+    <div class="login-sub">PIN 6자리를 입력하세요</div>
+    <input type="password" id="pin-input" class="pin-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    <button id="login-btn" class="login-btn" type="button">로그인</button>
+    <div id="login-msg" class="login-msg"></div>
+  </div>
+</div>
+<script>
+  // 저장된 접속 키가 있으면(자동 로그인) 로그인 화면을 그리기 전에 바로 앱 화면으로 시작한다.
+  // (키 이름은 config.js의 LS_AK 'mg77_ak'와 같아야 함. 키가 무효면 기존처럼 로그인 화면으로 돌아감)
+  try { if (localStorage.getItem('mg77_ak')) { document.getElementById('mg-login').classList.remove('active'); document.body.classList.add('app-on'); } } catch (e) {}
+</script>
+
+<!-- 앱 -->
+<div id="mg-app">
+  <aside id="side">
+    <div id="mini-cal"></div>
+    <nav id="nav">
+      <div class="nav-cat">
+        <button type="button" class="nav-cat-btn">학생</button>
+        <div class="nav-menu">
+          <button data-page="students">학생</button>
+          <button data-page="classes">반</button>
+          <button data-page="words">단어</button>
+          <button data-page="attendance">출석부</button>
+          <button data-page="books">교재</button>
+          <button data-page="scores">성적</button>
+        </div>
+      </div>
+      <div class="nav-cat">
+        <button type="button" class="nav-cat-btn">선생님</button>
+        <div class="nav-menu">
+          <button data-page="timetable">시간표</button>
+          <button data-page="lessons">수업일지</button>
+          <button data-page="progress">진도</button>
+          <button data-page="exams">시험+교재</button>
+          <button data-page="sms">SMS</button>
+          <button data-page="events">일정+공휴일</button>
+          <button data-page="makeups">결석+보강</button>
+          <button data-page="counsels">상담</button>
+          <button data-page="settings">설정</button>
+        </div>
+      </div>
+      <button type="button" id="nav-tt" class="nav-tt" title="시간표 보기" aria-label="시간표 보기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11M15 9v11"/></svg></button>
+    </nav>
+    <div id="sn-root"></div>
+    <div id="sync-bar"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<datalist id="dl-schools"></datalist>
+<div id="toast" class="toast"></div>
+
+<script src="config.js?v=20261105a"></script>
+<script src="util.js?v=20261112t"></script>
+<script src="store.js?v=20261112t"></script>
+<script src="calendar.js?v=20261112t"></script>
+<script src="students.js?v=20261111d"></script>
+<script src="classes.js?v=20261113f"></script>
+<script src="lessons.js?v=20261113f"></script>
+<script src="todo-ext.js?v=20261112a"></script>
+<script src="exams.js?v=20261112w"></script>
+<script src="books.js?v=20261112t"></script>
+<script src="words.js?v=20261112w"></script>
+<script src="misc.js?v=20261112t"></script>
+<script src="sms.js?v=20261112t"></script>
+<script src="app.js?v=20261112b"></script>
+<script src="soon.js?v=20261107a"></script>
+<script src="todo-alarm.js?v=20261112b"></script>
+</body>
+</html>

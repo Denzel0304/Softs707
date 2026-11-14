@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 일괄 인쇄 - Professional</title>
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -118,6 +117,21 @@
         #file-input { display: none; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* 오류 모달 */
+        .modal-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-bg.show { display: flex; }
+        .modal {
+            background: var(--card-bg); border-radius: 12px; padding: 24px;
+            width: calc(100% - 40px); max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal h3 { margin: 0 0 12px; font-size: 1.1rem; color: var(--reset-color); display: flex; align-items: center; gap: 8px; }
+        .modal .m-file { font-weight: 600; word-break: break-all; margin-bottom: 6px; font-size: 0.9rem; }
+        .modal .m-msg { font-size: 0.85rem; color: #666; word-break: break-all; margin-bottom: 20px; }
+        .modal .m-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
@@ -150,9 +164,168 @@
         <ul id="file-list"></ul>
     </main>
 
+    <div class="modal-bg" id="err-modal">
+        <div class="modal">
+            <h3><i data-lucide="alert-triangle"></i> 파일 처리 실패</h3>
+            <div class="m-file" id="err-file"></div>
+            <div class="m-msg" id="err-msg"></div>
+            <div class="m-btns">
+                <button class="btn-reset" id="err-stop">전체 중단</button>
+                <button class="btn-print" id="err-continue">나머지 계속</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // ---------- 제한 해제 엔진 (qpdf, Web Worker 풀 병렬 처리) ----------
+        const QPDF_CDN = 'https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/';
+        const POOL_SIZE = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+        const WORKER_SRC = `
+let lastErr = '';
+let ready;
+console.error = (...a) => { lastErr = a.join(' '); };
+console.warn = (...a) => { lastErr = a.join(' '); };
+try {
+  importScripts('${QPDF_CDN}qpdf.js');
+  ready = self.Module({ locateFile: p => '${QPDF_CDN}' + p, print: () => {}, printErr: s => { lastErr = String(s); } });
+} catch (e) { ready = Promise.reject(e); }
+ready.then(() => postMessage({ type: 'ready' }), e => postMessage({ type: 'fatal', msg: String((e && e.message) || e) }));
+self.onmessage = async (ev) => {
+  const { id, buf } = ev.data;
+  let q;
+  try { q = await ready; } catch (e) { postMessage({ type: 'result', id, code: 'error', msg: '엔진을 불러오지 못했습니다' }); return; }
+  const inP = '/in_' + id + '.pdf', outP = '/out_' + id + '.pdf';
+  lastErr = '';
+  try {
+    q.FS.writeFile(inP, new Uint8Array(buf));
+    let r;
+    try {
+      // 제한 해제 + 주석/양식 입력값을 본문에 병합 (화면에 보이는 그대로)
+      r = q.callMain(['--decrypt', '--generate-appearances', '--flatten-annotations=screen', inP, outP]);
+    } catch (e) { lastErr = String((e && e.message) || e); r = 2; }
+    if (r === 0 || r === 3) {
+      const out = q.FS.readFile(outP);
+      const ab = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);
+      postMessage({ type: 'result', id, code: 'ok', buf: ab }, [ab]);
+    } else {
+      postMessage({ type: 'result', id, code: /password/i.test(lastErr) ? 'password' : 'error', msg: lastErr });
+    }
+  } catch (e) {
+    postMessage({ type: 'result', id, code: 'error', msg: String((e && e.message) || e) });
+  } finally {
+    try { q.FS.unlink(inP); } catch (e) {}
+    try { q.FS.unlink(outP); } catch (e) {}
+  }
+};`;
+
+        const pool = [];
+        let engineResolve;
+        const engineReady = new Promise(r => { engineResolve = r; });
+        let jobQueue = [];
+
+        function updateEngine() {
+            if (pool.some(s => s.ok === true)) engineResolve(true);
+            else if (pool.every(s => s.ok !== null)) engineResolve(false);
+        }
+
+        function pumpSlot(slot) {
+            if (!slot.ok || slot.busy || !jobQueue.length) return;
+            const job = jobQueue.shift();
+            slot.busy = true;
+            slot.pending = (d) => { slot.busy = false; job.resolve(d); pumpSlot(slot); };
+            slot.w.postMessage({ id: job.id, buf: job.buf }, [job.buf]);
+        }
+
+        function initPool() {
+            let url;
+            try {
+                url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
+            } catch (e) { engineResolve(false); return; }
+            for (let i = 0; i < POOL_SIZE; i++) {
+                const slot = { w: null, ok: null, busy: false, pending: null };
+                try { slot.w = new Worker(url); } catch (e) { slot.ok = false; pool.push(slot); continue; }
+                slot.w.onmessage = e => {
+                    const d = e.data;
+                    if (d.type === 'ready') { slot.ok = true; updateEngine(); pumpSlot(slot); }
+                    else if (d.type === 'fatal') { slot.ok = false; updateEngine(); }
+                    else if (d.type === 'result' && slot.pending) { const p = slot.pending; slot.pending = null; p(d); }
+                };
+                slot.w.onerror = e => {
+                    e.preventDefault();
+                    if (slot.ok === null) slot.ok = false;
+                    if (slot.pending) { const p = slot.pending; slot.pending = null; p({ code: 'error', msg: '처리 중 오류가 발생했습니다' }); }
+                    updateEngine();
+                };
+                pool.push(slot);
+            }
+            if (!pool.length) engineResolve(false);
+            updateEngine();
+        }
+        initPool();
+
+        // 파일 하나를 해제 작업 대기열에 넣고, 결과 Promise 반환
+        function unlockFile(id, buf) {
+            return new Promise(resolve => {
+                jobQueue.push({ id, buf, resolve });
+                pool.forEach(pumpSlot);
+            });
+        }
+
+        // ---------- 오류 모달 ----------
+        const errModal = document.getElementById('err-modal');
+        let errResolve = null;
+        function askOnError(fileName, msg) {
+            document.getElementById('err-file').textContent = fileName;
+            document.getElementById('err-msg').textContent = msg;
+            errModal.classList.add('show');
+            lucide.createIcons();
+            return new Promise(r => { errResolve = r; });
+        }
+        function closeErr(val) {
+            errModal.classList.remove('show');
+            const r = errResolve; errResolve = null;
+            if (r) r(val);
+        }
+        document.getElementById('err-continue').onclick = () => closeErr('continue');
+        document.getElementById('err-stop').onclick = () => closeErr('stop');
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && errResolve) closeErr('stop'); });
+
+        // ---------- 벡터 페이지 배치 (기존 이미지 방식과 동일한 배치) ----------
+        // 원본 페이지를 그대로(벡터) 가져와 A4에 꽉 채우고, 가로 페이지는 90° 반시계 회전
+        async function appendVectorPages(mergedPdf, bytes, A4_WIDTH, A4_HEIGHT) {
+            const src = await PDFLib.PDFDocument.load(bytes, { updateMetadata: false });
+            const pages = src.getPages();
+            // 보이는 영역 = CropBox ∩ MediaBox
+            const boxes = pages.map(pg => {
+                const m = pg.getMediaBox(), c = pg.getCropBox();
+                const l = Math.max(m.x, c.x), b = Math.max(m.y, c.y);
+                const r = Math.min(m.x + m.width, c.x + c.width), t = Math.min(m.y + m.height, c.y + c.height);
+                return (r > l && t > b) ? { left: l, bottom: b, right: r, top: t }
+                    : { left: m.x, bottom: m.y, right: m.x + m.width, top: m.y + m.height };
+            });
+            const emb = await mergedPdf.embedPages(pages, boxes);
+            pages.forEach((pg, i) => {
+                // 페이지 자체 회전 정보(/Rotate) 반영
+                let rot = pg.getRotation().angle % 360;
+                if (rot < 0) rot += 360;
+                if (rot % 90) rot = 0;
+                const w = boxes[i].right - boxes[i].left, h = boxes[i].top - boxes[i].bottom;
+                const vw = rot % 180 ? h : w, vh = rot % 180 ? w : h;
+                // 가로 페이지이면 90° 반시계 방향으로 회전 → 세로 A4에 맞춤
+                const total = ((rot - (vw > vh ? 90 : 0)) % 360 + 360) % 360;
+                const o = {
+                    0:   { x: 0,        y: 0,         width: A4_WIDTH,  height: A4_HEIGHT, rotate: 0 },
+                    90:  { x: 0,        y: A4_HEIGHT, width: A4_HEIGHT, height: A4_WIDTH,  rotate: 270 },
+                    180: { x: A4_WIDTH, y: A4_HEIGHT, width: A4_WIDTH,  height: A4_HEIGHT, rotate: 180 },
+                    270: { x: A4_WIDTH, y: 0,         width: A4_HEIGHT, height: A4_WIDTH,  rotate: 90 }
+                }[total];
+                const newPage = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                newPage.drawPage(emb[i], { x: o.x, y: o.y, width: o.width, height: o.height, rotate: PDFLib.degrees(o.rotate) });
+            });
+            return pages.length;
+        }
 
         let selectedFiles = [];
         const fileInput = document.getElementById('file-input');
@@ -218,54 +391,67 @@
             lucide.createIcons();
 
             try {
+                const engineOk = await engineReady;
+                if (!engineOk) throw new Error('제한 해제 엔진을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.');
+
                 const mergedPdf = await PDFLib.PDFDocument.create();
                 const A4_WIDTH = 595.28;
                 const A4_HEIGHT = 841.89;
-                const totalFiles = selectedFiles.length;
-                
+                const files = selectedFiles.slice();
+                const totalFiles = files.length;
+
+                // 모든 파일의 제한 해제를 병렬로 먼저 시작 (결과는 순서대로 사용)
+                jobQueue = [];
+                const jobs = files.map((f, idx) =>
+                    f.data.arrayBuffer()
+                        .then(buf => unlockFile(idx, buf))
+                        .catch(e => ({ code: 'error', msg: '파일을 읽지 못했습니다: ' + e.message }))
+                );
+
+                let aborted = false;
                 for (let fIdx = 0; fIdx < totalFiles; fIdx++) {
-                    const fileObj = selectedFiles[fIdx];
+                    const fileObj = files[fIdx];
                     const percent = Math.round(((fIdx) / totalFiles) * 100);
                     progressBar.style.width = `${percent}%`;
 
-                    const arrayBuffer = await fileObj.data.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                    
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const viewport = page.getViewport({scale: 2.2});
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        await page.render({canvasContext: context, viewport: viewport}).promise;
+                    let failMsg = null;
+                    let unlockedBytes = null;
+                    const res = await jobs[fIdx];
+                    if (res.code === 'ok') unlockedBytes = res.buf;
+                    else if (res.code === 'password') failMsg = '열기 비밀번호가 걸려 있어 열 수 없습니다.';
+                    else failMsg = '제한 해제에 실패했습니다.' + (res.msg ? ' (' + res.msg + ')' : '');
 
-                        // 가로 페이지이면 90° 반시계 방향으로 회전 → 세로 A4에 맞춤
-                        let outCanvas = canvas;
-                        if (viewport.width > viewport.height) {
-                            outCanvas = document.createElement('canvas');
-                            outCanvas.width = canvas.height;
-                            outCanvas.height = canvas.width;
-                            const rctx = outCanvas.getContext('2d');
-                            rctx.translate(0, outCanvas.height);
-                            rctx.rotate(-Math.PI / 2);
-                            rctx.drawImage(canvas, 0, 0);
+                    if (!failMsg) {
+                        try {
+                            // 홀수 페이지에서 끝났으면 빈 페이지 삽입
+                            // → 각 파일이 항상 새 앞면(홀수 페이지)에서 시작하도록 보장
+                            const startCount = mergedPdf.getPageCount();
+                            if (startCount % 2 === 1) mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                            try {
+                                await appendVectorPages(mergedPdf, unlockedBytes, A4_WIDTH, A4_HEIGHT);
+                            } catch (e) {
+                                // 실패한 파일이 추가한 페이지(빈 페이지 포함)는 되돌림
+                                while (mergedPdf.getPageCount() > startCount) mergedPdf.removePage(mergedPdf.getPageCount() - 1);
+                                throw e;
+                            }
+                        } catch (e) {
+                            failMsg = 'PDF를 읽지 못했습니다. (' + e.message + ')';
                         }
-                        
-                        const imgDataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
-                        const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
-                        const img = await mergedPdf.embedJpg(imgBytes);
-                        
-                        const newPage = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                        newPage.drawImage(img, { x: 0, y: 0, width: A4_WIDTH, height: A4_HEIGHT });
                     }
 
-                    // 마지막 파일이 아니고, 페이지 수가 홀수이면 빈 페이지 삽입
-                    // → 다음 파일이 항상 새 앞면(홀수 페이지)에서 시작하도록 보장
-                    if (fIdx < totalFiles - 1 && pdf.numPages % 2 === 1) {
-                        mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                    if (failMsg) {
+                        const choice = await askOnError(fileObj.data.name, failMsg);
+                        if (choice === 'stop') { aborted = true; jobQueue = []; break; }
                     }
                 }
+
+                if (aborted) {
+                    progressContainer.style.display = 'none';
+                    progressText.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    return;
+                }
+                if (mergedPdf.getPageCount() === 0) throw new Error('인쇄할 페이지가 없습니다.');
 
                 progressBar.style.width = `100%`;
                 const pdfBytes = await mergedPdf.save();

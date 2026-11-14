@@ -29,7 +29,7 @@
   .home h1{font-size:28px;margin:0 0 6px;letter-spacing:-.5px}
   .home h1 span{background:linear-gradient(transparent 55%,var(--mark) 55%);padding:0 3px}
   .home .lead{margin:0 0 24px;color:var(--ink-soft);font-size:14px}
-  .menus{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+  .menus{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
   .menu{display:block;text-align:left;padding:22px 20px;border:1.5px solid var(--ink);border-radius:12px;background:var(--panel);
         box-shadow:0 3px 0 #b9c3d8;cursor:pointer;transition:transform .1s,background .12s}
   .menu:hover{background:#f4f6fb;transform:translateY(-2px)}
@@ -147,6 +147,13 @@
   .tsec td.a{color:#000}
   .page.key .tsec td.a{font-weight:700}
 
+  /* 시험지 책 */
+  .bk-grp{display:flex;flex-direction:column;align-items:center;gap:18px}
+  .bk-list{font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:6px;max-height:160px;overflow-y:auto;
+           border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#f7f8fb}
+  .bk-list:empty{display:none}
+  .btns[hidden]{display:none}
+
   @page{size:A4 portrait;margin:0}
   @media print{
     body{background:#fff}
@@ -156,6 +163,9 @@
     .page{box-shadow:none;break-after:page;page-break-after:always}
     .page:last-child{break-after:auto;page-break-after:auto}
     .sec .rt th,.sec .ch th,.tinfo th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bk-grp{display:block}
+    body.print-test .bk-key,body.print-key .bk-test{display:none!important}
+    body:not(.print-test):not(.print-key) .bk-key{break-before:page;page-break-before:always}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -171,6 +181,7 @@
       <button class="menu" data-go="memo"><b>암기장 제작</b><small>Day별 6회차 암기장과 시험지</small></button>
       <button class="menu" data-go="test"><b>단어 시험 출제</b><small>범위를 정해 50문항 시험지 출제</small></button>
       <button class="menu" data-go="students"><b>학생별 출제</b><small>학생마다 단어장과 범위를 저장해 한꺼번에 출제</small></button>
+      <button class="menu" data-go="book"><b>시험지 책 만들기</b><small>누적 범위(최대 7과)로 전체 시험지와 답지를 책으로 제작</small></button>
     </div>
     <div class="lib">
       <div class="lib-top">
@@ -334,6 +345,55 @@
 </div>
 </section>
 
+<!-- ═════════════ 시험지 책 만들기 ═════════════ -->
+<section class="view" id="view-book">
+<div class="app">
+  <aside class="controls">
+    <h1><button class="back" data-go="">← 메인</button><span>시험지 책</span> 만들기</h1>
+
+    <section class="group">
+      <h2>출제 조건</h2>
+      <p class="guide">범위는 단어장 전체 Day로 자동으로 정해집니다. <b>1-2</b>부터 7과까지 누적한 뒤 7과씩 밀고, 끝에서 다시 줄어듭니다. 회차마다 <b>50문항</b>을 랜덤으로 출제하고, 범위 안 단어가 50개보다 적으면 있는 만큼 모두 출제합니다.</p>
+      <div class="set">
+        <label for="bBook">단어장</label><select id="bBook"></select>
+        <label>유형</label>
+        <div class="radios" id="bType">
+          <label><input type="radio" name="bType" value="ek" checked> 영→한</label>
+          <label><input type="radio" name="bType" value="ke"> 한→영</label>
+          <label><input type="radio" name="bType" value="mix"> 혼합</label>
+        </div>
+      </div>
+      <div class="bk-list" id="bList"></div>
+      <div class="btns">
+        <button class="main" id="bMake">출제</button>
+        <button id="bShuffle" disabled>다시 섞기</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>저장</h2>
+      <div class="checks">
+        <label><input type="radio" name="bMode" value="split" checked> 시험지 + 답지 (파일 2개)</label>
+        <label><input type="radio" name="bMode" value="one"> 통합본 (시험지 전체 → 답지 전체, 파일 1개)</label>
+        <label><input type="checkbox" class="opt-duplex"> 양면 프린터 사용 (통합본에서 답지를 새 종이로)</label>
+      </div>
+      <div class="btns" id="bBtnSplit">
+        <button class="main" id="bPrintTest" disabled>시험지 인쇄 / PDF</button>
+        <button class="main" id="bPrintKey" disabled>답지 인쇄 / PDF</button>
+      </div>
+      <div class="btns" id="bBtnOne" hidden>
+        <button class="main wide" id="bPrintOne" disabled>통합본 인쇄 / PDF</button>
+      </div>
+    </section>
+
+    <div class="status" id="bStatus" role="status"></div>
+  </aside>
+  <main class="preview" id="bookPreview">
+    <div class="empty">단어장과 유형을 고르고 <b>출제</b>를 누르세요.</div>
+  </main>
+</div>
+</section>
+
 <dialog id="errDlg" class="err" aria-labelledby="errTitle">
   <h2 id="errTitle">DB 파일을 불러오지 않았습니다</h2>
   <p class="err-file" id="errFile"></p>
@@ -407,7 +467,7 @@ const TYPE_NAMES = { ek: "영→한", ke: "한→영", mix: "혼합" };
 /* ========================================================
    상태
    ======================================================== */
-const state = { db: null, settings: loadSettings(), current: null, books: new Map(), test: null, stuDocs: null, slots: loadSlots() };
+const state = { db: null, settings: loadSettings(), current: null, books: new Map(), test: null, stuDocs: null, slots: loadSlots(), bookDoc: null };
 const $ = id => document.getElementById(id);
 
 /* ========================================================
@@ -832,6 +892,7 @@ async function deleteBook(name){
   state.books.delete(name);
   if (state.db && state.db.name === name){ clearDB(); }
   if (state.test && state.test.book === name){ resetTest(); }
+  if (state.bookDoc && state.bookDoc.book === name){ resetBook(); }
   refreshBooks();
 }
 function refreshBooks(){
@@ -852,6 +913,11 @@ function refreshBooks(){
   tSel.innerHTML = books.length ? opts : `<option value="">등록된 단어장 없음</option>`;
   if (state.books.has(tPrev)) tSel.value = tPrev;
   updateTestHints();
+  // 시험지 책
+  const bSel = $("bBook"), bPrev = bSel.value;
+  bSel.innerHTML = books.length ? opts : `<option value="">등록된 단어장 없음</option>`;
+  if (state.books.has(bPrev)) bSel.value = bPrev;
+  updateBookHints();
   // 학생 목록
   renderSlots();
 }
@@ -1254,9 +1320,133 @@ async function importSlots(file){
 }
 
 /* ========================================================
+   시험지 책 만들기
+   범위: 1-2, 1-3 … 1-7 → 2-8, 3-9 … (7과씩 밀기) → 끝에서 45-50 … 49-50
+   (Day 번호가 아니라 단어장의 Day 순서 기준이므로 빠진 Day가 있어도 동작)
+   ======================================================== */
+const BOOK_WIN = 7;                // 한 회차 최대 과 수
+function bookWindows(ds){
+  const N = ds.length, wins = [];
+  for (let e = 1; e < N; e++) wins.push(ds.slice(Math.max(0, e - (BOOK_WIN - 1)), e + 1));
+  for (let s = Math.max(1, N - (BOOK_WIN - 1)); s <= N - 2; s++) wins.push(ds.slice(s, N));
+  return wins;
+}
+// 회차 하나: 50문항(모자라면 범위 안 전체), 항상 랜덤
+function makeBookTest(book, days, type){
+  const map = bookMap(book);
+  const avail = days.reduce((t, d) => t + map.get(d).length, 0);
+  const n = Math.min(TEST_PER_PAGE, avail);
+  const alloc = allocate(days.map(d => [d, map.get(d).length]), n);
+  let picked = [];
+  for (const d of days) picked = picked.concat(shuffle(map.get(d)).slice(0, alloc.get(d)));
+  picked = shuffle(picked);
+  const ekSet = new Set(type === "mix" ? shuffle(picked.map((_, i) => i)).slice(0, Math.ceil(n / 2)) : []);
+  const items = picked.map((it, i) => {
+    const en = stripPron(it.w), ko = stripPron(it.m);
+    const ek = type === "ek" || (type === "mix" && ekSet.has(i));
+    return ek ? { q: en, a: ko } : { q: ko, a: en };
+  });
+  return { book: book.name, prefix: book.prefix, days, range: rangeLabel(days, book.prefix), n, type, items };
+}
+// 책 한 장 (단어 시험 양식과 같고, 이름·날짜 칸만 없음)
+function bookPageHTML(t, isKey){
+  const cols = `<col style="width:${TEST_COL.no}mm"><col style="width:${TEST_COL.q}mm"><col style="width:${TEST_COL.a}mm">`;
+  const cell = s => `<div class="c">${s}</div>`;
+  const side = i => {
+    const it = t.items[i];
+    if (!it) return `<td class="no">${cell("")}</td><td class="q fit">${cell("")}</td><td class="a fit">${cell("")}</td>`;
+    return `<td class="no">${cell(i + 1)}</td><td class="q fit">${cell(esc(it.q))}</td><td class="a fit">${cell(isKey ? esc(it.a) : "")}</td>`;
+  };
+  let rows = "";
+  for (let r = 0; r < TEST_ROWS; r++) rows += `<tr class="d">${side(r)}<td class="gap"></td>${side(r + TEST_ROWS)}</tr>`;
+  return `<div class="page${isKey ? " key" : ""}">
+    <div class="ph"><div class="lab">${isKey ? "정답지" : "단어 시험"}</div><div class="ttl">${esc(t.book)}</div><div class="day"></div></div>
+    <table class="tinfo"><colgroup><col style="width:12%"><col style="width:58%"><col style="width:12%"><col style="width:18%"></colgroup>
+      <tr><th>범위</th><td>${esc(t.range)}</td><th>점수</th><td class="sc">/ ${t.n}</td></tr></table>
+    <div class="sec tsec"><table style="--rh:${TEST_ROW_H.toFixed(3)}mm;--fs:${TEST_FONT_PT}pt">
+      <colgroup>${cols}<col style="width:${GAP_W}mm">${cols}</colgroup>
+      <tr class="ch"><th class="no">번호</th><th>문제</th><th>답</th><th class="gap"></th><th class="no">번호</th><th>문제</th><th>답</th></tr>
+      ${rows}
+    </table></div>
+  </div>`;
+}
+function bookMode(){
+  const r = document.querySelector('input[name="bMode"]:checked');
+  return r ? r.value : "split";
+}
+function bookType(){
+  const r = document.querySelector('input[name="bType"]:checked');
+  return r ? r.value : "ek";
+}
+function updateBookHints(){
+  const book = state.books.get($("bBook").value);
+  if (!book){ $("bList").textContent = ""; return; }
+  const wins = bookWindows(book.days.map(x => x[0]));
+  $("bList").innerHTML = `<b>${esc(bookRangeText(book))} · 총 ${wins.length}회차</b><br>` +
+    wins.map((w, i) => `${i + 1}회: ${esc(w[0] === w[w.length - 1] ? `${w[0]}` : `${w[0]}-${w[w.length - 1]}`)}`).join(" · ");
+}
+function runBook(){
+  const name = $("bBook").value;
+  const book = state.books.get(name);
+  if (!book){
+    resetBook();
+    showErrorBox("시험지 책을 만들지 못했습니다", name, "메인 화면에서 단어장을 등록하세요.", [name ? `"${name}" 단어장이 없습니다.` : "단어장을 고르세요."]);
+    status("단어장을 고르세요.", true, "bStatus");
+    return;
+  }
+  const ds = book.days.map(x => x[0]);
+  if (ds.length < 2){
+    resetBook();
+    showErrorBox("시험지 책을 만들지 못했습니다", name, "Day가 2개 이상인 단어장이 필요합니다.", [`이 단어장은 ${book.prefix}가 ${ds.length}개뿐입니다.`]);
+    status("Day가 2개 이상이어야 합니다.", true, "bStatus");
+    return;
+  }
+  const type = bookType();
+  state.bookDoc = { book: book.name, type, tests: bookWindows(ds).map(days => makeBookTest(book, days, type)) };
+  renderBook();
+  ["bShuffle", "bPrintTest", "bPrintKey", "bPrintOne"].forEach(id => $(id).disabled = false);
+  status(`${state.bookDoc.tests.length}회차 · ${TYPE_NAMES[type]} 출제 완료 (시험지 ${state.bookDoc.tests.length}장 + 답지 ${state.bookDoc.tests.length}장)`, false, "bStatus");
+}
+function renderBook(){
+  const doc = state.bookDoc;
+  if (!doc) return;
+  const testPages = doc.tests.map(t => bookPageHTML(t, false));
+  const keyPages = doc.tests.map(t => bookPageHTML(t, true));
+  // 통합본 + 양면이면 답지가 시험지 뒷면에 오지 않게 빈 면 추가
+  const testHtml = bookMode() === "one" ? padDuplex(testPages) : testPages.join("");
+  renderInto($("bookPreview"), `<div class="bk-grp bk-test">${testHtml}</div><div class="bk-grp bk-key">${keyPages.join("")}</div>`);
+}
+function resetBook(){
+  state.bookDoc = null;
+  $("bookPreview").innerHTML = `<div class="empty">단어장과 유형을 고르고 <b>출제</b>를 누르세요.</div>`;
+  ["bShuffle", "bPrintTest", "bPrintKey", "bPrintOne"].forEach(id => $(id).disabled = true);
+}
+function syncBookMode(){
+  const one = bookMode() === "one";
+  $("bBtnSplit").hidden = one;
+  $("bBtnOne").hidden = !one;
+  renderBook();
+}
+// what: "test" | "key" | "one"  (PDF 파일 이름 기본값을 정하려고 제목도 잠시 바꿈)
+function printBook(what){
+  const doc = state.bookDoc;
+  if (!doc){ status("출제가 되지 않아 인쇄할 수 없습니다.", true, "bStatus"); return; }
+  const suffix = { test: "시험지", key: "답지", one: "통합본" }[what];
+  const oldTitle = document.title;
+  document.title = `${doc.book}_${TYPE_NAMES[doc.type].replace("→", "")}_${suffix}`;
+  document.body.classList.toggle("print-test", what === "test");
+  document.body.classList.toggle("print-key", what === "key");
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove("print-test", "print-key");
+    document.title = oldTitle;
+  }, 50);
+}
+
+/* ========================================================
    화면 전환과 초기화
    ======================================================== */
-const VIEWS = ["memo", "test", "students"];
+const VIEWS = ["memo", "test", "students", "book"];
 function showView(){
   const v = location.hash.replace("#", "");
   const name = VIEWS.includes(v) ? v : "home";
@@ -1275,6 +1465,7 @@ function rerenderAll(){
   if (state.current) renderDays([state.current]);
   if (state.test) renderInto($("testPreview"), testDocHTML(state.test, ""));
   renderStudents();
+  renderBook();
 }
 
 function initUI(){
@@ -1328,6 +1519,15 @@ function initUI(){
   $("tMake").addEventListener("click", runTest);
   $("tShuffle").addEventListener("click", runTest);
   $("tPrint").addEventListener("click", () => { if (state.test) window.print(); });
+
+  // 시험지 책
+  $("bBook").addEventListener("change", () => { updateBookHints(); resetBook(); status("", false, "bStatus"); });
+  $("bMake").addEventListener("click", runBook);
+  $("bShuffle").addEventListener("click", runBook);
+  document.querySelectorAll('input[name="bMode"]').forEach(el => el.addEventListener("change", syncBookMode));
+  $("bPrintTest").addEventListener("click", () => printBook("test"));
+  $("bPrintKey").addEventListener("click", () => printBook("key"));
+  $("bPrintOne").addEventListener("click", () => printBook("one"));
 
   // 학생별
   $("slotBody").addEventListener("input", onSlotInput);

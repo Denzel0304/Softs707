@@ -329,6 +329,11 @@
     }
     .db-edit-btn { background:rgba(79,174,224,0.12); color:var(--accent); }
     .db-del-btn  { background:rgba(224,80,96,0.10); color:#e05060; }
+    .db-fav-btn {
+      width:30px; padding:4px 0; border-radius:8px; border:none; cursor:pointer;
+      background:rgba(245,166,35,0.10); color:var(--text-light); font-size:16px; line-height:1;
+    }
+    .db-fav-btn.on { color:var(--orange3); background:rgba(245,166,35,0.18); }
     .db-food-macros { display:flex; gap:6px; flex-wrap:wrap; }
     .db-macro-item { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
     .db-macro-item.protein { background:rgba(79,174,224,0.12); color:var(--accent); }
@@ -844,12 +849,23 @@ function renderFoodSelect() {
   const sel = document.getElementById('foodSelect');
   const cur = sel.value;
   sel.innerHTML = '<option value="">음식 선택</option><option value="__etc__">➕ 기타 (직접 입력)</option>';
-  [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach(f => {
+  const sorted = [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+  const favs   = sorted.filter(f => f.fav);
+  const others = sorted.filter(f => !f.fav);
+  const addOpt = (f, isFav) => {
     const o = document.createElement('option');
     o.value = f.id;
-    o.textContent = `${f.emoji||'🍽️'}\u00A0\u00A0${f.name} (1${f.unit})`;
+    o.textContent = `${isFav?'★ ':''}${f.emoji||'🍽️'}  ${f.name} (1${f.unit})`;
     sel.appendChild(o);
-  });
+  };
+  favs.forEach(f => addOpt(f, true));
+  if (favs.length>0 && others.length>0) {
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────────────';
+    sel.appendChild(sep);
+  }
+  others.forEach(f => addOpt(f, false));
   if (cur) sel.value = cur;
 }
 
@@ -1180,6 +1196,7 @@ function renderDBList() {
           </div>
         </div>
         <div class="db-food-actions">
+          <button class="db-fav-btn${f.fav?' on':''}" data-id="${f.id}" title="즐겨찾기">${f.fav?'★':'☆'}</button>
           <button class="db-edit-btn" data-id="${f.id}">수정</button>
           <button class="db-del-btn"  data-id="${f.id}">삭제</button>
         </div>
@@ -1193,12 +1210,24 @@ function renderDBList() {
     </div>`;
   }).join('');
 
+  list.querySelectorAll('.db-fav-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleFavorite(btn.dataset.id));
+  });
   list.querySelectorAll('.db-edit-btn').forEach(btn=>{
     btn.addEventListener('click',()=>openFoodModal(btn.dataset.id));
   });
   list.querySelectorAll('.db-del-btn').forEach(btn=>{
     btn.addEventListener('click',()=>confirmDeleteFood(btn.dataset.id));
   });
+}
+
+// ── 즐겨찾기 토글 ──
+function toggleFavorite(id) {
+  const food = foodDB.find(f=>f.id===id);
+  if (!food) return;
+  food.fav = !food.fav;
+  saveDB(); renderDBList(); renderFoodSelect();
+  showToast(food.fav ? `${food.name} 즐겨찾기 추가 ★` : `${food.name} 즐겨찾기 해제`);
 }
 
 async function confirmDeleteFood(id) {

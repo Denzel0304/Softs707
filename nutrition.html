@@ -334,7 +334,7 @@
       color:var(--text-light); font-size:22px; line-height:1;
     }
     .db-fav-btn.on { color:var(--orange3); }
-    .db-food-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
+    .db-food-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
     .db-food-macros { display:flex; gap:6px; flex-wrap:wrap; }
     .db-macro-item { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
     .db-macro-item.protein { background:rgba(79,174,224,0.12); color:var(--accent); }
@@ -1197,13 +1197,13 @@ function renderDBList() {
           </div>
         </div>
       </div>
+      <div class="db-food-macros">
+        <span class="db-macro-item protein">단백질 ${f.protein}g</span>
+        <span class="db-macro-item carb">탄수화물 ${f.carb}g</span>
+        <span class="db-macro-item fat">지방 ${f.fat}g</span>
+      </div>
       <div class="db-food-bottom">
-        <div class="db-food-macros">
-          <span class="db-macro-item protein">단백질 ${f.protein}g</span>
-          <span class="db-macro-item carb">탄수화물 ${f.carb}g</span>
-          <span class="db-macro-item fat">지방 ${f.fat}g</span>
-          <span class="db-macro-item kcal">🔥 ${f.kcal} kcal</span>
-        </div>
+        <span class="db-macro-item kcal">🔥 ${f.kcal} kcal</span>
         <div class="db-food-actions">
           <button class="db-edit-btn" data-id="${f.id}">수정</button>
           <button class="db-del-btn"  data-id="${f.id}">삭제</button>

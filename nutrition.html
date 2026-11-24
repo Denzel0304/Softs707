@@ -317,10 +317,11 @@
       padding:14px 16px; box-shadow:0 2px 8px rgba(79,174,224,0.07);
       animation:fadeUp 0.3s ease both;
     }
-    .db-food-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-    .db-food-name-wrap { display:flex; align-items:center; gap:8px; }
+    .db-food-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .db-food-name-wrap { display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
+    .db-food-name-wrap > div { min-width:0; }
     .db-food-icon { font-size:22px; }
-    .db-food-name { font-size:15px; font-weight:700; color:var(--text-dark); }
+    .db-food-name { font-size:15px; font-weight:700; color:var(--text-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .db-food-unit { font-size:11px; color:var(--text-light); margin-top:1px; }
     .db-food-actions { display:flex; gap:6px; flex-shrink:0; }
     .db-edit-btn, .db-del-btn {
@@ -1019,7 +1020,14 @@ function renderFoodList() {
   });
 }
 
-function deleteFood(idx) {
+async function deleteFood(idx) {
+  const item = todayFoods[idx];
+  if (!item) return;
+  const label = item.foodId==='__etc__' ? '직접 입력' : `${item.amount}${item.unit}`;
+  document.getElementById('confirmTitle').textContent = '기록 삭제';
+  document.getElementById('confirmDesc').innerHTML = `<strong>${item.name}</strong> (${label})<br>오늘 기록에서 삭제할까요?`;
+  const ok = await showConfirm();
+  if (!ok) return;
   todayFoods.splice(idx,1);
   renderFoodList(); updateGaugeUI(); saveTodayData(); renderHistory();
 }
@@ -1196,6 +1204,10 @@ function renderDBList() {
             <div class="db-food-unit">1${f.unit} 기준</div>
           </div>
         </div>
+        <div class="db-food-actions">
+          <button class="db-edit-btn" data-id="${f.id}">수정</button>
+          <button class="db-del-btn"  data-id="${f.id}">삭제</button>
+        </div>
       </div>
       <div class="db-food-macros">
         <span class="db-macro-item protein">단백질 ${f.protein}g</span>
@@ -1204,10 +1216,6 @@ function renderDBList() {
       </div>
       <div class="db-food-bottom">
         <span class="db-macro-item kcal">🔥 ${f.kcal} kcal</span>
-        <div class="db-food-actions">
-          <button class="db-edit-btn" data-id="${f.id}">수정</button>
-          <button class="db-del-btn"  data-id="${f.id}">삭제</button>
-        </div>
       </div>
     </div>`;
   }).join('');
